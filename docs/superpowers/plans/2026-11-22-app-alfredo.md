@@ -62,7 +62,6 @@ src/
     push.ts                 # web-push sender interface
   claves/cripto.ts          # AES-GCM, PRF/PIN key derivation (browser)
 supabase/migrations/0001_init.sql
-scripts/seed.ts
 tests/unit/**  tests/e2e/**
 ```
 
@@ -382,7 +381,7 @@ tests/unit/**  tests/e2e/**
 
 - [ ] **Step 1: Failing e2e `recorrido.spec.ts`** (iPhone 14 project, memory repo seeded): full happy path — login → Inicio → Calendario send greeting → Recordatorios resolve → Contame files a fact into Portofino → Mensajes reply → Documentos upload → Contraseñas add → Contactos call link → back to Inicio; every page has no console errors and no horizontal scroll at 390px width.
 - [ ] **Step 2: Run** → FAIL where pieces are missing; fix. **Step 3: Run** `pnpm test && pnpm e2e` → all PASS.
-- [ ] **Step 4: Write `docs/deploy.md`**: Supabase project + `supabase db push` + `pnpm seed`; Vercel env vars list (every var named in Global Constraints and Tasks 4, 12, 15); VAPID key generation (`npx web-push generate-vapid-keys`); first-time setup on his iPhone: open URL in Safari → Compartir › Agregar a inicio → open from the icon → /configurar with SETUP_CODE → Face ID → Ajustes › Activar avisos.
+- [ ] **Step 4: Write `docs/deploy.md`**: Supabase project `kxnrsymrzfaftxobsgys` already has the schema and seed (migrations in `supabase/migrations`); Vercel env vars list (every var named in Global Constraints and Tasks 4, 12, 15); VAPID key generation (`npx web-push generate-vapid-keys`); first-time setup on his iPhone: open URL in Safari → Compartir › Agregar a inicio → open from the icon → /configurar with SETUP_CODE → Face ID → Ajustes › Activar avisos.
 - [ ] **Step 5: Commit** `test: full journey e2e and deploy guide`
 
 ---
