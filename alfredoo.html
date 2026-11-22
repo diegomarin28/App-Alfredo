@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Prueba de voz</title>
+<style>
+  body { margin: 0; font-family: -apple-system, system-ui, sans-serif; background: #F5F7FA; color: #1C1F24; }
+  main { max-width: 480px; margin: 0 auto; padding: 24px 20px 40px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { margin: 0; font-size: 26px; }
+  p { margin: 0; color: #5F646B; font-size: 15px; }
+  .card { background: #fff; border: 1px solid #E3E8EF; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  button { height: 56px; border: none; border-radius: 28px; background: #1F4E8C; color: #fff; font-size: 17px; font-weight: 600; }
+  button.on { background: #B3261E; }
+  button.sec { height: 44px; background: #ECEFF4; color: #1C1F24; font-size: 15px; }
+  #texto { min-height: 80px; font-size: 18px; line-height: 1.4; }
+  #parcial { color: #5F646B; }
+  #estado { font-size: 14px; color: #5F646B; }
+  select { height: 44px; border: 1px solid #E3E8EF; border-radius: 10px; font-size: 16px; padding: 0 10px; background: #fff; }
+  ul { margin: 0; padding-left: 18px; color: #3F434A; font-size: 15px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Prueba de voz · v2</h1>
+  <p>Tocá una vez para empezar, hablá todo lo que quieras y tocá de nuevo para terminar.</p>
+
+  <div class="card">
+    <label for="idioma"><strong>Idioma del reconocimiento</strong></label>
+    <select id="idioma">
+      <option value="es-UY">Español (Uruguay)</option>
+      <option value="es-AR">Español (Argentina)</option>
+      <option value="es-ES">Español (España)</option>
+      <option value="es-419">Español (Latinoamérica)</option>
+    </select>
+    <p>Probá la misma frase con cada uno y quedate con el que entienda mejor.</p>
+  </div>
+
+  <div class="card">
+    <button id="btn" type="button">Tocá para empezar</button>
+    <div id="estado">Listo para probar.</div>
+    <div id="texto"><span id="final"></span> <span id="parcial"></span></div>
+    <button id="borrar" class="sec" type="button">Borrar</button>
+  </div>
+
+  <div class="card">
+    <strong>Frases para probar</strong>
+    <ul>
+      <li>Hoy le pagué a Simón y compró flores para el cantero.</li>
+      <li>Se rompió la bomba de la piscina en Malibú.</li>
+      <li>El del riego vino el martes, hay que volver a llamarlo.</li>
+      <li>Acordate de sacar los pasajes de los chicos.</li>
+    </ul>
+  </div>
+</main>
+<script>
+  const btn = document.getElementById('btn');
+  const estado = document.getElementById('estado');
+  const finalEl = document.getElementById('final');
+  const parcialEl = document.getElementById('parcial');
+  const idioma = document.getElementById('idioma');
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  let rec = null;
+  let quiereEscuchar = false; // lo decide el usuario, no el navegador
+  let acumulado = '';
+
+  function nuevoRec() {
+    const r = new SR();
+    r.lang = idioma.value;
+    r.continuous = true;
+    r.interimResults = true;
+    r.onresult = (e) => {
+      let parcial = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) acumulado += (acumulado ? ' ' : '') + t.trim();
+        else parcial += t;
+      }
+      finalEl.textContent = acumulado;
+      parcialEl.textContent = parcial;
+    };
+    r.onerror = (e) => {
+      if (e.error === 'no-speech' || e.error === 'aborted') return; // se reintenta solo
+      estado.textContent = 'Error: ' + e.error;
+      if (e.error === 'not-allowed') parar();
+    };
+    // Safari corta solo después de un silencio: si el usuario no tocó "terminar", lo reiniciamos.
+    r.onend = () => {
+      parcialEl.textContent = '';
+      if (quiereEscuchar) {
+        try { r.start(); } catch (_) { rec = nuevoRec(); rec.start(); }
+      }
+    };
+    return r;
+  }
+
+  function empezar() {
+    quiereEscuchar = true;
+    rec = nuevoRec();
+    rec.start();
+    btn.classList.add('on');
+    btn.textContent = 'Escuchando… tocá para terminar';
+    estado.textContent = 'Hablá tranquilo, podés hacer pausas.';
+  }
+
+  function parar() {
+    quiereEscuchar = false;
+    if (rec) rec.stop();
+    btn.classList.remove('on');
+    btn.textContent = 'Tocá para empezar';
+    estado.textContent = acumulado ? 'Terminó. ¿Lo entendió bien?' : 'No se escuchó nada.';
+  }
+
+  if (!SR) {
+    estado.textContent = 'Este navegador no tiene reconocimiento de voz.';
+    btn.disabled = true;
+  } else {
+    btn.addEventListener('click', () => (quiereEscuchar ? parar() : empezar()));
+    document.getElementById('borrar').addEventListener('click', () => { acumulado = ''; finalEl.textContent = ''; parcialEl.textContent = ''; });
+    idioma.addEventListener('change', () => { if (quiereEscuchar) { parar(); } });
+  }
+</script>
+</body>
+</html>
