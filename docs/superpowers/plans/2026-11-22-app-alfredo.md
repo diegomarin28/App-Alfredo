@@ -94,7 +94,7 @@ tests/unit/**  tests/e2e/**
 **Interfaces:**
 - Produces (types in `tipos.ts`):
   - `Fecha { id; nombre: string; tipo: 'cumple' | 'aniversario' | 'otra'; dia: string /* MM-DD */; anioNacimiento?: number }`
-  - `Recordatorio { id; titulo: string; dia: string /* MM-DD */; avisarDiasAntes: number; pospuestoHasta?: string /* YYYY-MM-DD */; resueltoAnio?: number }`
+  - `Recordatorio { id; titulo: string; dia: string | null /* MM-DD; null = fecha todavía no cargada, nunca activo */; avisarDiasAntes: number; pospuestoHasta?: string /* YYYY-MM-DD */; resueltoAnio?: number }`
   - `Vencimiento { id; titulo: string; ambito: 'empresa' | 'personal'; fecha: string; avisarDiasAntes: number; hecho: boolean }`
 - Produces (functions):
   - `hoyMontevideo(now: Date): string` → `YYYY-MM-DD` in America/Montevideo
@@ -127,7 +127,8 @@ tests/unit/**  tests/e2e/**
 ### Task 3: Data layer (Repo, memory, Supabase, migration)
 
 **Files:**
-- Create: `src/data/repo.ts`, `src/data/memoryRepo.ts`, `src/data/supabaseRepo.ts`, `src/data/getRepo.ts`, `supabase/migrations/0001_init.sql`, `scripts/seed.ts`
+- Create: `src/data/repo.ts`, `src/data/memoryRepo.ts`, `src/data/supabaseRepo.ts`, `src/data/getRepo.ts`
+- Already exists and is applied to the Supabase project (do not recreate): `supabase/migrations/0001_init.sql`, `0002_*.sql` — tables, RLS, bucket `archivos`, seed (config row, 4 carpetas, 6 recordatorios). SupabaseRepo must match these column names exactly. Every Contame-created entity carries `loteId` (`lote_id`) for undo.
 - Test: `tests/unit/repo.contract.ts`, `tests/unit/memoryRepo.test.ts`, `tests/unit/supabaseRepo.test.ts` (runs only if `SUPABASE_TEST_URL` is set)
 
 **Interfaces:**
@@ -138,7 +139,7 @@ tests/unit/**  tests/e2e/**
 
 - [ ] **Step 1: Write a contract test suite** `repoContract(makeRepo)`: create→list→get→update→remove round-trip for each entity; `eventosCasa.list({casa:'portofino'})` returns only Portofino, newest `cuando` first; `seed()` yields 6 recordatorios (titles exactly as spec) and 4 carpetas; config defaults `{ nombre: 'Alfredo', alertaIaEnviada: false }`.
 - [ ] **Step 2: Run** against MemoryRepo → FAIL.
-- [ ] **Step 3: Implement** MemoryRepo (Maps + `crypto.randomUUID()`), the SQL migration (one table per entity, snake_case columns, RLS enabled on all tables with no anon policies — server uses the service role key only), SupabaseRepo mapping camelCase ↔ snake_case, private storage bucket `archivos`, `scripts/seed.ts` running `seed()` against Supabase.
+- [ ] **Step 3: Implement** MemoryRepo (Maps + `crypto.randomUUID()`, `seed()` mirroring the SQL seed) and SupabaseRepo (service role key, camelCase ↔ snake_case, storage bucket `archivos`, signed URLs for `urlArchivo`).
 - [ ] **Step 4: Run** `pnpm test` → PASS (Supabase suite skipped without env).
 - [ ] **Step 5: Commit** `feat: repo interface with memory and supabase backends`
 
