@@ -10,6 +10,8 @@ export interface AiArgs {
   herramientas?: unknown[]
   /** Pide que el modelo use alguna herramienta (tool_choice: any). */
   forzarHerramienta?: boolean
+  /** A lo sumo una llamada a herramienta por respuesta (disable_parallel_tool_use). */
+  unaSolaHerramienta?: boolean
 }
 
 export interface AiResultado {
@@ -48,7 +50,11 @@ export class AnthropicClient implements AiClient {
       system: args.sistema,
       messages: args.mensajes.map((m) => ({ role: m.rol, content: m.texto })),
       ...(conTools ? { tools } : {}),
-      ...(forzar ? { tool_choice: { type: 'any' as const } } : {}),
+      ...(forzar
+        ? { tool_choice: { type: 'any' as const, ...(args.unaSolaHerramienta ? { disable_parallel_tool_use: true } : {}) } }
+        : conTools && args.unaSolaHerramienta
+          ? { tool_choice: { type: 'auto' as const, disable_parallel_tool_use: true } }
+          : {}),
     })
     let texto = ''
     let tool: Anthropic.ToolUseBlock | undefined
