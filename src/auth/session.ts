@@ -45,3 +45,21 @@ export async function tomarDesafio(tipo: Desafio['tipo']): Promise<string | null
   jar.set(COOKIE_DESAFIO, '', opcionesCookie(0))
   return desafio
 }
+
+/** Error de autorización para server actions y route handlers (R20). */
+export class SinPermiso extends Error {
+  constructor(public readonly status: 401 | 403) {
+    super(status === 401 ? 'Sin sesión.' : 'No tenés permiso para esto.')
+  }
+}
+
+/**
+ * Cada server action y route handler debe llamarla primero (R20): las actions se pueden invocar
+ * desde cualquier página, así que el middleware no alcanza. Lanza SinPermiso (401 sin sesión, 403 rol no permitido).
+ */
+export async function requerirRol(...roles: Rol[]): Promise<Sesion> {
+  const sesion = await getSesion()
+  if (!sesion) throw new SinPermiso(401)
+  if (!roles.includes(sesion.rol)) throw new SinPermiso(403)
+  return sesion
+}
