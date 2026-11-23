@@ -85,7 +85,7 @@ describe('contame (Review Focus 4)', () => {
     expect(llamada.mensajes[0].texto).toContain('Simón')
     expect(llamada.mensajes[0].texto).toContain('<dictado>Le pagué a Simón</dictado>')
     expect((llamada.herramientas as { name: string }[]).map((h) => h.name)).toEqual(['guardar', 'preguntar'])
-    expect(llamada).toMatchObject({ modelo: 'claude-haiku-5-5', maxTokens: 800, forzarHerramienta: true, unaSolaHerramienta: true })
+    expect(llamada).toMatchObject({ modelo: 'claude-haiku-5-5', maxTokens: 2000, forzarHerramienta: true, unaSolaHerramienta: true })
     expect(llamada.sinPensar).toBeUndefined()
   })
 

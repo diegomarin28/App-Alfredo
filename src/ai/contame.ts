@@ -260,14 +260,14 @@ export async function deshacerLote(repo: Repo, loteId: string): Promise<number> 
 /**
  * El pedido de clasificación (también lo usa scripts/probar-haiku.ts).
  * Haiku 5.5 acepta forzar la herramienta (any): siempre llama a guardar o preguntar,
- * y forzada no piensa, así que los 800 tokens van a la herramienta.
+ * y forzada no piensa, así que los 2000 tokens van a la herramienta.
  */
 export function pedidoClasificacion(nombre: string, texto: string, respuestas: string[], ctx: ContextoContame): AiArgs {
   return {
     modelo: MODELO_CONTAME,
     sistema: construirSistema(nombre),
     mensajes: [{ rol: 'user', texto: construirUsuario(texto, respuestas, ctx) }],
-    maxTokens: 800,
+    maxTokens: 2000,
     herramientas: HERRAMIENTAS,
     forzarHerramienta: true,
     unaSolaHerramienta: true,
@@ -279,7 +279,7 @@ export async function clasificar(
 ): Promise<Clasificacion> {
   const config = await repo.getConfig()
   const r = await usarIa(repo, ai, email, pedidoClasificacion(config.nombre, texto, respuestas, ctx))
-  // Cortada por max_tokens (un texto largo no entra en 800): la herramienta puede venir a medias.
+  // Cortada por max_tokens (un texto muy largo no entra en 2000): la herramienta puede venir a medias.
   if (r.stopReason === 'max_tokens') return { cortada: true }
   // Rechazo: puede cortar una herramienta a medias; nunca se usa.
   if (r.stopReason === 'refusal') return { sinClasificar: true }

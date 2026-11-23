@@ -97,7 +97,7 @@ describe('AnthropicClient', () => {
 describe('pedido real a la API (SDK simulado)', () => {
   const ctx = { hoy: '2026-11-22', personas: [], contactos: [] }
 
-  it('Contame: Haiku 5.5, 800 tokens, herramienta forzada (any, una sola), guardar/preguntar y system con caché', async () => {
+  it('Contame: Haiku 5.5, 2000 tokens, herramienta forzada (any, una sola), guardar/preguntar y system con caché', async () => {
     const acciones = [{ tipo: 'pendiente', texto: 'Llamar al plomero' }]
     create.mockResolvedValue(respuesta('tool_use', [{ type: 'tool_use', id: 't1', name: 'guardar', input: { acciones } }],
       { input_tokens: 300, output_tokens: 80, cache_creation_input_tokens: 0, cache_read_input_tokens: 2500 }))
@@ -107,7 +107,7 @@ describe('pedido real a la API (SDK simulado)', () => {
     const pedido = create.mock.calls[0][0]
     expect(pedido).toMatchObject({
       model: 'claude-haiku-5-5',
-      max_tokens: 800,
+      max_tokens: 2000,
       tool_choice: { type: 'any', disable_parallel_tool_use: true },
       system: [{ type: 'text', text: sistemaContame('Alfredo'), cache_control: { type: 'ephemeral' } }],
     })

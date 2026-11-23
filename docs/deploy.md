@@ -60,7 +60,7 @@ Los modelos y sus precios están fijos en el código (`src/ai/client.ts` y `src/
 | Uso | Modelo | Entrada | Salida | Leer caché | Escribir caché (5 min) | `max_tokens` |
 |---|---|---|---|---|---|---|
 | Mensajes | `claude-sonnet-5-5` | 2 | 10 | 0,10 | 2,50 | 400 (sin pensar) |
-| Contame | `claude-haiku-5-5` | 0,10 | 0,50 | 0,01 | 0,125 | 800 (herramienta forzada) |
+| Contame | `claude-haiku-5-5` | 0,10 | 0,50 | 0,01 | 0,125 | 2000 (herramienta forzada) |
 
 Si un pedido a Haiku pasa de 100.000 tokens de entrada (contando la caché), se cobra 0,50 / 2,50 (caché: 0,05 / 0,625). Cada uso guarda su costo exacto y el saldo (`AI_BUDGET_USD`) y el aviso (`AI_ALERT_USD`) miran la suma de los dos modelos. El prompt de sistema va con caché de 5 minutos (si tiene menos de 512 tokens no se cachea, sin error). Si Anthropic cambia los precios, hay que actualizar `src/ai/precios.ts`.
 
