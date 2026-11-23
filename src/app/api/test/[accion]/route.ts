@@ -2,10 +2,14 @@
  * SOLO PARA PRUEBAS. 404 salvo ENABLE_TEST_ROUTES=1 + NODE_ENV≠production + datos en memoria.
  *   POST /api/test/login  { rol: 'owner' | 'familia' }
  *   POST /api/test/reset  { datos?, config?, sinSeed?, hoy? }
+ *   POST /api/test/ai     { respuestas: Partial<AiResultado>[] }  reemplaza la cola de la IA falsa (y borra sus llamadas)
+ *   GET|POST /api/test/ai-llamadas  llamadas recibidas por la IA falsa y mails enviados
  */
 import { NextResponse, type NextRequest } from 'next/server'
 import { rutasDePruebaHabilitadas } from '@/auth/pruebas'
 import { iniciarSesion } from '@/auth/session'
+import { getAiFake, getEmail } from '@/ai'
+import type { FakeEmailSender } from '@/ai/email'
 import { getRepo } from '@/data/getRepo'
 import type { MemoryRepo } from '@/data/memoryRepo'
 import { ENTIDADES, type Entidad } from '@/data/repo'
@@ -16,6 +20,19 @@ type Ctx = { params: Promise<{ accion: string }> }
 
 const noExiste = () => NextResponse.json({ error: 'No existe.' }, { status: 404 })
 const mal = (error: string) => NextResponse.json({ error }, { status: 400 })
+
+function llamadasIa() {
+  const fake = getAiFake()
+  if (!fake) return mal('la IA no es la falsa')
+  const mails = (getEmail() as FakeEmailSender).enviados ?? []
+  return NextResponse.json({ llamadas: fake.llamadas, mails })
+}
+
+export async function GET(_req: NextRequest, { params }: Ctx) {
+  if (!rutasDePruebaHabilitadas()) return noExiste()
+  const { accion } = await params
+  return accion === 'ai-llamadas' ? llamadasIa() : noExiste()
+}
 
 export async function POST(req: NextRequest, { params }: Ctx) {
   if (!rutasDePruebaHabilitadas()) return noExiste()
@@ -47,6 +64,17 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     setHoyDePrueba((b.hoy as string | undefined) ?? null)
     return NextResponse.json({ ok: true })
   }
+
+  if (accion === 'ai') {
+    const fake = getAiFake()
+    if (!fake) return mal('la IA no es la falsa')
+    if (!Array.isArray(b.respuestas)) return mal('respuestas debe ser una lista')
+    fake.cola = b.respuestas as typeof fake.cola
+    fake.llamadas = []
+    return NextResponse.json({ ok: true })
+  }
+
+  if (accion === 'ai-llamadas') return llamadasIa()
 
   return noExiste()
 }
