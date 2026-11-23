@@ -1,23 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { ENTORNO_E2E } from './entorno'
-import { entrarComo, resetear } from './helpers'
-
-/** Face ID simulado: autenticador de plataforma con verificación de usuario (Chromium CDP). */
-async function conFaceIdVirtual(page: Page) {
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('WebAuthn.enable')
-  await cdp.send('WebAuthn.addVirtualAuthenticator', {
-    options: {
-      protocol: 'ctap2',
-      transport: 'internal',
-      hasResidentKey: true,
-      hasUserVerification: true,
-      isUserVerified: true,
-      automaticPresenceSimulation: true,
-    },
-  })
-  return cdp
-}
+import { conFaceIdVirtual, entrarComo, resetear } from './helpers'
 
 const RAIZ = /^http:\/\/localhost:3100\/$/
 

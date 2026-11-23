@@ -1,5 +1,6 @@
 import { expect, type APIRequestContext, type Page } from '@playwright/test'
 import type { Config } from '../../src/domain/tipos'
+import { ENTORNO_E2E } from './entorno'
 
 export type Rol = 'owner' | 'familia'
 
@@ -27,4 +28,31 @@ export async function entrarComo(page: Page, rol: Rol): Promise<void> {
 export async function resetear(x: APIRequestContext | Page, args: ArgsReset = {}): Promise<void> {
   const res = await contexto(x).post('/api/test/reset', { data: args })
   expect(res.status(), (await res.text()).slice(0, 200)).toBe(200)
+}
+
+/** Face ID simulado: autenticador de plataforma con verificación de usuario (Chromium CDP). Sin PRF salvo que se pida. */
+export async function conFaceIdVirtual(page: Page, { prf = false } = {}) {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('WebAuthn.enable')
+  await cdp.send('WebAuthn.addVirtualAuthenticator', {
+    options: {
+      protocol: 'ctap2',
+      transport: 'internal',
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+      ...(prf ? { hasPrf: true } : {}),
+    },
+  })
+  return cdp
+}
+
+/** Registra una passkey en el autenticador virtual vía /configurar (deja sesión de owner). */
+export async function registrarFaceId(page: Page, opciones: { prf?: boolean } = {}): Promise<void> {
+  await conFaceIdVirtual(page, opciones)
+  await page.goto('/configurar')
+  await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)
+  await page.getByRole('button', { name: 'Registrar Face ID' }).click()
+  await expect(page).toHaveURL(/^http:\/\/localhost:3100\/$/)
 }
