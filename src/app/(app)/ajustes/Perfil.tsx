@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Boton, Field, clasesInput } from '@/components/ui'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { MAX_ESTILO, MAX_NOMBRE } from '@/domain/validarAjustes'
 import { guardarEstilo, guardarNombre } from './actions'
 
@@ -9,7 +10,7 @@ type Respuesta = { ok: true } | { ok: false; error: string }
 function Formulario({ etiqueta, boton, guardar, inicial, largo, ayuda }: {
   etiqueta: string; boton: string; guardar: (t: string) => Promise<Respuesta>; inicial: string; largo?: boolean; ayuda?: string
 }) {
-  const [texto, setTexto] = useState(inicial)
+  const [texto, setTexto, campo] = useTextoEscrito(inicial)
   const [estado, setEstado] = useState<'quieto' | 'guardando' | 'guardado' | 'error'>('quieto')
   const [error, setError] = useState('')
 
@@ -30,8 +31,8 @@ function Formulario({ etiqueta, boton, guardar, inicial, largo, ayuda }: {
     <form onSubmit={enviar} className="space-y-3">
       <Field label={etiqueta} hint={ayuda}>
         {largo
-          ? <textarea value={texto} rows={8} onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={`${clasesInput} py-2`} />
-          : <input value={texto} maxLength={MAX_NOMBRE + 20} autoComplete="off" onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={clasesInput} />}
+          ? <textarea {...campo} value={texto} rows={8} onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={`${clasesInput} py-2`} />
+          : <input {...campo} value={texto} maxLength={MAX_NOMBRE + 20} autoComplete="off" onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={clasesInput} />}
       </Field>
       <Boton type="submit" disabled={estado === 'guardando'}>{boton}</Boton>
       {estado === 'guardado' && <p role="status" className="text-base font-medium text-azul">Guardado</p>}

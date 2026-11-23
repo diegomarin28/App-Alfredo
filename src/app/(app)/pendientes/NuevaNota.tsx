@@ -2,11 +2,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, clasesInput } from '@/components/ui'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { guardarNota } from './actions'
 
 export default function NuevaNota() {
   const router = useRouter()
-  const [texto, setTexto] = useState('')
+  const [texto, setTexto, campo] = useTextoEscrito('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -29,7 +30,7 @@ export default function NuevaNota() {
   return (
     <form onSubmit={guardar} className="space-y-3">
       <textarea
-        value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Escribir una nota" placeholder="Escribir una nota"
+        {...campo} value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Escribir una nota" placeholder="Escribir una nota"
         rows={4} maxLength={5000} className={`${clasesInput} py-2`}
       />
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}

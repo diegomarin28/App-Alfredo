@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, hidratado, resetear } from './helpers'
+import { entrarComo, hidratado, resetear, retenerJavaScript } from './helpers'
 
 const datos = {
   contactos: [
@@ -66,10 +66,8 @@ test('agregar contacto y teléfono inválido', async ({ page }) => {
 })
 
 test('lo escrito en el buscador antes de que cargue el JavaScript también filtra', async ({ page }) => {
-  // Se retiene el JavaScript de la página: el buscador está (HTML del servidor) pero React todavía no.
-  let soltar!: () => void
-  const retenido = new Promise<void>((r) => { soltar = r })
-  await page.route('**/_next/static/chunks/**', async (ruta) => { await retenido; await ruta.continue() })
+  // El buscador está (HTML del servidor) pero React todavía no.
+  const soltar = await retenerJavaScript(page)
   await page.goto('/contactos', { waitUntil: 'domcontentloaded' })
   const buscar = page.getByRole('searchbox', { name: 'Buscar' })
   await buscar.fill('martin')

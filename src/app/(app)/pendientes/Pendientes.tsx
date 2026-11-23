@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, EmptyState, clasesInput } from '@/components/ui'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { agregarPendiente, tildarPendiente } from './actions'
 
 export interface ItemPendiente { id: string; texto: string; hecho: boolean }
 
 export default function Pendientes({ items }: { items: ItemPendiente[] }) {
   const router = useRouter()
-  const [texto, setTexto] = useState('')
+  const [texto, setTexto, campo] = useTextoEscrito('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   // estado optimista por id: sobrevive hasta que llegan los datos nuevos del servidor
@@ -60,7 +61,7 @@ export default function Pendientes({ items }: { items: ItemPendiente[] }) {
     <div className="space-y-6">
       <form onSubmit={agregar} className="flex gap-2">
         <input
-          value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Agregar pendiente" placeholder="Agregar pendiente"
+          {...campo} value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Agregar pendiente" placeholder="Agregar pendiente"
           maxLength={200} autoComplete="off" enterKeyHint="done" className={clasesInput}
         />
         <Boton type="submit" disabled={enviando}>Agregar</Boton>

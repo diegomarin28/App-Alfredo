@@ -3,12 +3,13 @@ import { useState } from 'react'
 import { waLink } from '@/domain/telefono'
 import { saludos, type Tono } from '@/domain/saludos'
 import { Boton, Chip, clasesInput } from '@/components/ui'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 
 const TONOS: [Tono, string][] = [['calido', 'Cálido'], ['formal', 'Formal'], ['corto', 'Corto']]
 
 export default function Saludo({ nombre }: { nombre: string }) {
   const [tono, setTono] = useState<Tono>('calido')
-  const [texto, setTexto] = useState(saludos(nombre).calido)
+  const [texto, setTexto, campo] = useTextoEscrito(saludos(nombre).calido)
   const [copiado, setCopiado] = useState(false)
 
   function elegir(t: Tono) {
@@ -31,7 +32,7 @@ export default function Saludo({ nombre }: { nombre: string }) {
         ))}
       </div>
       <textarea
-        aria-label="Saludo" rows={4} value={texto} onChange={(e) => setTexto(e.target.value)}
+        {...campo} aria-label="Saludo" rows={4} value={texto} onChange={(e) => setTexto(e.target.value)}
         className={`${clasesInput} py-2`}
       />
       <div className="flex flex-wrap gap-3">

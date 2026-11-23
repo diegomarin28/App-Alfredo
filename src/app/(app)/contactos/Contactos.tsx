@@ -1,6 +1,7 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Card, Chip, EmptyState, clasesInput } from '@/components/ui'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { coincide, formatearTelUY } from '@/domain/contactos'
 import type { Contacto } from '@/domain/tipos'
 
@@ -10,21 +11,14 @@ const ETIQUETA: Record<Contacto['tipo'], string> = { cliente: 'Cliente', proveed
 const boton = 'inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-base font-semibold'
 
 export default function Contactos({ contactos }: { contactos: Contacto[] }) {
-  const [q, setQ] = useState('')
+  const [q, setQ, campo] = useTextoEscrito('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
-  const buscar = useRef<HTMLInputElement>(null)
-  // Lo que se escribió antes de que React enganche la página queda en el campo (React no lo pisa al
-  // hidratar) pero nunca pasa por onChange: se toma al montar para que la lista ya salga filtrada.
-  useEffect(() => {
-    const escrito = buscar.current?.value
-    if (escrito) setQ(escrito)
-  }, [])
   const lista = contactos.filter((c) => (filtro === 'todos' || c.tipo === filtro) && coincide(c, q))
 
   return (
     <>
       <input
-        ref={buscar} type="search" aria-label="Buscar" placeholder="Buscar por nombre o empresa" value={q}
+        {...campo} type="search" aria-label="Buscar" placeholder="Buscar por nombre o empresa" value={q}
         onChange={(e) => setQ(e.target.value)} className={clasesInput} autoComplete="off"
       />
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo">

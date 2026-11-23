@@ -2,13 +2,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import imageCompression from 'browser-image-compression'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 
 const clasesBoton = 'inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl px-3 py-2 text-center text-base leading-tight font-semibold focus-within:ring-2 focus-within:ring-azul'
 
 /** Dos botones (cámara / galería): comprime a 1600px y sube a POST /api/archivos. */
 export default function Subir({ tipo, carpetaId }: { tipo: 'documento' | 'foto'; carpetaId?: string }) {
   const router = useRouter()
-  const [titulo, setTitulo] = useState('')
+  const [titulo, setTitulo, campoTitulo] = useTextoEscrito('')
   const [error, setError] = useState('')
   const [subiendo, setSubiendo] = useState(false)
 
@@ -54,7 +55,7 @@ export default function Subir({ tipo, carpetaId }: { tipo: 'documento' | 'foto';
       {tipo === 'documento' && (
         <label className="block">
           <span className="mb-1 block text-base font-medium text-texto">Título</span>
-          <input value={titulo} onChange={(e) => setTitulo(e.target.value)} name="titulo" maxLength={80} autoComplete="off" className="min-h-11 w-full rounded-xl border border-borde bg-white px-3 text-base text-texto" />
+          <input {...campoTitulo} value={titulo} onChange={(e) => setTitulo(e.target.value)} name="titulo" maxLength={80} autoComplete="off" className="min-h-11 w-full rounded-xl border border-borde bg-white px-3 text-base text-texto" />
         </label>
       )}
       {faltaTitulo && <p className="text-base text-texto-2">Primero poné un título</p>}

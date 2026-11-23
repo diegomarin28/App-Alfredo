@@ -136,6 +136,17 @@ export async function hidratado(el: Locator): Promise<void> {
 }
 
 /**
+ * Retiene el JavaScript de la página, como un teléfono lento: el HTML del servidor ya se ve y se puede
+ * escribir, pero React todavía no enganchó. Devuelve la función que lo suelta.
+ */
+export async function retenerJavaScript(page: Page): Promise<() => void> {
+  let soltar!: () => void
+  const retenido = new Promise<void>((r) => { soltar = r })
+  await page.route('**/_next/static/chunks/**', async (ruta) => { await retenido; await ruta.continue() })
+  return soltar
+}
+
+/**
  * Portapapeles en la prueba. Chromium: permisos de leer y escribir. WebKit no conoce esos permisos y
  * no deja leer sin un toque del usuario, así que se anota lo que la app copia (la copia real igual se hace).
  */

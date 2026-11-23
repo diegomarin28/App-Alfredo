@@ -1,9 +1,10 @@
 'use client'
 import { startRegistration } from '@simplewebauthn/browser'
 import { useState, type FormEvent } from 'react'
+import { useTextoEscrito } from '@/components/useTextoEscrito'
 
 export function FormConfigurar() {
-  const [codigo, setCodigo] = useState('')
+  const [codigo, setCodigo, campo] = useTextoEscrito('')
   const [ocupado, setOcupado] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -43,6 +44,7 @@ export function FormConfigurar() {
       <label className="flex flex-col gap-2">
         <span className="font-medium text-texto">Código de configuración</span>
         <input
+          {...campo}
           value={codigo}
           onChange={(e) => setCodigo(e.target.value)}
           autoComplete="one-time-code"
