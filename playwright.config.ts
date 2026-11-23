@@ -37,6 +37,8 @@ const projects: Project[] = MOTORES.flatMap((browserName) => [
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // Las capturas (@capturas) solo corren con `pnpm capturas`.
+  grepInvert: process.env.CAPTURAS ? undefined : /@capturas/,
   // Compila todas las pantallas antes de empezar (ver tests/e2e/precalentar.ts).
   globalSetup: './tests/e2e/precalentar.ts',
   workers: 1,

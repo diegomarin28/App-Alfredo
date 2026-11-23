@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "e2e": "node scripts/e2e.mjs",
+    "capturas": "CAPTURAS=1 playwright test capturas.spec.ts --reporter=line",
     "probar-haiku": "tsx --conditions=react-server scripts/probar-haiku.ts"
   },
   "dependencies": {
