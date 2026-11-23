@@ -64,6 +64,11 @@ export function registroPermitido(passkeysGuardadas: number, sesion: Sesion | nu
   return passkeysGuardadas === 0 || sesion?.rol === 'owner'
 }
 
+/** Adónde va una página sin sesión válida: la familia con el link vencido ve "Este link ya no sirve". */
+export function destinoSinSesion(rolCookie: Rol | null): '/familia' | '/entrar' {
+  return rolCookie === 'familia' ? '/familia' : '/entrar'
+}
+
 /** Valida lo que salió de la cookie. Familia vencida (por env o por su `expira`) → null. */
 export function sesionVigente(datos: unknown, ahora: Date): Sesion | null {
   if (!datos || typeof datos !== 'object') return null

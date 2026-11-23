@@ -3,11 +3,11 @@
  * nada de repo ni módulos de servidor.
  *   sin sesión        → páginas a /entrar, APIs 401
  *   familia prohibida → páginas a /, APIs 403
- *   familia vencida   → como sin sesión, y se borra la cookie
+ *   familia vencida   → páginas a /familia ("Este link ya no sirve"), APIs 401, y se borra la cookie
  */
 import { NextResponse, type NextRequest } from 'next/server'
-import { esApi, esPublica, puedeVer } from '@/auth/access'
-import { COOKIE_SESION, leerSesion } from '@/auth/sesionSellada'
+import { destinoSinSesion, esApi, esPublica, puedeVer } from '@/auth/access'
+import { COOKIE_SESION, leerSesion, rolDeCookie } from '@/auth/sesionSellada'
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname
@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
   if (rol === null) {
     res = api
       ? NextResponse.json({ error: 'Tenés que entrar primero.' }, { status: 401 })
-      : NextResponse.redirect(new URL('/entrar', req.url))
+      : NextResponse.redirect(new URL(destinoSinSesion(await rolDeCookie(cookie)), req.url))
     // Cookie vencida, inválida o de familia fuera de fecha: se borra.
     if (cookie) res.cookies.set(COOKIE_SESION, '', { path: '/', maxAge: 0 })
   } else {

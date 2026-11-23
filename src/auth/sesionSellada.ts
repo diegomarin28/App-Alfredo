@@ -11,6 +11,11 @@ export const COOKIE_DESAFIO = 'alfredo_desafio'
 const DIA = 24 * 60 * 60
 export const OWNER_SEGUNDOS = 180 * DIA
 export const DESAFIO_SEGUNDOS = 5 * 60
+/**
+ * La cookie de familia vive un poco más que la sesión (que vence en FAMILY_EXPIRES_AT): así el middleware
+ * todavía sabe que era de la familia y la manda a "Este link ya no sirve" en vez de a /entrar.
+ */
+export const FAMILIA_GRACIA_SEGUNDOS = 30 * DIA
 
 export interface OpcionesCookie {
   httpOnly: true
@@ -37,7 +42,7 @@ export function nuevaSesion(rol: Rol, ahora: Date): { datos: Sesion; segundos: n
   const vence = familiaVence()
   const segundos = Math.floor((vence.getTime() - ahora.getTime()) / 1000)
   if (!(segundos > 0)) return null
-  return { datos: { rol: 'familia', expira: vence.toISOString() }, segundos }
+  return { datos: { rol: 'familia', expira: vence.toISOString() }, segundos: segundos + FAMILIA_GRACIA_SEGUNDOS }
 }
 
 export async function sellar(datos: object, segundos: number): Promise<string> {
@@ -49,6 +54,17 @@ export async function leerSesion(valor: string | undefined, ahora: Date): Promis
   if (!valor) return null
   try {
     return sesionVigente(await unsealData(valor, { password: secretoSesion() }), ahora)
+  } catch {
+    return null
+  }
+}
+
+/** Rol que dice un sello válido, valga o no la sesión todavía (solo para elegir adónde redirigir). */
+export async function rolDeCookie(valor: string | undefined): Promise<Rol | null> {
+  if (!valor) return null
+  try {
+    const { rol } = (await unsealData(valor, { password: secretoSesion() })) as { rol?: unknown }
+    return rol === 'owner' || rol === 'familia' ? rol : null
   } catch {
     return null
   }
