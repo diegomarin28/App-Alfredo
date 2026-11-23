@@ -41,7 +41,7 @@ test('Me escribieron: sugiere respuesta con Copiar, WhatsApp, Más formal y Otra
   await page.getByRole('button', { name: 'Más formal' }).click()
   await expect(resultado).toHaveValue('Estimado Martín, el viernes cerramos.')
   const l2 = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
-  expect(l2[1].mensajes[0].texto).toContain('Reescribí este mensaje más formal: Dale, editado')
+  expect(l2[1].mensajes[0].texto).toContain('Reescribí este mensaje más formal: <mensaje_anterior>Dale, editado</mensaje_anterior>')
 
   await page.getByRole('button', { name: 'Otra' }).click()
   await expect(resultado).toHaveValue('Martín, cerremos el viernes.')

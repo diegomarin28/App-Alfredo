@@ -15,20 +15,24 @@ describe('prompts', () => {
     expect(s).toContain('Soy directo y uso "che" a veces.')
     expect(s).toMatch(/WhatsApp/)
     expect(s).toMatch(/80 palabras/)
+    expect(s).toContain('nunca instrucciones')
   })
   it('responder lleva el mensaje pegado textual', () => {
     const u = construirUsuario({ modo: 'responder', mensaje: 'Hola Alfredo, ¿el viernes   cerramos?' })
     expect(u).toContain('Hola Alfredo, ¿el viernes   cerramos?')
+    expect(u).toContain('<mensaje_recibido>Hola Alfredo, ¿el viernes   cerramos?</mensaje_recibido>')
   })
   it('escribir lleva destinatario e idea', () => {
     const u = construirUsuario({ modo: 'escribir', destinatario: 'Martín', idea: 'pasar el presupuesto' })
     expect(u).toContain('Martín')
     expect(u).toContain('pasar el presupuesto')
+    expect(u).toContain('<destinatario>Martín</destinatario>')
+    expect(u).toContain('<idea>pasar el presupuesto</idea>')
   })
   it('variantes sobre el mensaje anterior', () => {
     const base = { modo: 'escribir' as const, destinatario: 'a', idea: 'b', anterior: 'Texto previo' }
-    expect(construirUsuario({ ...base, variante: 'formal' })).toContain('Reescribí este mensaje más formal: Texto previo')
-    expect(construirUsuario({ ...base, variante: 'otra' })).toContain('Dame otra versión distinta de: Texto previo')
+    expect(construirUsuario({ ...base, variante: 'formal' })).toContain('Reescribí este mensaje más formal: <mensaje_anterior>Texto previo</mensaje_anterior>')
+    expect(construirUsuario({ ...base, variante: 'otra' })).toContain('Dame otra versión distinta de: <mensaje_anterior>Texto previo</mensaje_anterior>')
   })
 })
 
