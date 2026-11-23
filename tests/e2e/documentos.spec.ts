@@ -25,10 +25,12 @@ test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }
 
   await page.getByRole('link', { name: 'Barco' }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Barco')
-  // sin título
-  await page.locator('input[type=file]').first().setInputFiles(FOTO)
-  await expect(page.getByText('Poné un título')).toBeVisible()
+  // sin título: cámara y galería apagadas, con la pista (así no se pierde una foto sacada)
+  await expect(page.getByText('Primero poné un título')).toBeVisible()
+  for (const input of await page.locator('input[type=file]').all()) await expect(input).toBeDisabled()
   await page.getByLabel('Título').fill('Póliza auto')
+  await expect(page.getByText('Primero poné un título')).toHaveCount(0)
+  await expect(page.locator('input[type=file]').first()).toBeEnabled()
   await page.locator('input[type=file]').first().setInputFiles(FOTO)
   await expect(page.getByText('Póliza auto')).toBeVisible()
   await expect(page.getByText('22 de noviembre de 2026')).toBeVisible()

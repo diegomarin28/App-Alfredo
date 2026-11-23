@@ -25,4 +25,13 @@ describe('BottomNav', () => {
     expect(screen.queryByRole('link', { name: 'Mensajes' })).toBeNull()
     expect(screen.getAllByRole('link').map((l) => l.textContent)).toEqual(['Inicio', 'Calendario', 'Portofino'])
   })
+
+  it('etiquetas en text-sm (14 px), no text-xs', () => {
+    render(<BottomNav activo="inicio" rol="owner" />)
+    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
+      const link = screen.getByRole('link', { name: n })
+      expect(link).toHaveClass('text-sm')
+      expect(link).not.toHaveClass('text-xs')
+    }
+  })
 })

@@ -5,6 +5,9 @@ import { ConfigIaError, SinSaldoError } from '@/ai/presupuesto'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 
+/** Segundos que Vercel deja correr la función (varias rondas con herramientas). En el plan Hobby el tope es menor: ver docs/deploy.md. */
+export const maxDuration = 300
+
 const mal = (error: string) => NextResponse.json({ error }, { status: 400 })
 
 function validar(b: Record<string, unknown>): EntradaContame | { error: string } {

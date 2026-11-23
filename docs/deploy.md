@@ -21,7 +21,7 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 | `APP_ORIGIN` | Origen completo de la app. | `https://alfredo.vercel.app` |
 | `FAMILY_CODE` | Código del link de familia `/familia?codigo=...`. **20 caracteres o más**, al azar (uno más corto no se acepta nunca). Que sea apto para URL: letras, números y guiones. | `openssl rand -hex 16` |
 | `FAMILY_EXPIRES_AT` | Hasta cuándo sirve el link de familia. | `2026-11-25T23:59:00-03:00` |
-| `ANTHROPIC_API_KEY` | Clave de Anthropic (solo servidor). Sin ella se usa una IA falsa. | `<clave anthropic>` |
+| `ANTHROPIC_API_KEY` | Clave de Anthropic (solo servidor). **Obligatoria**: sin ella Contame y Mensajes no andan y la app muestra "La IA no está configurada, avisale a Diego." (la IA falsa es solo para pruebas). | `<clave anthropic>` |
 | `ANTHROPIC_MODEL` | Modelo a usar. | `claude-sonnet-5-5` |
 | `AI_PRICE_INPUT_PER_MTOK` | Precio USD por millón de tokens de entrada (mirar docs.claude.com pricing). Sin esto la IA se niega a funcionar. | `<precio>` |
 | `AI_PRICE_OUTPUT_PER_MTOK` | Precio USD por millón de tokens de salida. | `<precio>` |
@@ -29,7 +29,7 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 | `AI_ALERT_USD` | Umbral del aviso por mail en USD (se manda una sola vez). | `16` |
 | `ALERT_EMAIL` | Mail que recibe el aviso de saldo. | `tu@mail.com` |
 | `ALERT_FROM` | Remitente del aviso (Resend). | `App Alfredo <onboarding@resend.dev>` |
-| `RESEND_API_KEY` | Clave de Resend. Sin ella los mails se simulan. | `<clave resend>` |
+| `RESEND_API_KEY` | Clave de Resend. Sin ella el aviso de poco saldo **no se manda**: queda un `console.error` en los logs de Vercel y el aviso no se marca como enviado. | `<clave resend>` |
 | `VAPID_PUBLIC_KEY` | Clave pública de avisos push (servidor). | `<salida de web-push>` |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | La misma clave pública, para el navegador. | `<misma que VAPID_PUBLIC_KEY>` |
 | `VAPID_PRIVATE_KEY` | Clave privada de avisos push. | `<salida de web-push>` |
@@ -48,13 +48,17 @@ La pública va en `VAPID_PUBLIC_KEY` y en `NEXT_PUBLIC_VAPID_PUBLIC_KEY`; la pri
 
 ## 3. Avisos diarios (cron)
 
-`vercel.json` programa `/api/cron/avisos` con `0 14 * * *`: todos los días a las 14:00 UTC, que son las **11:00 de Montevideo**. Si defines `CRON_SECRET`, Vercel manda `Authorization: Bearer $CRON_SECRET` automáticamente y la ruta lo exige. Para probar a mano: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<dominio>/api/cron/avisos`.
+`vercel.json` programa `/api/cron/avisos` con `0 14 * * *`: todos los días a las 14:00 UTC, que son las **11:00 de Montevideo**. En el plan **Hobby** de Vercel los cron no son puntuales: el aviso sale en algún momento **entre las 11:00 y las 11:59** de Montevideo (en Pro sale a la hora exacta). Si definís `CRON_SECRET`, Vercel manda `Authorization: Bearer $CRON_SECRET` automáticamente y la ruta lo exige. Para probar a mano: `curl -H "Authorization: Bearer <CRON_SECRET>" https://<dominio>/api/cron/avisos`.
 
-## 4. Límite de 4,5 MB
+## 4. Duración de las funciones de IA
+
+Las rutas de IA declaran cuánto pueden tardar: `/api/ai/mensajes` hasta **60 s** y `/api/ai/contame` hasta **300 s** (`maxDuration`; Contame hace varias rondas con el modelo). Hace falta un plan de Vercel que permita esas duraciones (Pro). En el plan **Hobby** el máximo es menor: Vercel recorta la duración a su tope y un Contame largo puede cortarse con error. Revisá el tope en Vercel > Project > Settings > Functions.
+
+## 5. Límite de 4,5 MB
 
 Vercel rechaza pedidos de más de 4,5 MB. Por eso las fotos se comprimen en el teléfono antes de subirlas, para quedar por debajo del límite. Un archivo muy grande que no sea foto puede fallar con un error de tamaño.
 
-## 5. Primera vez en el iPhone de Alfredo
+## 6. Primera vez en el iPhone de Alfredo
 
 1. Abrir la URL de la app en **Safari**. Aparece `/entrar`.
 2. Tocar **Configurar Face ID por primera vez** (lleva a `/configurar`; el link solo aparece mientras no hay ninguna passkey) e ingresar el `SETUP_CODE`.
@@ -68,14 +72,14 @@ Vercel rechaza pedidos de más de 4,5 MB. Por eso las fotos se comprimen en el t
 
 Una vez registrada la primera passkey, el `SETUP_CODE` ya no alcanza: `/configurar` dice "Face ID ya está configurado". Para sumar otra passkey (por ejemplo, en un teléfono nuevo sin iCloud Llavero) hay que estar adentro de la app con Face ID y entrar a `/configurar` desde ahí.
 
-## 6. Contraseñas: cosas a tener en cuenta
+## 7. Contraseñas: cosas a tener en cuenta
 
 - **PRF o PIN.** Si el teléfono soporta PRF (extensión de la passkey), Face ID abre las contraseñas solo. Si no, se pide un PIN de 6 números además de Face ID. El modo se fija la primera vez y no se cambia.
 - **Teléfono nuevo o passkey nueva en modo PRF**: no puede abrir las contraseñas ya guardadas. Mantené una copia de las contraseñas en otro lugar seguro.
 - **El PIN es más débil**: frente a alguien que robe la base de datos, un PIN de 6 números se puede adivinar por fuerza bruta mucho más fácil que una clave PRF.
 - **Una contraseña copiada queda en el portapapeles** hasta que se copie otra cosa.
 
-## 7. Revisiones manuales en un iPhone real
+## 8. Revisiones manuales en un iPhone real
 
 - [ ] Instalada desde Safari, abre a pantalla completa con el ícono.
 - [ ] Login con Face ID y desbloqueo de Contraseñas (confirmar el camino PRF en iOS 18; si no, PIN).

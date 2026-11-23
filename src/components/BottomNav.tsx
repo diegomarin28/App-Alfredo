@@ -31,7 +31,7 @@ function Pestana({ tab, texto, activo }: { tab: Exclude<Tab, 'contame'>; texto: 
     <Link
       href={RUTAS[tab]}
       aria-current={activo ? 'page' : undefined}
-      className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs font-medium ${activo ? 'text-azul' : 'text-texto-2'}`}
+      className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-sm font-medium ${activo ? 'text-azul' : 'text-texto-2'}`}
     >
       {ICONOS[tab]}
       <span>{texto}</span>
