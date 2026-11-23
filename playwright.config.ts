@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { ENTORNO_E2E } from './tests/e2e/entorno'
 
 const PORT = 3100
 
@@ -11,7 +12,8 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev',
     url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    env: { DATA_BACKEND: 'memory', ENABLE_TEST_ROUTES: '1', AI_BACKEND: 'fake' },
+    // Nunca reusar: un servidor ya levantado podría no tener las variables de prueba.
+    reuseExistingServer: false,
+    env: { ...ENTORNO_E2E },
   },
 })

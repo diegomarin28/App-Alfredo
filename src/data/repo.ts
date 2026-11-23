@@ -1,6 +1,6 @@
 import type {
   Carpeta, ClaveCifrada, Config, Contacto, Documento, EventoCasa, Fecha,
-  FotoFamiliar, Nota, Pendiente, PersonaCasa, Recordatorio, ServicioCasa,
+  FotoFamiliar, Nota, Passkey, Pendiente, PersonaCasa, Recordatorio, ServicioCasa,
   UsoIa, Vencimiento,
 } from '@/domain/tipos'
 
@@ -32,6 +32,7 @@ export interface Repo {
   fotos: Tabla<FotoFamiliar>
   claves: Tabla<ClaveCifrada>
   usoIa: Tabla<UsoIa>
+  passkeys: Tabla<Passkey>
   getConfig(): Promise<Config>
   setConfig(patch: Partial<Config>): Promise<Config>
   /** path debe empezar con `fotos/` o `documentos/`. Devuelve el path. */
@@ -44,7 +45,7 @@ export type Entidad = Exclude<keyof Repo, 'getConfig' | 'setConfig' | 'uploadArc
 export const ENTIDADES: Entidad[] = [
   'fechas', 'recordatorios', 'vencimientos', 'personasCasa', 'eventosCasa',
   'serviciosCasa', 'contactos', 'pendientes', 'notas', 'carpetas',
-  'documentos', 'fotos', 'claves', 'usoIa',
+  'documentos', 'fotos', 'claves', 'usoIa', 'passkeys',
 ]
 
 /** Nombre de tabla en Postgres por entidad. */
@@ -53,6 +54,7 @@ export const TABLAS: Record<Entidad, string> = {
   personasCasa: 'personas_casa', eventosCasa: 'eventos_casa', serviciosCasa: 'servicios_casa',
   contactos: 'contactos', pendientes: 'pendientes', notas: 'notas', carpetas: 'carpetas',
   documentos: 'documentos', fotos: 'fotos', claves: 'claves', usoIa: 'uso_ia',
+  passkeys: 'passkeys',
 }
 
 export const CONFIG_POR_DEFECTO: Config = {

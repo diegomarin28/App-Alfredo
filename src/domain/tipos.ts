@@ -137,6 +137,18 @@ export interface UsoIa {
   creadoEn: string
 }
 
+/** Passkey (Face ID) registrada para entrar. */
+export interface Passkey {
+  id: string
+  creadoEn?: string
+  /** base64url */
+  credentialId: string
+  /** clave pública COSE, base64url */
+  publicKey: string
+  counter: number
+  transports?: string[]
+}
+
 export interface Config {
   estiloEscritura: string
   nombre: string

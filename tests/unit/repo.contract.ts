@@ -26,6 +26,7 @@ const CASOS: Caso[] = [
   { entidad: 'documentos', nuevo: (c) => ({ carpetaId: c.carpetaId, titulo: 'Póliza', path: 'documentos/x.jpg' }), patch: { titulo: 'Póliza 2' } },
   { entidad: 'fotos', nuevo: () => ({ path: 'fotos/x.jpg' }), patch: { path: 'fotos/y.jpg' } },
   { entidad: 'claves', nuevo: () => ({ sitio: 'banco', usuario: 'diego', cifrado: 'AAAA', iv: 'BBBB' }), patch: { cifrado: 'CCCC' } },
+  { entidad: 'passkeys', nuevo: () => ({ credentialId: `cred-${uid()}`, publicKey: 'cGstZGUtcHJ1ZWJh', counter: 0, transports: ['internal', 'hybrid'] }), patch: { counter: 7 } },
   { entidad: 'usoIa', nuevo: () => ({ tokensIn: 10, tokensOut: 20, costoUsd: 0.000123 }), patch: { tokensOut: 30 } },
 ]
 
