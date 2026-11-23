@@ -94,12 +94,17 @@ test('rutas de prueba: entrarComo deja la sesión pedida', async ({ page }) => {
   await expect(page).toHaveURL(/\/claves$/)
 })
 
-test('primera vez: /entrar ofrece configurar Face ID; después ya no', async ({ page, browserName }) => {
-  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
+test('primera vez: /entrar muestra el link para configurar Face ID, de al menos 44px', async ({ page }) => {
   await page.goto('/entrar')
   const configurar = page.getByRole('link', { name: 'Configurar Face ID por primera vez' })
   await expect(configurar).toHaveAttribute('href', '/configurar')
   expect((await configurar.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+})
+
+test('primera vez: configurar Face ID desde /entrar; después el link ya no aparece', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
+  await page.goto('/entrar')
+  const configurar = page.getByRole('link', { name: 'Configurar Face ID por primera vez' })
   await conFaceIdVirtual(page)
   await configurar.click()
   await expect(page).toHaveURL(/\/configurar$/)

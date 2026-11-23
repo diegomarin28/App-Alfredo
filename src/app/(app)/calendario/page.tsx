@@ -60,7 +60,7 @@ export default async function Calendario() {
 
       <section aria-labelledby="fechas" className="space-y-4">
         <h2 id="fechas" className="text-xl font-semibold">Fechas</h2>
-        {ordenados.length === 0 && <EmptyState>Todavía no hay fechas cargadas. Tocá Agregar fecha para sumar la primera.</EmptyState>}
+        {ordenados.length === 0 && <EmptyState>Todavía no hay fechas cargadas. Tocá Agregar para sumar la primera.</EmptyState>}
         {ordenados.map(([m, items]) => (
           <section key={m} aria-label={MESES[m - 1]} className="space-y-2">
             <h3 className="text-base font-semibold text-texto-2">{MESES[m - 1]}</h3>

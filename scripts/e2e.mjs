@@ -9,6 +9,7 @@ const tandas = args.some((a) => a.startsWith('--project')) ? [[]] : [['--project
 let codigo = 0
 for (const tanda of tandas) {
   const r = spawnSync('playwright', ['test', ...tanda, ...args], { stdio: 'inherit', shell: process.platform === 'win32' })
+  if (r.error) console.error(r.error)
   if (r.status !== 0) codigo = r.status ?? 1
 }
 process.exit(codigo)

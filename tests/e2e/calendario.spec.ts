@@ -68,7 +68,7 @@ test('repo vacío: estado vacío sin romper', async ({ page }) => {
   await entrarComo(page, 'owner')
   const res = await page.goto('/calendario')
   expect(res?.status()).toBe(200)
-  await expect(page.getByText('Todavía no hay fechas cargadas')).toBeVisible()
+  await expect(page.getByText('Todavía no hay fechas cargadas. Tocá Agregar para sumar la primera.')).toBeVisible()
 })
 
 test('familia puede ver y agregar', async ({ page }) => {
