@@ -1,15 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Chip, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, Field, Sheet, clasesInput } from '@/components/ui'
+import AvisoChips, { claveAviso, diasAviso } from '@/components/AvisoChips'
 import { MESES } from '@/domain/validarFecha'
 import { guardarRecordatorio } from './actions'
-
-const OPCIONES = [
-  { clave: 'semana', texto: '1 semana', dias: 7 },
-  { clave: 'mes', texto: '1 mes', dias: 30 },
-  { clave: 'meses', texto: '2 meses', dias: 60 },
-] as const
 
 function numeroONulo(v: FormDataEntryValue | null): number | null {
   return v === null || v === '' ? null : Number(v)
@@ -22,7 +17,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
   const [abierto, setAbierto] = useState(false)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const claveInicial = inicial ? (OPCIONES.find((o) => o.dias === inicial.avisarDiasAntes)?.clave ?? 'otro') : 'mes'
+  const claveInicial = inicial ? claveAviso(inicial.avisarDiasAntes) : 'mes'
   const [aviso, setAviso] = useState<string>(claveInicial)
   const [otro, setOtro] = useState(inicial ? String(inicial.avisarDiasAntes) : '')
 
@@ -36,7 +31,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
-    const dias = aviso === 'otro' ? Number(otro) : OPCIONES.find((o) => o.clave === aviso)!.dias
+    const dias = diasAviso(aviso, otro)
     setEnviando(true)
     setError('')
     try {
@@ -77,20 +72,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
               </select>
             </Field>
           </div>
-          <div role="group" aria-label="Avisarme con" className="space-y-2">
-            <p className="text-base font-medium">Avisarme con</p>
-            <div className="flex flex-wrap gap-2">
-              {OPCIONES.map((o) => (
-                <Chip key={o.clave} activo={aviso === o.clave} aria-pressed={aviso === o.clave} onClick={() => setAviso(o.clave)}>{o.texto}</Chip>
-              ))}
-              <Chip activo={aviso === 'otro'} aria-pressed={aviso === 'otro'} onClick={() => setAviso('otro')}>Otro</Chip>
-            </div>
-            {aviso === 'otro' && (
-              <Field label="Cantidad de días">
-                <input value={otro} onChange={(e) => setOtro(e.target.value)} inputMode="numeric" pattern="[0-9]*" maxLength={3} className={clasesInput} />
-              </Field>
-            )}
-          </div>
+          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} />
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
           <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>
         </form>
