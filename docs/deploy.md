@@ -12,7 +12,7 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 
 | Variable | Qué es | Ejemplo / marcador |
 |---|---|---|
-| `DATA_BACKEND` | De dónde salen los datos. En producción, `supabase`. | `supabase` |
+| `DATA_BACKEND` | De dónde salen los datos. En producción tiene que ser `supabase`: con otro valor (o sin cargarlo) la app no arranca y muestra "Algo salió mal", en vez de guardar en memoria y perderlo todo. | `supabase` |
 | `SUPABASE_URL` | URL del proyecto Supabase. | `https://jtvcfwjixvbyzcbhcwkl.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor). | `<clave service_role>` |
 | `SESSION_SECRET` | Secreto de la cookie de sesión, 32+ caracteres al azar. | `openssl rand -base64 48` |

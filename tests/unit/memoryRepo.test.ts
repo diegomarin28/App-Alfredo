@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRepo } from '@/data/memoryRepo'
 import { getRepo } from '@/data/getRepo'
 import { repoContract } from './repo.contract'
@@ -68,6 +68,21 @@ describe('getRepo', () => {
     const a = getRepo()
     expect(getRepo()).toBe(a)
     expect(await a.recordatorios.list()).toHaveLength(6)
+  })
+
+  it('en producción sin DATA_BACKEND=supabase falla al llamarla (nunca datos en memoria)', () => {
+    vi.stubEnv('NODE_ENV', 'production')
+    try {
+      for (const valor of [undefined, '', 'memory', 'Supabase']) {
+        delete globalThis.__alfredoRepo
+        if (valor === undefined) delete process.env.DATA_BACKEND
+        else process.env.DATA_BACKEND = valor
+        expect(() => getRepo()).toThrow(/DATA_BACKEND=supabase/)
+        expect(globalThis.__alfredoRepo).toBeUndefined()
+      }
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 
   it('usa Supabase cuando DATA_BACKEND=supabase (falla sin credenciales)', () => {
