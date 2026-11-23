@@ -34,6 +34,7 @@ export default function Page() {
   const [pregunta, setPregunta] = useState<{ pregunta: string; opciones: Opcion[] } | null>(null)
   const [guardado, setGuardado] = useState<Linea[]>([])
   const [loteId, setLoteId] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [deshecho, setDeshecho] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,11 +76,12 @@ export default function Page() {
         body: JSON.stringify(resp.length ? { texto: t, respuestas: resp } : { texto: t }),
       })
       const j = (await res.json().catch(() => ({}))) as {
-        guardado?: Linea[]; loteId?: string; pregunta?: string; opciones?: Opcion[]; error?: string
+        guardado?: Linea[]; loteId?: string; aviso?: string; pregunta?: string; opciones?: Opcion[]; error?: string
       }
       if (Array.isArray(j.guardado) && typeof j.loteId === 'string') {
         setGuardado(j.guardado)
         setLoteId(j.loteId)
+        setAviso(typeof j.aviso === 'string' ? j.aviso : null)
         setDeshecho(false)
         setFase('listo')
       } else if (typeof j.pregunta === 'string' && Array.isArray(j.opciones)) {
@@ -124,8 +126,16 @@ export default function Page() {
     setPregunta(null)
     setGuardado([])
     setLoteId(null)
+    setAviso(null)
     setDeshecho(false)
     setError(null)
+  }
+
+  /** Revisar lo dictado cuando dejó de escuchar solo (error o silencio largo). */
+  function revisar() {
+    setOrigen('voz')
+    setEditado(null)
+    setFase('revisar')
   }
 
   const vista = fase === 'inicio' && teclado ? 'revisar' : fase
@@ -157,6 +167,12 @@ export default function Page() {
                 <Card className="space-y-2">
                   <p className="text-base font-medium text-azul">Te escucho… podés hacer pausas.</p>
                   <p aria-live="polite" className="min-h-12 text-lg text-texto">{dictado.texto}</p>
+                </Card>
+              )}
+              {!dictado.escuchando && dictado.texto && (
+                <Card className="space-y-3">
+                  <p className="text-lg text-texto">{dictado.texto}</p>
+                  <Boton className="min-h-12 w-full" onClick={revisar}>Revisar y enviar</Boton>
                 </Card>
               )}
               {dictado.error && <Alerta>{dictado.error}</Alerta>}
@@ -227,6 +243,7 @@ export default function Page() {
                       </li>
                     ))}
                   </ul>
+                  {aviso && <p role="status" className="rounded-2xl bg-urg-bg p-4 text-base text-urg-tx">{aviso}</p>}
                 </>
               )}
               <div className="flex flex-col gap-3">

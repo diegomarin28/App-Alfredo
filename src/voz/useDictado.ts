@@ -36,6 +36,10 @@ export interface Dictado {
 
 export const ERROR_PERMISO = 'Falta el permiso del micrófono'
 const ERROR_MICROFONO = 'No encuentro el micrófono.'
+export const ERROR_RED = 'No pude escuchar. Revisá la conexión y probá de nuevo.'
+const ERROR_SILENCIO = 'No te escuché por un rato. Tocá para hablar de nuevo.'
+/** Safari corta tras unos segundos de silencio; más de esto seguido sin resultado se corta. */
+const MAX_REINICIOS_SIN_RESULTADO = 5
 
 /**
  * Dictado con reconocimiento de voz del navegador (portado del prototipo).
@@ -51,6 +55,8 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
   const quiereEscuchar = useRef(false) // lo decide el usuario, no el navegador
   const rec = useRef<Reconocedor | null>(null)
   const acumulado = useRef('')
+  /** reinicios seguidos sin ningún resultado */
+  const reinicios = useRef(0)
 
   const parar = useCallback((mensaje?: string) => {
     quiereEscuchar.current = false
@@ -65,7 +71,11 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
     r.lang = lang
     r.continuous = true
     r.interimResults = true
+    // Cada handler ignora los eventos tardíos de un reconocedor que ya no es el actual (p. ej. tras "Grabar de nuevo").
+    const actual = () => rec.current === r
     r.onresult = (e) => {
+      if (!actual()) return
+      reinicios.current = 0
       let p = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript
@@ -78,13 +88,22 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
       setParcial(p.trim())
     }
     r.onerror = (e) => {
+      if (!actual()) return
       if (e.error === 'no-speech' || e.error === 'aborted') return // se reintenta solo
+      // Cualquier otro error para: si no, cada onend reiniciaría para siempre mostrando "Te escucho…".
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') parar(ERROR_PERMISO)
       else if (e.error === 'audio-capture') parar(ERROR_MICROFONO)
+      else parar(ERROR_RED)
     }
     r.onend = () => {
+      if (!actual()) return
       setParcial('')
-      if (!quiereEscuchar.current || rec.current !== r) return
+      if (!quiereEscuchar.current) return
+      if (reinicios.current >= MAX_REINICIOS_SIN_RESULTADO) {
+        parar(ERROR_SILENCIO)
+        return
+      }
+      reinicios.current++
       try {
         r.start()
       } catch {
@@ -103,9 +122,16 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
   const empezar = useCallback(() => {
     const r = nuevo()
     if (!r) return
+    const anterior = rec.current
+    rec.current = r // desde acá el anterior queda ignorado
+    try {
+      anterior?.abort?.()
+    } catch {
+      /* ya estaba parado */
+    }
     setError(undefined)
+    reinicios.current = 0
     quiereEscuchar.current = true
-    rec.current = r
     setEscuchando(true)
     try {
       r.start()

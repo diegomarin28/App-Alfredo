@@ -18,6 +18,8 @@ export interface AiResultado {
   texto: string
   toolInput?: unknown
   toolName?: string
+  /** stop_reason de la API: 'max_tokens' = respuesta cortada (no usar una herramienta a medias). */
+  stopReason?: string
   tokensIn: number
   tokensOut: number
 }
@@ -65,6 +67,7 @@ export class AnthropicClient implements AiClient {
     return {
       texto,
       ...(tool ? { toolName: tool.name, toolInput: tool.input } : {}),
+      ...(r.stop_reason ? { stopReason: r.stop_reason } : {}),
       tokensIn: r.usage.input_tokens,
       tokensOut: r.usage.output_tokens,
     }
@@ -80,6 +83,6 @@ export class FakeAiClient implements AiClient {
     this.llamadas.push(args)
     const siguiente = this.cola.shift()
     const ultimo = args.mensajes[args.mensajes.length - 1]?.texto ?? ''
-    return { texto: `Eco: ${ultimo}`, tokensIn: 100, tokensOut: 50, ...siguiente }
+    return { texto: `Eco: ${ultimo}`, stopReason: 'end_turn', tokensIn: 100, tokensOut: 50, ...siguiente }
   }
 }

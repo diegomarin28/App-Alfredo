@@ -167,13 +167,46 @@ test('sin reconocimiento de voz: se puede escribir o pegar', async ({ page }) =>
   await expect(page.getByText('Pendientes: Comprar pilas')).toBeVisible()
 })
 
-test('permiso de micrófono denegado: aviso claro', async ({ page }) => {
+test('permiso de micrófono denegado: aviso claro, sin perder lo dictado', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'Comprar pilas')
   await page.evaluate(() => (window as unknown as { __voz: { error(c: string): void } }).__voz.error('not-allowed'))
   await expect(page.getByRole('alert').filter({ hasText: 'Falta el permiso del micrófono' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
+  await expect(page.getByText('Comprar pilas')).toBeVisible()
+  await page.getByRole('button', { name: 'Revisar y enviar' }).click()
+  await expect(page.getByLabel('Lo que entendí · podés corregirlo')).toHaveValue('Comprar pilas')
+})
+
+test('sin conexión: deja de escuchar y avisa (no se queda reiniciando)', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await page.evaluate(() => (window as unknown as { __voz: { error(c: string): void } }).__voz.error('network'))
+  await expect(page.getByRole('alert').filter({ hasText: 'No pude escuchar. Revisá la conexión y probá de nuevo.' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { __voz: { starts(): number } }).__voz.starts())).toBe(1)
+})
+
+test('respuesta de la IA cortada: guarda todo como nota y lo avisa', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await guion(page, [{
+    texto: '',
+    toolName: 'guardar',
+    toolInput: { acciones: [{ tipo: 'eventoCasa', casa: 'portofino', que: 'Primera cosa', cuando: '2026-11-22' }] },
+    stopReason: 'max_tokens',
+  }])
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Escribir o pegar texto' }).click()
+  await page.getByLabel('Escribí o dictá con el teclado').fill('Primera cosa en Portofino. Segunda cosa en Malibú.')
+  await page.getByRole('button', { name: 'Enviar' }).click()
+  await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
+  await expect(page.getByText('Notas: Primera cosa en Portofino. Segunda cosa en Malibú.')).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
+  await page.goto('/casas?casa=portofino')
+  await expect(page.getByText('Primera cosa', { exact: true })).toHaveCount(0)
 })
 
 test('sin saldo: mensaje amable', async ({ page }) => {

@@ -132,6 +132,87 @@ describe('useDictado', () => {
     expect(r.starts).toBe(1)
   })
 
+  it.each(['network', 'language-not-supported', 'service-not-allowed', 'audio-capture', 'bad-grammar'])(
+    'error %s: para (no reinicia) y avisa en castellano', (codigo) => {
+      const { result } = renderHook(() => useDictado({}))
+      act(() => result.current.empezar())
+      const r = ultima()
+      act(() => r.decir('Algo', true))
+      act(() => r.onerror?.({ error: codigo }))
+      act(() => r.onend?.())
+      expect(result.current.escuchando).toBe(false)
+      expect(result.current.error).toMatch(/^(No pude escuchar|No encuentro el micrófono|Falta el permiso)/)
+      expect(r.starts).toBe(1)
+      expect(FakeRec.instancias).toHaveLength(1)
+      // lo dictado no se pierde
+      expect(result.current.texto).toBe('Algo')
+    })
+
+  it('network da el mensaje de conexión', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    act(() => ultima().onerror?.({ error: 'network' }))
+    expect(result.current.error).toBe('No pude escuchar. Revisá la conexión y probá de nuevo.')
+  })
+
+  it('corta después de 5 reinicios seguidos sin resultado', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const r = ultima()
+    for (let i = 0; i < 5; i++) act(() => r.onend?.())
+    expect(r.starts).toBe(6)
+    expect(result.current.escuchando).toBe(true)
+    act(() => r.onend?.())
+    expect(r.starts).toBe(6)
+    expect(result.current.escuchando).toBe(false)
+    expect(result.current.error).toBeTruthy()
+  })
+
+  it('un resultado reinicia la cuenta de reinicios', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const r = ultima()
+    for (let i = 0; i < 5; i++) act(() => r.onend?.())
+    act(() => r.decir('hola', true))
+    for (let i = 0; i < 5; i++) act(() => r.onend?.())
+    expect(result.current.escuchando).toBe(true)
+    expect(r.starts).toBe(11)
+    expect(result.current.error).toBeUndefined()
+  })
+
+  it('ignora eventos tardíos del reconocedor anterior (Grabar de nuevo)', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const viejo = ultima()
+    act(() => viejo.decir('primera toma', true))
+    act(() => result.current.terminar())
+    act(() => result.current.borrar())
+    act(() => result.current.empezar())
+    const nuevo = ultima()
+    expect(nuevo).not.toBe(viejo)
+    act(() => viejo.decir('tarde', true))
+    expect(result.current.texto).toBe('')
+    act(() => viejo.onerror?.({ error: 'network' }))
+    expect(result.current.error).toBeUndefined()
+    expect(result.current.escuchando).toBe(true)
+    act(() => viejo.onend?.())
+    expect(viejo.starts).toBe(1)
+    act(() => nuevo.decir('segunda toma', true))
+    expect(result.current.texto).toBe('segunda toma')
+  })
+
+  it('empezar con un reconocedor activo lo cancela y usa uno nuevo', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const viejo = ultima()
+    let abortado = false
+    viejo.abort = () => { abortado = true; viejo.onend?.() }
+    act(() => result.current.empezar())
+    expect(abortado).toBe(true)
+    expect(viejo.starts).toBe(1)
+    expect(result.current.escuchando).toBe(true)
+  })
+
   it('borrar() vacía el texto y empezar de nuevo limpia el error', () => {
     const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())

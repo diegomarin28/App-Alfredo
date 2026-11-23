@@ -19,9 +19,11 @@ export const MAX_RESPUESTA = 500
 export const MAX_RONDAS = 3
 const MAX_ACCIONES = 200
 const MAX_OPCIONES = 5
+export const AVISO_CORTADA = 'Era mucho para ordenar de una vez: lo guardé todo como nota para que lo revises.'
 
 export interface Guardado { accion: Accion; id: string; descripcion: string }
-export type ResultadoContame = { guardado: Guardado[]; loteId: string } | { pregunta: string; opciones: Opcion[] }
+export interface Guardados { guardado: Guardado[]; loteId: string; aviso?: string }
+export type ResultadoContame = Guardados | { pregunta: string; opciones: Opcion[] }
 export interface EntradaContame { texto: string; respuestas?: string[] }
 
 /** Entidades que pueden venir de Contame (llevan loteId). */
@@ -43,7 +45,7 @@ export async function contextoContame(repo: Repo): Promise<ContextoContame> {
 
 // ---------- salida del modelo (no confiable, R28) ----------
 
-type Clasificacion = { acciones: unknown[] } | { pregunta: string; opciones: Opcion[] } | { sinClasificar: true }
+type Clasificacion = { acciones: unknown[] } | { pregunta: string; opciones: Opcion[] } | { sinClasificar: true } | { cortada: true }
 
 const cadena = (v: unknown, max: number): string | null => {
   if (typeof v !== 'string') return null
@@ -144,11 +146,11 @@ function textoLegible(raw: unknown): string {
   return CAMPOS_LEGIBLES.map((k) => o[k]).filter((v): v is string => typeof v === 'string' && !!v.trim()).map((v) => v.trim()).join(' · ')
 }
 
-/** Texto sin clasificar: pendiente si entra; si es largo, nota(s) de voz. */
-function textoLibre(texto: string): Accion[] {
+/** Texto sin clasificar: pendiente si entra (y no se pide nota); si no, nota(s) de voz. */
+function textoLibre(texto: string, comoNota = false): Accion[] {
   const t = texto.trim()
   if (!t) return []
-  if (t.length <= MAX_PENDIENTE) return [{ tipo: 'pendiente', texto: t }]
+  if (t.length <= MAX_PENDIENTE && !comoNota) return [{ tipo: 'pendiente', texto: t }]
   const notas: Accion[] = []
   let resto = t
   while (resto.length > MAX_NOTA) {
@@ -206,12 +208,14 @@ async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
 }
 
 /** Valida y guarda todo con un mismo loteId. Lo inválido va a Pendientes; nada se pierde. */
-export async function guardarAcciones(repo: Repo, crudas: unknown[], texto: string, hoyStr: string): Promise<{ guardado: Guardado[]; loteId: string }> {
+export async function guardarAcciones(
+  repo: Repo, crudas: unknown[], texto: string, hoyStr: string, comoNota = false,
+): Promise<Guardados> {
   let textoUsado = false
   const todoElTexto = (): Accion[] => {
     if (textoUsado) return []
     textoUsado = true
-    return textoLibre(texto)
+    return textoLibre(texto, comoNota)
   }
   const acciones: Accion[] = []
   if (crudas.length === 0 || crudas.length > MAX_ACCIONES) acciones.push(...todoElTexto())
@@ -260,10 +264,14 @@ export async function clasificar(
   const r = await usarIa(repo, ai, email, {
     sistema: construirSistema(config.nombre),
     mensajes: [{ rol: 'user', texto: construirUsuario(texto, respuestas, ctx) }],
-    maxTokens: 8000,
+    maxTokens: 16000,
     herramientas: HERRAMIENTAS,
     unaSolaHerramienta: true,
   })
+  // Cortada por max_tokens: la herramienta puede venir a medias (p. ej. solo las primeras acciones).
+  if (r.stopReason === 'max_tokens') return { cortada: true }
+  // Rechazo: puede cortar una herramienta a medias; nunca se usa.
+  if (r.stopReason === 'refusal') return { sinClasificar: true }
   const input = r.toolInput as Record<string, unknown> | undefined
   if (r.toolName === 'guardar' && input && Array.isArray(input.acciones) && input.acciones.length > 0) {
     return { acciones: input.acciones }
@@ -284,6 +292,7 @@ export async function contame(repo: Repo, ai: AiClient, email: EmailSender, entr
   if (ultima !== undefined && esOtraCosa(ultima)) return guardarAcciones(repo, [], texto, hoyStr)
 
   const c = await clasificar(repo, ai, email, texto, respuestas, await contextoContame(repo))
+  if ('cortada' in c) return { ...(await guardarAcciones(repo, [], texto, hoyStr, true)), aviso: AVISO_CORTADA }
   if ('pregunta' in c) {
     if (respuestas.length >= MAX_RONDAS) return guardarAcciones(repo, [], texto, hoyStr)
     return c

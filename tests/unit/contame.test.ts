@@ -231,6 +231,32 @@ describe('contame (Review Focus 4)', () => {
     expect(await deshacerLote(repo, r.loteId)).toBe(7)
   })
 
+  it('respuesta cortada (max_tokens): no guarda las acciones parciales; todo el texto va a notas con aviso', async () => {
+    const ai = new FakeAiClient([{ ...guardar([{ tipo: 'eventoCasa', casa: 'portofino', que: 'Primera cosa', cuando: '2026-11-22' }]), stopReason: 'max_tokens' }])
+    const texto = 'Primera cosa en Portofino. Segunda cosa en Malibú.'
+    const r = await contame(repo, ai, email, { texto })
+    if (!('guardado' in r)) throw new Error('esperaba guardado')
+    expect(await repo.eventosCasa.list()).toHaveLength(0)
+    expect(r.guardado.map((g) => g.accion)).toEqual([{ tipo: 'nota', texto }])
+    expect((await repo.notas.list())[0]).toMatchObject({ texto, origen: 'voz', loteId: r.loteId })
+    expect(r.aviso).toMatch(/nota/i)
+    expect(r.aviso).toMatch(/revis/i)
+  })
+
+  it('respuesta cortada con una pregunta: tampoco se usa', async () => {
+    const ai = new FakeAiClient([{ ...preguntar('¿Dónde?', [{ etiqueta: 'Malibú', respuesta: 'Malibú' }]), stopReason: 'max_tokens' }])
+    const r = await contame(repo, ai, email, { texto: 'Algo' })
+    if (!('guardado' in r)) throw new Error('esperaba guardado')
+    expect(r.guardado[0].accion).toEqual({ tipo: 'nota', texto: 'Algo' })
+    expect(r.aviso).toBeTruthy()
+  })
+
+  it('respuesta completa: sin aviso', async () => {
+    const ai = new FakeAiClient([guardar([{ tipo: 'pendiente', texto: 'Algo' }])])
+    const r = await contame(repo, ai, email, { texto: 'Algo' })
+    expect('aviso' in r).toBe(false)
+  })
+
   it('fecha con día imposible → pendiente', async () => {
     const ai = new FakeAiClient([guardar([{ tipo: 'fecha', nombre: 'Ana', tipoFecha: 'cumple', dia: '02-31' }])])
     const r = await contame(repo, ai, email, { texto: 'cumple de Ana' })
