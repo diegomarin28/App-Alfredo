@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, resetear } from './helpers'
 
 const datos = {
   contactos: [
@@ -63,4 +63,19 @@ test('agregar contacto y teléfono inválido', async ({ page }) => {
   await expect(fila.getByRole('link', { name: 'Llamar' })).toHaveAttribute('href', 'tel:+59898765432')
   await page.reload()
   await expect(page.getByText('Pablo Ruiz')).toBeVisible()
+})
+
+test('lo escrito en el buscador antes de que cargue el JavaScript también filtra', async ({ page }) => {
+  // Se retiene el JavaScript de la página: el buscador está (HTML del servidor) pero React todavía no.
+  let soltar!: () => void
+  const retenido = new Promise<void>((r) => { soltar = r })
+  await page.route('**/_next/static/chunks/**', async (ruta) => { await retenido; await ruta.continue() })
+  await page.goto('/contactos', { waitUntil: 'domcontentloaded' })
+  const buscar = page.getByRole('searchbox', { name: 'Buscar' })
+  await buscar.fill('martin')
+  soltar()
+  await hidratado(buscar)
+  await expect(buscar).toHaveValue('martin')
+  await expect(page.getByRole('listitem')).toHaveCount(1)
+  await expect(page.getByText('Martín Pérez')).toBeVisible()
 })

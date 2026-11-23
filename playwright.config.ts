@@ -37,6 +37,8 @@ const projects: Project[] = MOTORES.flatMap((browserName) => [
 
 export default defineConfig({
   testDir: 'tests/e2e',
+  // Compila todas las pantallas antes de empezar (ver tests/e2e/precalentar.ts).
+  globalSetup: './tests/e2e/precalentar.ts',
   workers: 1,
   fullyParallel: false,
   use: { baseURL: `http://localhost:${PORT}` },

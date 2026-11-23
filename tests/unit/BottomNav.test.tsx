@@ -26,12 +26,12 @@ describe('BottomNav', () => {
     expect(screen.getAllByRole('link').map((l) => l.textContent)).toEqual(['Inicio', 'Calendario', 'Portofino'])
   })
 
-  it('etiquetas en text-sm (14 px), no text-xs', () => {
+  it('etiquetas en text-base (16 px) y cada pestaña del ancho de su texto (entra "Calendario" a 375 px)', () => {
     render(<BottomNav activo="inicio" rol="owner" />)
     for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
       const link = screen.getByRole('link', { name: n })
-      expect(link).toHaveClass('text-sm')
-      expect(link).not.toHaveClass('text-xs')
+      expect(link).toHaveClass('text-base', 'flex-auto')
+      for (const c of ['text-sm', 'text-xs', 'flex-1']) expect(link).not.toHaveClass(c)
     }
   })
 })

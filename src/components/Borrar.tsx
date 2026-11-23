@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton } from './ui'
+import { Boton, clasesFondoHoja, clasesHoja } from './ui'
 
 type Res = { ok: true } | { ok: false; error: string }
 
@@ -44,11 +44,11 @@ export default function Borrar({ pregunta, accion, className = '' }: {
     <>
       <Boton variante="suave" className={className} onClick={() => setAbierto(true)}>Borrar</Boton>
       {abierto && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={cerrar}>
+        <div className={clasesFondoHoja} onClick={cerrar}>
           <div
             role="alertdialog" aria-modal="true" aria-label={pregunta}
             onClick={(e) => e.stopPropagation()}
-            className="w-full space-y-4 rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+            className={`space-y-4 ${clasesHoja}`}
           >
             <h2 className="text-xl font-semibold text-texto">{pregunta}</h2>
             {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}

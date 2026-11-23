@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
-    "e2e": "playwright test",
+    "e2e": "node scripts/e2e.mjs",
     "probar-haiku": "tsx --conditions=react-server scripts/probar-haiku.ts"
   },
   "dependencies": {
@@ -25,6 +25,7 @@
     "web-push": "^4.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.3.5",
     "@testing-library/jest-dom": "^8.0.0",

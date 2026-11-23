@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, Chip, EmptyState, clasesInput } from '@/components/ui'
 import { coincide, formatearTelUY } from '@/domain/contactos'
 import type { Contacto } from '@/domain/tipos'
@@ -7,17 +7,24 @@ import type { Contacto } from '@/domain/tipos'
 type Filtro = 'todos' | Contacto['tipo']
 const FILTROS: [Filtro, string][] = [['todos', 'Todos'], ['cliente', 'Clientes'], ['proveedor', 'Proveedores'], ['otro', 'Otros']]
 const ETIQUETA: Record<Contacto['tipo'], string> = { cliente: 'Cliente', proveedor: 'Proveedor', otro: 'Otro' }
-const boton = 'inline-flex min-h-11 flex-1 items-center justify-center rounded-xl px-5 text-base font-semibold'
+const boton = 'inline-flex min-h-11 items-center justify-center rounded-xl px-5 text-base font-semibold'
 
 export default function Contactos({ contactos }: { contactos: Contacto[] }) {
   const [q, setQ] = useState('')
   const [filtro, setFiltro] = useState<Filtro>('todos')
+  const buscar = useRef<HTMLInputElement>(null)
+  // Lo que se escribió antes de que React enganche la página queda en el campo (React no lo pisa al
+  // hidratar) pero nunca pasa por onChange: se toma al montar para que la lista ya salga filtrada.
+  useEffect(() => {
+    const escrito = buscar.current?.value
+    if (escrito) setQ(escrito)
+  }, [])
   const lista = contactos.filter((c) => (filtro === 'todos' || c.tipo === filtro) && coincide(c, q))
 
   return (
     <>
       <input
-        type="search" aria-label="Buscar" placeholder="Buscar por nombre o empresa" value={q}
+        ref={buscar} type="search" aria-label="Buscar" placeholder="Buscar por nombre o empresa" value={q}
         onChange={(e) => setQ(e.target.value)} className={clasesInput} autoComplete="off"
       />
       <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo">
@@ -37,9 +44,9 @@ export default function Contactos({ contactos }: { contactos: Contacto[] }) {
               </div>
               {c.nota && <p className="text-base whitespace-pre-wrap">{c.nota}</p>}
               {c.telefono && (
-                <div className="flex gap-2">
-                  <a href={`tel:+${c.telefono}`} className={`${boton} bg-azul text-white`}>Llamar</a>
-                  <a href={`https://wa.me/${c.telefono}`} className={`${boton} bg-gris text-texto`}>WhatsApp</a>
+                <div className="grid grid-cols-2 gap-2">
+                  <a href={`tel:+${c.telefono}`} className={`${boton} bg-gris text-texto`}>Llamar</a>
+                  <a href={`https://wa.me/${c.telefono}`} className={`${boton} bg-azul text-white hover:bg-azul-osc`}>WhatsApp</a>
                 </div>
               )}
             </Card>

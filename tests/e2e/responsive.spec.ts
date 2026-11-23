@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, resetear } from './helpers'
 
 const LG = 1024
 
@@ -60,4 +60,36 @@ test('computadora: a 1024 px el contenido tampoco queda debajo de la barra later
   await page.setViewportSize({ width: 1024, height: 768 })
   await page.goto('/')
   await esperarBarraLateral(page)
+})
+
+/** Hoja de abajo en el teléfono; en computadora, centrada sobre la columna del contenido (no tapa la barra lateral). */
+async function esperarHoja(page: Page, dialogo: ReturnType<Page['getByRole']>) {
+  await expect(dialogo).toBeVisible()
+  const d = (await dialogo.boundingBox())!
+  const { n, m, vw, vh } = await cajas(page)
+  if (vw >= LG) {
+    expect(d.x).toBeGreaterThanOrEqual(n.x + n.width)
+    expect(d.width).toBeLessThanOrEqual(720)
+    expect(Math.abs(d.x + d.width / 2 - (m.x + m.width / 2))).toBeLessThanOrEqual(1)
+    expect(Math.abs(d.y + d.height / 2 - vh / 2)).toBeLessThanOrEqual(1)
+  } else {
+    expect(d.x).toBe(0)
+    expect(d.width).toBe(vw)
+    expect(Math.abs(d.y + d.height - vh)).toBeLessThanOrEqual(1)
+  }
+}
+
+test('hojas y confirmaciones: abajo en el teléfono, centradas en la columna en computadora', async ({ page }) => {
+  await resetear(page, { datos: { contactos: [{ nombre: 'Martín Pérez', tipo: 'cliente' }], fechas: [{ nombre: 'Ana', tipo: 'cumple', dia: '11-25' }] } })
+  await page.goto('/contactos')
+  const agregar = page.getByRole('button', { name: 'Agregar contacto' })
+  await hidratado(agregar)
+  await agregar.click()
+  await esperarHoja(page, page.getByRole('dialog', { name: 'Agregar contacto' }))
+
+  await page.goto('/calendario')
+  const borrar = page.getByRole('button', { name: 'Borrar' })
+  await hidratado(borrar)
+  await borrar.click()
+  await esperarHoja(page, page.getByRole('alertdialog'))
 })

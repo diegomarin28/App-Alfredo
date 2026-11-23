@@ -21,7 +21,7 @@ export function Field({ label, children, hint }: { label: string; children: Reac
     <label className="block">
       <span className="mb-1 block text-base font-medium text-texto">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-sm text-texto-2">{hint}</span>}
+      {hint && <span className="mt-1 block text-base text-texto-2">{hint}</span>}
     </label>
   )
 }
@@ -47,17 +47,24 @@ export function Boton({ variante = 'primario', className = '', ...rest }: PropsB
   return <button type="button" {...rest} className={`min-h-11 rounded-xl px-5 text-base font-semibold ${color} ${className}`} />
 }
 
+/**
+ * Fondo y panel de las hojas: en el teléfono, hoja pegada abajo de lado a lado; en computadora (lg), una
+ * ventana centrada sobre la columna del contenido (a la derecha de la barra lateral de w-60, hasta 720 px).
+ */
+export const clasesFondoHoja = 'fixed inset-0 z-50 flex items-end bg-black/40 lg:items-center lg:justify-center lg:pl-60'
+export const clasesHoja = 'w-full rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:rounded-3xl lg:pb-5'
+
 /** Hoja inferior simple. Se cierra con el botón "Cerrar" o tocando afuera. */
 export function Sheet({ abierto, onCerrar, titulo, children }: {
   abierto: boolean; onCerrar: () => void; titulo: string; children: ReactNode
 }) {
   if (!abierto) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={onCerrar}>
+    <div className={clasesFondoHoja} onClick={onCerrar}>
       <div
         role="dialog" aria-modal="true" aria-label={titulo}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[85dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]"
+        className={`max-h-[85dvh] overflow-y-auto ${clasesHoja}`}
       >
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xl font-semibold">{titulo}</h2>
