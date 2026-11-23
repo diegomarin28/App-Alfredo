@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
+import { validarId } from '@/domain/ids'
 import { validarVencimiento, type EntradaVencimiento } from '@/domain/vencimientos'
 
 type Res = { ok: true } | { ok: false; error: string }
@@ -31,13 +32,21 @@ export async function agregarVencimiento(entrada: EntradaVencimiento): Promise<R
   return { ok: true }
 }
 
-export async function marcarHecho(id: string): Promise<Res> {
+async function cambiarHecho(id: string, hecho: boolean): Promise<Res> {
   const p = await permitido()
   if (!p.ok) return p
-  if (typeof id !== 'string' || !id) return { ok: false, error: 'No existe ese vencimiento.' }
-  const repo = await getRepo()
-  if (!(await repo.vencimientos.get(id))) return { ok: false, error: 'No existe ese vencimiento.' }
-  await repo.vencimientos.update(id, { hecho: true })
+  const repo = getRepo()
+  if (!validarId(id) || !(await repo.vencimientos.get(id))) return { ok: false, error: 'No existe ese vencimiento.' }
+  await repo.vencimientos.update(id, { hecho })
   refrescar()
   return { ok: true }
+}
+
+export async function marcarHecho(id: string): Promise<Res> {
+  return cambiarHecho(id, true)
+}
+
+/** "Deshacer" del aviso que aparece después de tocar Hecho. */
+export async function deshacerHecho(id: string): Promise<Res> {
+  return cambiarHecho(id, false)
 }

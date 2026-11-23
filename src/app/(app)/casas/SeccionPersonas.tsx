@@ -2,8 +2,9 @@ import { Card, EmptyState, Field, clasesInput } from '@/components/ui'
 import { formatearTelUY } from '@/domain/contactos'
 import { telLink } from '@/domain/telefono'
 import type { Casa, PersonaCasa } from '@/domain/tipos'
+import Borrar from '@/components/Borrar'
 import Agregar from './Agregar'
-import { agregarPersona } from './actions'
+import { agregarPersona, borrarPersona } from './actions'
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? '')
 
@@ -34,9 +35,12 @@ export default function SeccionPersonas({ casa, personas }: { casa: Casa; person
                   {p.detalle && <p className="text-base text-texto-2">{p.detalle}</p>}
                   {p.telefono && <p className="text-base text-texto-2">{formatearTelUY(p.telefono)}</p>}
                 </div>
-                {p.telefono && (
-                  <a href={telLink(p.telefono)} className="inline-flex min-h-11 shrink-0 items-center rounded-xl bg-azul px-5 text-base font-semibold text-white hover:bg-azul-osc">Llamar</a>
-                )}
+                <div className="flex shrink-0 flex-col gap-2">
+                  {p.telefono && (
+                    <a href={telLink(p.telefono)} className="inline-flex min-h-11 items-center justify-center rounded-xl bg-azul px-5 text-base font-semibold text-white hover:bg-azul-osc">Llamar</a>
+                  )}
+                  <Borrar pregunta={`¿Borrar a ${p.nombre}?`} accion={borrarPersona.bind(null, p.id)} />
+                </div>
               </Card>
             </li>
           ))}

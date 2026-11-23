@@ -45,9 +45,11 @@ export interface Repo {
   /** path debe empezar con `fotos/` o `documentos/`. Devuelve el path. */
   uploadArchivo(path: string, blob: Blob): Promise<string>
   urlArchivo(path: string): Promise<string>
+  /** Borra el archivo guardado. Idempotente; valida el path igual que uploadArchivo. */
+  removeArchivo(path: string): Promise<void>
 }
 
-export type Entidad = Exclude<keyof Repo, 'getConfig' | 'setConfig' | 'uploadArchivo' | 'urlArchivo'>
+export type Entidad = Exclude<keyof Repo, 'getConfig' | 'setConfig' | 'uploadArchivo' | 'urlArchivo' | 'removeArchivo'>
 
 export const ENTIDADES: Entidad[] = [
   'fechas', 'recordatorios', 'vencimientos', 'personasCasa', 'eventosCasa',

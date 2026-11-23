@@ -3,7 +3,9 @@ import { getRepo } from '@/data/getRepo'
 import { hoy, proximosCumples } from '@/domain/fechas'
 import { MESES } from '@/domain/validarFecha'
 import { Card, EmptyState } from '@/components/ui'
+import Borrar from '@/components/Borrar'
 import Saludo from './Saludo'
+import { borrarFecha } from './actions'
 import NuevaFecha from './NuevaFecha'
 
 export const dynamic = 'force-dynamic'
@@ -60,17 +62,24 @@ export default async function Calendario() {
         {ordenados.map(([m, items]) => (
           <section key={m} aria-label={MESES[m - 1]} className="space-y-2">
             <h3 className="text-base font-semibold text-texto-2">{MESES[m - 1]}</h3>
-            {items.map((f) => (
-              <Card key={f.id} className="flex items-baseline justify-between gap-3">
-                <div>
-                  <p className="text-base font-medium">{f.nombre}</p>
-                  <p className="text-base text-texto-2">
-                    {TIPO[f.tipo]}{f.edad != null && f.tipo === 'cumple' ? ` · cumple ${f.edad} años` : f.edad != null ? ` · ${f.edad} años` : ''}
-                  </p>
-                </div>
-                <span className="text-xl font-semibold">{Number(f.dia.slice(3))}</span>
-              </Card>
-            ))}
+            <ul className="space-y-2">
+              {items.map((f) => (
+                <li key={f.id}>
+                  <Card className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-base font-medium">{f.nombre}</p>
+                      <p className="text-base text-texto-2">
+                        {TIPO[f.tipo]}{f.edad != null && f.tipo === 'cumple' ? ` · cumple ${f.edad} años` : f.edad != null ? ` · ${f.edad} años` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-xl font-semibold">{Number(f.dia.slice(3))}</span>
+                      <Borrar pregunta={`¿Borrar la fecha de ${f.nombre}?`} accion={borrarFecha.bind(null, f.id)} />
+                    </div>
+                  </Card>
+                </li>
+              ))}
+            </ul>
           </section>
         ))}
       </section>

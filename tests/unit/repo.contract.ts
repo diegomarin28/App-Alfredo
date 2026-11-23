@@ -165,5 +165,15 @@ export function repoContract(nombre: string, makeRepo: () => Promise<Repo>, opts
       await expect(repo.uploadArchivo('otro/x.txt', new Blob(['x']))).rejects.toThrow()
       await expect(repo.uploadArchivo('fotos/../x.txt', new Blob(['x']))).rejects.toThrow()
     })
+
+    it('removeArchivo borra el archivo, es idempotente y valida el path', async () => {
+      const repo = await makeRepo()
+      const path = `fotos/contrato-${uid()}.txt`
+      await repo.uploadArchivo(path, new Blob(['chau'], { type: 'text/plain' }))
+      await expect(repo.removeArchivo(path)).resolves.toBeUndefined()
+      await expect(repo.removeArchivo(path)).resolves.toBeUndefined()
+      await expect(repo.removeArchivo('otro/x.txt')).rejects.toThrow()
+      await expect(repo.removeArchivo('fotos/../x.txt')).rejects.toThrow()
+    })
   })
 }

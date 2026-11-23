@@ -133,6 +133,12 @@ export class SupabaseRepo implements Repo {
     return path
   }
 
+  async removeArchivo(path: string): Promise<void> {
+    validarPathArchivo(path)
+    const { error } = await this.db.storage.from(BUCKET).remove([path])
+    falla(error, 'storage.remove')
+  }
+
   async urlArchivo(path: string): Promise<string> {
     const { data, error } = await this.db.storage.from(BUCKET).createSignedUrl(path, URL_SEGUNDOS)
     falla(error, 'storage.signedUrl')

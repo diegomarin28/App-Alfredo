@@ -16,7 +16,8 @@ export default async function Vencimientos() {
     return (
       <section aria-labelledby={id} className="space-y-3">
         <h2 id={id} className="text-xl font-semibold">{titulo}</h2>
-        {items.length > 0 && <Lista items={items} />}
+        {/* Siempre montada: así el "Deshacer" sobrevive aunque la sección quede vacía. */}
+        <Lista items={items} />
       </section>
     )
   }

@@ -1,7 +1,8 @@
 import { Card, EmptyState, Field, clasesInput } from '@/components/ui'
 import type { Casa, ServicioCasa } from '@/domain/tipos'
+import Borrar from '@/components/Borrar'
 import Agregar from './Agregar'
-import { agregarServicio } from './actions'
+import { agregarServicio, borrarServicio } from './actions'
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? '')
 
@@ -23,9 +24,12 @@ export default function SeccionServicios({ casa, servicios }: { casa: Casa; serv
         <ul className="space-y-2">
           {servicios.map((v) => (
             <li key={v.id}>
-              <Card className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <span className="text-base font-semibold text-texto">{v.clave}</span>
-                <span className="text-base text-texto-2">{v.valor}</span>
+              <Card className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-base font-semibold break-words text-texto">{v.clave}</p>
+                  <p className="text-base break-words text-texto-2">{v.valor}</p>
+                </div>
+                <Borrar pregunta={`¿Borrar ${v.clave}?`} accion={borrarServicio.bind(null, v.id)} className="shrink-0" />
               </Card>
             </li>
           ))}

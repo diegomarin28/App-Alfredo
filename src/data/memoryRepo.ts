@@ -117,6 +117,11 @@ export class MemoryRepo implements Repo {
     return `/api/archivos/${path}`
   }
 
+  async removeArchivo(path: string): Promise<void> {
+    validarPathArchivo(path)
+    this.archivos.delete(path)
+  }
+
   /** Solo memoria: lo usa la ruta GET /api/archivos/[...path]. */
   async leerArchivo(path: string): Promise<{ bytes: Uint8Array; tipo: string } | null> {
     return this.archivos.get(path) ?? null

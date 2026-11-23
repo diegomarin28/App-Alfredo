@@ -2,10 +2,12 @@ import { Card, EmptyState, Field, clasesInput } from '@/components/ui'
 import { fechaCompleta } from '@/domain/vencimientos'
 import { hoy } from '@/domain/fechas'
 import type { Casa, EventoCasa } from '@/domain/tipos'
+import Borrar from '@/components/Borrar'
 import Agregar from './Agregar'
-import { agregarEvento } from './actions'
+import { agregarEvento, borrarEvento } from './actions'
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? '')
+const corto = (t: string) => (t.length > 40 ? `${t.slice(0, 40).trimEnd()}…` : t)
 
 export default function SeccionHistorial({ casa, eventos }: { casa: Casa; eventos: EventoCasa[] }) {
   async function guardar(f: FormData) {
@@ -25,9 +27,12 @@ export default function SeccionHistorial({ casa, eventos }: { casa: Casa; evento
         <ul className="space-y-2">
           {eventos.map((e) => (
             <li key={e.id}>
-              <Card>
-                <p className="text-base font-semibold text-texto">{e.que}</p>
-                <p className="text-base text-texto-2">{fechaCompleta(e.cuando)}</p>
+              <Card className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-base font-semibold break-words text-texto">{e.que}</p>
+                  <p className="text-base text-texto-2">{fechaCompleta(e.cuando)}</p>
+                </div>
+                <Borrar pregunta={`¿Borrar «${corto(e.que)}» del historial?`} accion={borrarEvento.bind(null, e.id)} className="shrink-0" />
               </Card>
             </li>
           ))}

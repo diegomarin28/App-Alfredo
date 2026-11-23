@@ -1,6 +1,8 @@
 import { getRepo } from '@/data/getRepo'
 import { EmptyState } from '@/components/ui'
+import Borrar from '@/components/Borrar'
 import Subir from '../Subir'
+import { borrarFoto } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,9 +17,10 @@ export default async function Page() {
       {items.length === 0 ? <EmptyState>Todavía no hay fotos. Sumá la primera.</EmptyState> : (
         <ul className="grid grid-cols-2 gap-3">
           {items.map((f) => (
-            <li key={f.id}>
+            <li key={f.id} className="space-y-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={f.url} alt="Foto familiar" className="aspect-square w-full rounded-2xl border border-borde object-cover" />
+              <Borrar pregunta="¿Borrar esta foto?" accion={borrarFoto.bind(null, f.id)} className="w-full" />
             </li>
           ))}
         </ul>

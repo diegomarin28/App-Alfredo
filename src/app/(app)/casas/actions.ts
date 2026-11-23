@@ -7,6 +7,7 @@ import {
   validarEventoCasa, validarPersonaCasa, validarServicioCasa,
   type EntradaEventoCasa, type EntradaPersonaCasa, type EntradaServicioCasa,
 } from '@/domain/casas'
+import { validarId } from '@/domain/ids'
 
 type Res = { ok: true } | { ok: false; error: string }
 
@@ -48,4 +49,26 @@ export async function agregarServicio(entrada: EntradaServicioCasa): Promise<Res
   await (await getRepo()).serviciosCasa.create(r.valor)
   revalidatePath('/casas')
   return { ok: true }
+}
+
+async function borrar(tabla: 'personasCasa' | 'eventosCasa' | 'serviciosCasa', id: string, noEsta: string): Promise<Res> {
+  const no = await permitir()
+  if (no) return no
+  const t = getRepo()[tabla]
+  if (!validarId(id) || !(await t.get(id))) return { ok: false, error: noEsta }
+  await t.remove(id)
+  revalidatePath('/casas')
+  return { ok: true }
+}
+
+export async function borrarPersona(id: string): Promise<Res> {
+  return borrar('personasCasa', id, 'Esa persona ya no está.')
+}
+
+export async function borrarEvento(id: string): Promise<Res> {
+  return borrar('eventosCasa', id, 'Eso del historial ya no está.')
+}
+
+export async function borrarServicio(id: string): Promise<Res> {
+  return borrar('serviciosCasa', id, 'Ese servicio ya no está.')
 }

@@ -40,6 +40,13 @@ describe('MemoryRepo', () => {
     expect(await repo.leerArchivo('fotos/nada.txt')).toBeNull()
   })
 
+  it('removeArchivo: el archivo deja de leerse', async () => {
+    const repo = new MemoryRepo()
+    await repo.uploadArchivo('fotos/b.jpg', new Blob(['x'], { type: 'image/jpeg' }))
+    await repo.removeArchivo('fotos/b.jpg')
+    expect(await repo.leerArchivo('fotos/b.jpg')).toBeNull()
+  })
+
   it('devuelve copias: mutar un resultado no cambia lo guardado', async () => {
     const repo = new MemoryRepo()
     const p = await repo.pendientes.create({ texto: 'a', hecho: false })
