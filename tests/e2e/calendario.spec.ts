@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, leerPortapapeles, permitirPortapapeles, resetear } from './helpers'
 import { waLink } from '../../src/domain/telefono'
 
-test.use({ permissions: ['clipboard-read', 'clipboard-write'] })
+test.beforeEach(async ({ context, browserName }) => {
+  await permitirPortapapeles(context, browserName)
+})
 
 const HOY = '2026-11-22'
 const DATOS = {
@@ -32,7 +34,7 @@ test('próximo cumple destacado y saludo editable', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('href', waLink(editado))
   await page.getByRole('button', { name: 'Copiar' }).click()
   await expect(page.getByText('Copiado')).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(editado)
+  expect(await leerPortapapeles(page)).toBe(editado)
 })
 
 test('lista por mes desde el mes actual y agregar fecha', async ({ page }) => {

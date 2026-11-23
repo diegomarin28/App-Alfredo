@@ -7,8 +7,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!sesion) redirect('/entrar')
   return (
     <>
-      <div className="mx-auto min-h-dvh max-w-xl px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))]">
-        {children}
+      {/* lg: la navegación pasa a una barra lateral de 15rem (w-60); el contenido se centra en el resto */}
+      <div className="lg:pl-60">
+        <div className="mx-auto min-h-dvh max-w-xl px-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:pb-[calc(2rem+env(safe-area-inset-bottom))]">
+          {children}
+        </div>
       </div>
       <BottomNav rol={sesion.rol} />
     </>

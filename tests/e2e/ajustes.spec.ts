@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, leerPortapapeles, permitirPortapapeles, resetear } from './helpers'
 import { ENTORNO_E2E } from './entorno'
 
 test('Ajustes sin instalar muestra las instrucciones', async ({ page }) => {
@@ -42,7 +42,8 @@ test('Ajustes: cambiar cómo te saludan y cómo escribís; se guarda y se usa', 
   await expect(page.getByRole('alert').filter({ hasText: 'máximo 4000' })).toBeVisible()
   await estilo.fill('Escribo corto y digo "dale".')
   await page.getByRole('button', { name: 'Guardar cómo escribís' }).click()
-  await expect(page.getByText('Guardado').last()).toBeVisible()
+  // el "Guardado" de este formulario (el del nombre ya está a la vista)
+  await expect(page.locator('form', { has: estilo }).getByRole('status')).toHaveText('Guardado')
 
   await page.reload()
   await expect(page.getByLabel('Cómo te saludan')).toHaveValue('Alfre')
@@ -51,8 +52,8 @@ test('Ajustes: cambiar cómo te saludan y cómo escribís; se guarda y se usa', 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Alfre')
 })
 
-test('Ajustes: link para la familia con copiar y WhatsApp', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+test('Ajustes: link para la familia con copiar y WhatsApp', async ({ page, context, browserName }) => {
+  await permitirPortapapeles(context, browserName)
   await resetear(page)
   await entrarComo(page, 'owner')
   await page.goto('/ajustes')
@@ -66,7 +67,7 @@ test('Ajustes: link para la familia con copiar y WhatsApp', async ({ page, conte
   expect(decodeURIComponent(href!)).toContain(url)
   await seccion.getByRole('button', { name: 'Copiar' }).click()
   await expect(seccion.getByText('Copiado')).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(url)
+  expect(await leerPortapapeles(page)).toBe(url)
 })
 
 test('Ajustes: Salir cierra la sesión y vuelve a Entrar', async ({ page }) => {

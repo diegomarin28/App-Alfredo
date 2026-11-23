@@ -18,7 +18,8 @@ test('sin sesión, Inicio manda a /entrar y las APIs dan 401', async ({ page, re
   expect(res.status()).toBe(401)
 })
 
-test('con código incorrecto /configurar no registra nada', async ({ page }) => {
+test('con código incorrecto /configurar no registra nada', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await conFaceIdVirtual(page)
   await page.goto('/configurar')
   await page.getByLabel('Código de configuración').fill('cualquiera')
@@ -29,7 +30,8 @@ test('con código incorrecto /configurar no registra nada', async ({ page }) => 
   await expect(page).toHaveURL(/\/entrar$/)
 })
 
-test('registrar Face ID, salir y volver a entrar con Face ID', async ({ page }) => {
+test('registrar Face ID, salir y volver a entrar con Face ID', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await conFaceIdVirtual(page)
   await page.goto('/configurar')
   await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)
@@ -51,7 +53,8 @@ test('registrar Face ID, salir y volver a entrar con Face ID', async ({ page }) 
   await expect(page).toHaveURL(/\/claves$/)
 })
 
-test('Face ID sin passkey registrada no entra', async ({ page }) => {
+test('Face ID sin passkey registrada no entra', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await conFaceIdVirtual(page)
   await page.goto('/entrar')
   await page.getByRole('button', { name: 'Entrar con Face ID' }).click()
@@ -91,7 +94,8 @@ test('rutas de prueba: entrarComo deja la sesión pedida', async ({ page }) => {
   await expect(page).toHaveURL(/\/claves$/)
 })
 
-test('primera vez: /entrar ofrece configurar Face ID; después ya no', async ({ page }) => {
+test('primera vez: /entrar ofrece configurar Face ID; después ya no', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await page.goto('/entrar')
   const configurar = page.getByRole('link', { name: 'Configurar Face ID por primera vez' })
   await expect(configurar).toHaveAttribute('href', '/configurar')
@@ -108,7 +112,8 @@ test('primera vez: /entrar ofrece configurar Face ID; después ya no', async ({ 
   await expect(page.getByRole('link', { name: 'Configurar Face ID por primera vez' })).toHaveCount(0)
 })
 
-test('con Face ID ya configurado, el SETUP_CODE no sirve sin sesión; el owner sí puede sumar otro', async ({ page, browser }) => {
+test('con Face ID ya configurado, el SETUP_CODE no sirve sin sesión; el owner sí puede sumar otro', async ({ page, browser, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await conFaceIdVirtual(page)
   await page.goto('/configurar')
   await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)

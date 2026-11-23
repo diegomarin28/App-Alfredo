@@ -31,7 +31,7 @@ function Pestana({ tab, texto, activo }: { tab: Exclude<Tab, 'contame'>; texto: 
     <Link
       href={RUTAS[tab]}
       aria-current={activo ? 'page' : undefined}
-      className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-sm font-medium ${activo ? 'text-azul' : 'text-texto-2'}`}
+      className={`flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-sm font-medium lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:text-base ${activo ? 'text-azul lg:bg-tinte' : 'text-texto-2 lg:hover:bg-gris'}`}
     >
       {ICONOS[tab]}
       <span>{texto}</span>
@@ -46,22 +46,23 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
   return (
     <nav
       aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-white pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:left-0 lg:right-auto lg:w-60 lg:border-t-0 lg:border-r lg:pb-0"
     >
-      <div className="mx-auto flex max-w-xl items-end px-2">
+      <div className="mx-auto flex max-w-xl items-end px-2 lg:mx-0 lg:max-w-none lg:flex-col lg:items-stretch lg:gap-1 lg:px-3 lg:pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Pestana tab="inicio" texto="Inicio" activo={actual === 'inicio'} />
         <Pestana tab="calendario" texto="Calendario" activo={actual === 'calendario'} />
         {owner && (
-          <div className="flex flex-1 justify-center">
+          <div className="flex flex-1 justify-center lg:flex-none lg:py-2">
             <Link
               href="/contame"
               aria-label="Hablar con el asistente"
               aria-current={actual === 'contame' ? 'page' : undefined}
-              className="-mt-6 flex size-16 items-center justify-center rounded-full bg-azul text-white shadow-lg ring-4 ring-white hover:bg-azul-osc"
+              className="-mt-6 flex size-16 items-center justify-center rounded-full bg-azul text-white shadow-lg ring-4 ring-white hover:bg-azul-osc lg:mt-0 lg:h-14 lg:w-full lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:shadow-md lg:ring-0"
             >
               <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
               </svg>
+              <span className="hidden text-base font-semibold lg:inline">Hablar con el asistente</span>
             </Link>
           </div>
         )}

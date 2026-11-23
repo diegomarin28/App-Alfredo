@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, leerPortapapeles, permitirPortapapeles, resetear } from './helpers'
 import { waLink } from '../../src/domain/telefono'
 
 const ESTILO = 'Escribo corto y con "dale" al final.'
@@ -14,8 +14,8 @@ test.beforeEach(async ({ page }) => {
   await entrarComo(page, 'owner')
 })
 
-test('Me escribieron: sugiere respuesta con Copiar, WhatsApp, Más formal y Otra', async ({ page, context }) => {
-  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+test('Me escribieron: sugiere respuesta con Copiar, WhatsApp, Más formal y Otra', async ({ page, context, browserName }) => {
+  await permitirPortapapeles(context, browserName)
   await guion(page, [{ texto: '"Dale Martín, el viernes cerramos."' }, { texto: 'Estimado Martín, el viernes cerramos.' }, { texto: 'Martín, cerremos el viernes.' }])
   await page.goto('/mensajes')
   await page.getByRole('button', { name: 'Me escribieron' }).click()
@@ -36,7 +36,7 @@ test('Me escribieron: sugiere respuesta con Copiar, WhatsApp, Más formal y Otra
 
   await page.getByRole('button', { name: 'Copiar' }).click()
   await expect(page.getByRole('button', { name: 'Copiado' })).toBeVisible()
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Dale, editado')
+  expect(await leerPortapapeles(page)).toBe('Dale, editado')
 
   await page.getByRole('button', { name: 'Más formal' }).click()
   await expect(resultado).toHaveValue('Estimado Martín, el viernes cerramos.')

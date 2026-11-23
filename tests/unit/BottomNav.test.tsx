@@ -35,3 +35,35 @@ describe('BottomNav', () => {
     }
   })
 })
+
+describe('BottomNav en computadora (lg: ≥ 1024 px)', () => {
+  it('es una sola nav "Principal": barra de abajo en el teléfono, barra lateral fija a la izquierda en lg', () => {
+    render(<BottomNav activo="inicio" rol="owner" />)
+    const navs = screen.getAllByRole('navigation', { name: 'Principal' })
+    expect(navs).toHaveLength(1)
+    const nav = navs[0]
+    // teléfono: igual que antes
+    expect(nav).toHaveClass('fixed', 'inset-x-0', 'bottom-0', 'border-t')
+    // lg: columna fija a la izquierda, a toda la altura
+    expect(nav).toHaveClass('lg:inset-y-0', 'lg:left-0', 'lg:right-auto', 'lg:w-60', 'lg:border-t-0', 'lg:border-r')
+    const lista = nav.firstElementChild!
+    expect(lista).toHaveClass('flex', 'lg:flex-col')
+  })
+
+  it('en lg las pestañas van en fila (ícono + texto) con texto de 16 px', () => {
+    render(<BottomNav activo="inicio" rol="owner" />)
+    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
+      const link = screen.getByRole('link', { name: n })
+      expect(link).toHaveClass('flex-col', 'lg:flex-row', 'lg:justify-start', 'lg:text-base')
+    }
+  })
+
+  it('Contame sigue destacado: en lg es un botón azul ancho con el texto visible', () => {
+    render(<BottomNav activo="inicio" rol="owner" />)
+    const contame = screen.getByRole('link', { name: 'Hablar con el asistente' })
+    expect(contame).toHaveClass('bg-azul', 'text-white', 'lg:w-full', 'lg:rounded-xl')
+    const texto = contame.querySelector('span')!
+    expect(texto).toHaveTextContent('Hablar con el asistente')
+    expect(texto).toHaveClass('hidden', 'lg:inline')
+  })
+})

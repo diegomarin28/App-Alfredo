@@ -54,7 +54,8 @@ test.beforeEach(async ({ request }) => {
   await resetear(request)
 })
 
-test('bloqueada → Face ID + PIN nuevo → agregar Banco → copiar; el servidor nunca ve la contraseña', async ({ page, context }) => {
+test('bloqueada → Face ID + PIN nuevo → agregar Banco → copiar; el servidor nunca ve la contraseña', async ({ page, context, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
   const red = espiarRed(page)
   await registrarFaceId(page)
@@ -125,7 +126,8 @@ test('bloqueada → Face ID + PIN nuevo → agregar Banco → copiar; el servido
   expect(api).toEqual([{ id: expect.any(String), sitio: 'Banco', usuario: 'alfredo', cifrado: expect.any(String), iv: expect.any(String) }])
 })
 
-test('con PRF (iPhone): Face ID solo abre, sin PIN, y la clave es la misma al volver', async ({ page }) => {
+test('con PRF (iPhone): Face ID solo abre, sin PIN, y la clave es la misma al volver', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   const red = espiarRed(page)
   await registrarFaceId(page, { prf: true })
   await page.goto('/claves')
@@ -142,7 +144,8 @@ test('con PRF (iPhone): Face ID solo abre, sin PIN, y la clave es la misma al vo
   for (const c of await red()) expect(c).not.toContain(SECRETO)
 })
 
-test('modo PRF en un celular sin PRF: avisa y no toca nada', async ({ page }) => {
+test('modo PRF en un celular sin PRF: avisa y no toca nada', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await registrarFaceId(page)
   const config = { claveSalt: b64(32), claveModo: 'prf', claveCheck: b64(18), claveCheckIv: b64(12) }
   expect((await page.request.post('/api/claves/config', { data: config })).status()).toBe(200)
@@ -164,7 +167,8 @@ async function ocultar(page: Page, { evento = true } = {}) {
 const mostrarApp = (page: Page) =>
   page.evaluate(() => Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true }))
 
-test('si la app se oculta después de Face ID y antes de abrir, queda bloqueada', async ({ page }) => {
+test('si la app se oculta después de Face ID y antes de abrir, queda bloqueada', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await registrarFaceId(page, { prf: true })
   await page.goto('/claves')
   let alCargar: ((p: Page) => Promise<void>) | null = (p) => ocultar(p)
@@ -200,7 +204,8 @@ test('si la app se oculta después de Face ID y antes de abrir, queda bloqueada'
   await expect(page.getByRole('button', { name: 'Bloquear', exact: true })).toBeVisible()
 })
 
-test('bloquear mientras se descifra no deja el texto a la vista ni en el portapapeles', async ({ page, context }) => {
+test('bloquear mientras se descifra no deja el texto a la vista ni en el portapapeles', async ({ page, context, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
   // Descifrado lento a pedido, para poder bloquear en el medio.
   await page.addInitScript(() => {
@@ -237,7 +242,8 @@ test('bloquear mientras se descifra no deja el texto a la vista ni en el portapa
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('nada')
 })
 
-test('PIN equivocado → "PIN incorrecto" y sigue bloqueada', async ({ page }) => {
+test('PIN equivocado → "PIN incorrecto" y sigue bloqueada', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await registrarFaceId(page)
   await page.goto('/claves')
   await elegirPin(page)
@@ -254,7 +260,8 @@ test('PIN equivocado → "PIN incorrecto" y sigue bloqueada', async ({ page }) =
   await expect(page.getByRole('listitem').filter({ hasText: 'Banco' })).toBeVisible()
 })
 
-test('borrar pide confirmación', async ({ page }) => {
+test('borrar pide confirmación', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await registrarFaceId(page)
   await page.goto('/claves')
   await elegirPin(page)
@@ -273,7 +280,8 @@ test('borrar pide confirmación', async ({ page }) => {
   expect(api.map((c: { sitio: string }) => c.sitio)).toEqual(['Mail'])
 })
 
-test('se bloquea al ocultar la app y a los 2 minutos sin tocar nada', async ({ page }) => {
+test('se bloquea al ocultar la app y a los 2 minutos sin tocar nada', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   await page.clock.install()
   await registrarFaceId(page)
   await page.goto('/claves')

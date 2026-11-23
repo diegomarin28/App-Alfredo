@@ -23,14 +23,15 @@ test('owner: saludo, foto, lo próximo y accesos', async ({ page }) => {
   await expect(prox).toContainText('3 pendientes')
   const nav = page.getByRole('navigation', { name: 'Principal' })
   await expect(nav).toBeVisible()
-  // M1: etiquetas a 14 px, sin desbordar su lugar a 390 px.
+  // M1: etiquetas a 14 px en la barra de abajo (16 px en la barra lateral de computadora), sin desbordar su lugar.
+  const ancho = page.viewportSize()!.width
   for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
     const link = nav.getByRole('link', { name: n })
-    expect(await link.evaluate((el) => getComputedStyle(el).fontSize), n).toBe('14px')
+    expect(await link.evaluate((el) => getComputedStyle(el).fontSize), n).toBe(ancho >= 1024 ? '16px' : '14px')
     const span = link.locator('span')
     expect(await span.evaluate((el) => el.getBoundingClientRect().width <= el.parentElement!.getBoundingClientRect().width), n).toBe(true)
   }
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(ancho)
 })
 
 for (const [nombre, ruta] of [

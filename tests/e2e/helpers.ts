@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
+import { expect, type APIRequestContext, type BrowserContext, type Locator, type Page } from '@playwright/test'
 import type { Config } from '../../src/domain/tipos'
 import { ENTORNO_E2E } from './entorno'
 
@@ -123,14 +123,37 @@ export function vigilarErrores(page: Page): string[] {
   return errores
 }
 
-/** La página no dio errores y no se desborda hacia los costados (iPhone 14: 390 px). */
+/** La página no dio errores y no se desborda hacia los costados (el ancho de la pantalla del proyecto). */
 export async function sinErroresNiDesborde(page: Page, errores: string[], donde: string): Promise<void> {
   const ancho = await page.evaluate(() => document.documentElement.scrollWidth)
-  expect(ancho, `desborde horizontal en ${donde}`).toBeLessThanOrEqual(390)
+  expect(ancho, `desborde horizontal en ${donde}`).toBeLessThanOrEqual(page.viewportSize()!.width)
   expect(errores, `errores de consola en ${donde}`).toEqual([])
 }
 
 /** Espera a que React haya enganchado el elemento (un toque antes de eso no hace nada, sobre todo en `next dev`). */
 export async function hidratado(el: Locator): Promise<void> {
   await expect.poll(() => el.evaluate((n) => Object.keys(n).some((k) => k.startsWith('__reactProps')))).toBe(true)
+}
+
+/**
+ * Portapapeles en la prueba. Chromium: permisos de leer y escribir. WebKit no conoce esos permisos y
+ * no deja leer sin un toque del usuario, así que se anota lo que la app copia (la copia real igual se hace).
+ */
+export async function permitirPortapapeles(context: BrowserContext, browserName: string): Promise<void> {
+  if (browserName === 'chromium') {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
+    return
+  }
+  await context.addInitScript(() => {
+    const original = navigator.clipboard.writeText.bind(navigator.clipboard)
+    navigator.clipboard.writeText = async (texto: string) => {
+      await original(texto)
+      ;(window as unknown as { __copiado?: string }).__copiado = texto
+    }
+  })
+}
+
+/** Lo último que la app copió (ver permitirPortapapeles). */
+export function leerPortapapeles(page: Page): Promise<string> {
+  return page.evaluate(() => (window as unknown as { __copiado?: string }).__copiado ?? navigator.clipboard.readText())
 }

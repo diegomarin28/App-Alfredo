@@ -10,7 +10,8 @@ const FOTO = path.join(__dirname, 'fixtures', 'foto.jpg')
 const PIN = '482915'
 const SECRETO = 'Plata-Secreta-2026!'
 
-test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page }) => {
+test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, browserName }) => {
+  test.skip(browserName === 'webkit', 'Face ID virtual: solo Chromium (CDP)')
   test.setTimeout(240_000)
   const errores = vigilarErrores(page)
   const revisar = (donde: string) => sinErroresNiDesborde(page, errores, donde)
