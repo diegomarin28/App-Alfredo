@@ -1,0 +1,90 @@
+import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import Link from 'next/link'
+
+export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
+  return <div {...rest} className={`rounded-[14px] border border-borde bg-white px-3.5 py-3 ${className}`}>{children}</div>
+}
+
+export function Chip({ children, activo = false, urgente = false, ...rest }: {
+  children: ReactNode; activo?: boolean; urgente?: boolean
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const color = urgente ? 'bg-urg-bg text-urg-tx' : activo ? 'bg-azul text-white' : 'bg-gris text-texto'
+  return (
+    <button type="button" {...rest} className={`min-h-11 rounded-full px-4 text-base font-medium ${color}`}>
+      {children}
+    </button>
+  )
+}
+
+export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-base font-medium text-texto">{label}</span>
+      {children}
+      {hint && <span className="mt-1 block text-base text-texto-2">{hint}</span>}
+    </label>
+  )
+}
+
+export const clasesInput = 'min-h-11 w-full rounded-xl border border-borde bg-white px-3 text-base text-texto'
+
+export function EmptyState({ children, href, accion }: { children: ReactNode; href?: string; accion?: string }) {
+  return (
+    <div className="rounded-2xl bg-tinte p-4 text-base text-texto-2">
+      <p>{children}</p>
+      {href && accion && (
+        <Link href={href} className="mt-3 inline-flex min-h-11 items-center rounded-xl bg-azul px-4 font-medium text-white hover:bg-azul-osc">
+          {accion}
+        </Link>
+      )}
+    </div>
+  )
+}
+
+type PropsBoton = ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primario' | 'suave' }
+export function Boton({ variante = 'primario', className = '', ...rest }: PropsBoton) {
+  const color = variante === 'primario' ? 'bg-azul text-white hover:bg-azul-osc' : 'bg-gris text-texto'
+  return <button type="button" {...rest} className={`min-h-11 rounded-xl px-5 text-base font-semibold ${color} ${className}`} />
+}
+
+/**
+ * Botón "+ Agregar" de la cabecera de cada pantalla. Dice solo "Agregar" para que entre al lado del título en
+ * cualquier teléfono; el nombre completo (p. ej. "Agregar fecha") va en aria-label y lo empieza igual.
+ */
+export function BotonAgregar({ nombre, ...rest }: { nombre: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <Boton {...rest} aria-label={nombre} className="inline-flex shrink-0 items-center gap-1.5 pl-4">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Agregar
+    </Boton>
+  )
+}
+
+/**
+ * Fondo y panel de las hojas: en el teléfono, hoja pegada abajo de lado a lado; en computadora (lg), una
+ * ventana centrada sobre la columna del contenido (a la derecha de la barra lateral de w-60, hasta 720 px).
+ */
+export const clasesFondoHoja = 'fixed inset-0 z-50 flex items-end bg-black/40 lg:items-center lg:justify-center lg:pl-60'
+export const clasesHoja = 'w-full rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:rounded-3xl lg:pb-5'
+
+/** Hoja inferior simple. Se cierra con el botón "Cerrar" o tocando afuera. */
+export function Sheet({ abierto, onCerrar, titulo, children }: {
+  abierto: boolean; onCerrar: () => void; titulo: string; children: ReactNode
+}) {
+  if (!abierto) return null
+  return (
+    <div className={clasesFondoHoja} onClick={onCerrar}>
+      <div
+        role="dialog" aria-modal="true" aria-label={titulo}
+        onClick={(e) => e.stopPropagation()}
+        className={`max-h-[85dvh] overflow-y-auto ${clasesHoja}`}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">{titulo}</h2>
+          <Boton variante="suave" onClick={onCerrar}>Cerrar</Boton>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}

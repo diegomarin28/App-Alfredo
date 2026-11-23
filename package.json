@@ -1,0 +1,47 @@
+{
+  "name": "app-alfredo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "e2e": "node scripts/e2e.mjs",
+    "capturas": "CAPTURAS=1 playwright test capturas.spec.ts --reporter=line",
+    "probar-haiku": "tsx --conditions=react-server scripts/probar-haiku.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "@simplewebauthn/browser": "^14.0.0",
+    "@simplewebauthn/server": "^14.1.0",
+    "@supabase/supabase-js": "^2.119.2",
+    "browser-image-compression": "^2.0.2",
+    "iron-session": "^9.1.0",
+    "next": "^15.5.29",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "resend": "^6.39.0",
+    "server-only": "^0.0.1",
+    "web-push": "^4.0.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@testing-library/jest-dom": "^8.0.0",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/web-push": "^3.6.4",
+    "@vitejs/plugin-react": "^6.3.0",
+    "jsdom": "^31.0.1",
+    "postcss": "^8.5.33",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.5",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.1"
+  }
+}

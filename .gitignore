@@ -1,0 +1,9 @@
+node_modules
+.next
+test-results
+playwright-report
+/capturas/
+next-env.d.ts
+*.tsbuildinfo
+.env*
+!.env.example
