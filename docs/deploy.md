@@ -51,7 +51,7 @@ La pública va en `VAPID_PUBLIC_KEY` y en `NEXT_PUBLIC_VAPID_PUBLIC_KEY`; la pri
 
 ## 4. Duración de las funciones de IA
 
-Las rutas de IA declaran cuánto pueden tardar: `/api/ai/mensajes` hasta **60 s** y `/api/ai/contame` hasta **300 s** (`maxDuration`; Contame hace varias rondas con el modelo). Hace falta un plan de Vercel que permita esas duraciones (Pro). En el plan **Hobby** el máximo es menor: Vercel recorta la duración a su tope y un Contame largo puede cortarse con error. Revisá el tope en Vercel > Project > Settings > Functions.
+Las rutas de IA declaran cuánto pueden tardar: `/api/ai/mensajes` hasta **60 s** y `/api/ai/contame` hasta **300 s** (`maxDuration`; Contame hace varias rondas con el modelo). Con **Fluid compute** (viene activado por defecto en los proyectos nuevos) el plan **Hobby** permite `maxDuration` de hasta 300 s, así que alcanza. Verificá que Fluid compute esté **Enabled** en Vercel > Project > Settings > Functions: si está apagado, el tope es menor, Vercel recorta la duración y un Contame largo puede cortarse con error.
 
 ### Modelos y precios de la IA
 
