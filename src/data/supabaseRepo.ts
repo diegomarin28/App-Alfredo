@@ -1,3 +1,4 @@
+import 'server-only'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import {
   ENTIDADES, TABLAS, validarPathArchivo, type Entidad, type Nuevo, type Repo, type Tabla,

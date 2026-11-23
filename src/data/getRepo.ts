@@ -1,3 +1,4 @@
+import 'server-only'
 import { MemoryRepo } from './memoryRepo'
 import { SupabaseRepo } from './supabaseRepo'
 import type { Repo } from './repo'
