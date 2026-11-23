@@ -1,0 +1,79 @@
+import type {
+  Carpeta, ClaveCifrada, Config, Contacto, Documento, EventoCasa, Fecha,
+  FotoFamiliar, Nota, Pendiente, PersonaCasa, Recordatorio, ServicioCasa,
+  UsoIa, Vencimiento,
+} from '@/domain/tipos'
+
+/** Datos para crear: sin id; creadoEn lo pone el repo si falta. */
+export type Nuevo<E extends { id: string }> = Omit<E, 'id' | 'creadoEn'> & { creadoEn?: string }
+
+export interface Tabla<E extends { id: string }> {
+  /** filtro: igualdad por campo. Orden: eventosCasa por `cuando` desc; el resto por creación. */
+  list(filtro?: Partial<E>): Promise<E[]>
+  get(id: string): Promise<E | null>
+  create(data: Nuevo<E>): Promise<E>
+  update(id: string, patch: Partial<Omit<E, 'id'>>): Promise<E>
+  /** Idempotente: borrar algo que no existe no falla. */
+  remove(id: string): Promise<void>
+}
+
+export interface Repo {
+  fechas: Tabla<Fecha>
+  recordatorios: Tabla<Recordatorio>
+  vencimientos: Tabla<Vencimiento>
+  personasCasa: Tabla<PersonaCasa>
+  eventosCasa: Tabla<EventoCasa>
+  serviciosCasa: Tabla<ServicioCasa>
+  contactos: Tabla<Contacto>
+  pendientes: Tabla<Pendiente>
+  notas: Tabla<Nota>
+  carpetas: Tabla<Carpeta>
+  documentos: Tabla<Documento>
+  fotos: Tabla<FotoFamiliar>
+  claves: Tabla<ClaveCifrada>
+  usoIa: Tabla<UsoIa>
+  getConfig(): Promise<Config>
+  setConfig(patch: Partial<Config>): Promise<Config>
+  /** path debe empezar con `fotos/` o `documentos/`. Devuelve el path. */
+  uploadArchivo(path: string, blob: Blob): Promise<string>
+  urlArchivo(path: string): Promise<string>
+}
+
+export type Entidad = Exclude<keyof Repo, 'getConfig' | 'setConfig' | 'uploadArchivo' | 'urlArchivo'>
+
+export const ENTIDADES: Entidad[] = [
+  'fechas', 'recordatorios', 'vencimientos', 'personasCasa', 'eventosCasa',
+  'serviciosCasa', 'contactos', 'pendientes', 'notas', 'carpetas',
+  'documentos', 'fotos', 'claves', 'usoIa',
+]
+
+/** Nombre de tabla en Postgres por entidad. */
+export const TABLAS: Record<Entidad, string> = {
+  fechas: 'fechas', recordatorios: 'recordatorios', vencimientos: 'vencimientos',
+  personasCasa: 'personas_casa', eventosCasa: 'eventos_casa', serviciosCasa: 'servicios_casa',
+  contactos: 'contactos', pendientes: 'pendientes', notas: 'notas', carpetas: 'carpetas',
+  documentos: 'documentos', fotos: 'fotos', claves: 'claves', usoIa: 'uso_ia',
+}
+
+export const CONFIG_POR_DEFECTO: Config = {
+  nombre: 'Alfredo',
+  estiloEscritura: '',
+  alertaIaEnviada: false,
+}
+
+export function validarPathArchivo(path: string): void {
+  if (!/^(fotos|documentos)\/[^/].*$/.test(path) || path.includes('..')) {
+    throw new Error(`Path de archivo inválido: ${path}`)
+  }
+}
+
+export const RECORDATORIOS_INICIALES = [
+  { titulo: 'Gestionar fin de año', dia: '12-31', avisarDiasAntes: 60 },
+  { titulo: 'Gestionar Navidad', dia: '12-25', avisarDiasAntes: 60 },
+  { titulo: 'Cena de Navidad', dia: '12-24', avisarDiasAntes: 30 },
+  { titulo: 'Cena de Año Nuevo', dia: '12-31', avisarDiasAntes: 30 },
+  { titulo: 'Cena de mi cumpleaños', dia: '11-25', avisarDiasAntes: 30 },
+  { titulo: 'Sacar pasajes de los chicos', dia: null, avisarDiasAntes: 60 },
+]
+
+export const CARPETAS_INICIALES = ['Seguros', 'Escrituras', 'Autos', 'Personales']
