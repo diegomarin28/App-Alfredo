@@ -12,11 +12,11 @@ export default async function PendientesYNotas() {
   const notas = (await repo.notas.list()).sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
 
   return (
-    <main className="space-y-8">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">Pendientes y notas</h1>
+    <main className="space-y-6">
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Pendientes y notas</h1>
       <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho }))} />
       <section aria-labelledby="notas" className="space-y-3">
-        <h2 id="notas" className="text-xl font-semibold">Notas</h2>
+        <h2 id="notas" className="text-xl font-bold">Notas</h2>
         <NuevaNota />
         {notas.length === 0 && <EmptyState>Todavía no hay notas.</EmptyState>}
         <ul className="space-y-2">

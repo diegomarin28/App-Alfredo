@@ -35,24 +35,26 @@ export default async function Calendario() {
   return (
     <main className="space-y-5">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-semibold text-texto">Calendario</h1>
+        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Calendario</h1>
         <NuevaFecha />
       </header>
 
       {proximo && (
         <section aria-label="Próximo cumpleaños" className="space-y-3">
-          <Card className="bg-tinte">
-            <p className="text-xl font-semibold">
+          <div className="rounded-[20px] bg-azul px-[18px] py-4 text-white">
+            <p className="text-[22px] leading-tight font-bold">
               {proximo.edad != null ? `${proximo.nombre} cumple ${proximo.edad}` : `Cumple de ${proximo.nombre}`}
             </p>
-            <p className="mt-1 text-base text-texto-2">{cuando(proximo.dias)}</p>
-          </Card>
-          <h2 className="text-xl font-semibold">Saludo</h2>
-          <Saludo key={proximo.id} nombre={proximo.nombre.trim().split(/\s+/)[0]} />
+            <p className="mt-1 text-base text-tinte">{cuando(proximo.dias)}</p>
+          </div>
+          <div className="space-y-3 rounded-[18px] border border-borde bg-white p-3.5">
+            <h2 className="text-lg font-semibold">Saludo</h2>
+            <Saludo key={proximo.id} nombre={proximo.nombre.trim().split(/\s+/)[0]} />
+          </div>
         </section>
       )}
 
-      <Link href="/recordatorios" className="flex min-h-14 items-center rounded-2xl border border-borde bg-white px-4 text-base font-medium text-texto hover:bg-tinte">
+      <Link href="/recordatorios" className="flex min-h-14 items-center rounded-[14px] border border-borde bg-white px-3.5 text-base font-semibold text-texto hover:bg-tinte">
         Recordatorios del año
       </Link>
 

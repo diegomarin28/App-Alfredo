@@ -30,9 +30,15 @@ function enDias(n: number): string {
   return `En ${n} días`
 }
 
+const icono = (d: React.ReactNode) => (
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-azul">{d}</svg>
+)
 const ACCESOS = [
-  ['Vencimientos', '/vencimientos'], ['Pendientes', '/pendientes'], ['Documentos', '/documentos'],
-  ['Contraseñas', '/claves'], ['Contactos', '/contactos'],
+  ['Vencimientos', '/vencimientos', icono(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)],
+  ['Pendientes', '/pendientes', icono(<path d="M4 12l5 5L20 6" />)],
+  ['Documentos', '/documentos', icono(<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />)],
+  ['Contraseñas', '/claves', icono(<><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>)],
+  ['Contactos', '/contactos', icono(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2" /></>)],
 ] as const
 
 export default async function Inicio() {
@@ -51,8 +57,8 @@ export default async function Inicio() {
     <main className="space-y-5">
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[28px] leading-tight font-semibold text-texto">{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
-          <p className="mt-1 text-base text-texto-2">{fechaLarga(hoyStr)}</p>
+          <p className="mb-1 text-base text-texto-2">{fechaLarga(hoyStr)}</p>
+          <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
         </div>
         {owner && (
           <Link href="/ajustes" aria-label="Ajustes" className="flex size-11 shrink-0 items-center justify-center rounded-full text-texto-2 hover:bg-tinte">
@@ -82,16 +88,17 @@ export default async function Inicio() {
 
       {owner && (
         <nav aria-label="Accesos directos" className="grid grid-cols-2 gap-3">
-          {ACCESOS.map(([nombre, href]) => (
-            <Link key={href} href={href} className="flex min-h-14 items-center rounded-2xl border border-borde bg-white px-4 text-base font-medium text-texto hover:bg-tinte">
-              {nombre}
+          {/* con un número impar de accesos, el último ocupa las dos columnas */}
+          {ACCESOS.map(([nombre, href, svg]) => (
+            <Link key={href} href={href} className="flex min-h-14 items-center gap-2.5 rounded-[14px] border border-borde bg-white px-3.5 text-base font-semibold text-texto last:odd:col-span-2 hover:bg-tinte">
+              {svg}{nombre}
             </Link>
           ))}
         </nav>
       )}
 
       <section aria-labelledby="proximo" className="space-y-3">
-        <h2 id="proximo" className="text-xl font-semibold">Lo próximo</h2>
+        <h2 id="proximo" className="text-lg font-bold">Lo próximo</h2>
         <Card>
           {cumple ? (
             <div className="flex items-baseline justify-between gap-3">

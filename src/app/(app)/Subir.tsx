@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import imageCompression from 'browser-image-compression'
 
-const clasesBoton = 'inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl px-5 text-base font-semibold focus-within:ring-2 focus-within:ring-azul'
+const clasesBoton = 'inline-flex min-h-12 cursor-pointer items-center justify-center rounded-xl px-3 py-2 text-center text-base leading-tight font-semibold focus-within:ring-2 focus-within:ring-azul'
 
 /** Dos botones (cámara / galería): comprime a 1600px y sube a POST /api/archivos. */
 export default function Subir({ tipo, carpetaId }: { tipo: 'documento' | 'foto'; carpetaId?: string }) {

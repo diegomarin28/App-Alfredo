@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonAgregar, Field, Sheet, clasesInput } from '@/components/ui'
 import { MESES } from '@/domain/validarFecha'
 import { agregarFecha } from './actions'
 
@@ -34,7 +34,7 @@ export default function NuevaFecha() {
 
   return (
     <>
-      <Boton onClick={() => { setError(''); setAbierto(true) }}>Agregar fecha</Boton>
+      <BotonAgregar nombre="Agregar fecha" onClick={() => { setError(''); setAbierto(true) }} />
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Agregar fecha">
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Nombre"><input name="nombre" className={clasesInput} autoComplete="off" /></Field>

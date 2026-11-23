@@ -13,7 +13,7 @@ export default async function Entrar() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-6 py-10">
       <div className="flex flex-col gap-2">
-        <h1 className="text-[28px] font-semibold text-texto">Hola, Alfredo</h1>
+        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Hola, Alfredo</h1>
         <p className="text-texto-2">Para entrar, usá Face ID.</p>
       </div>
       <BotonEntrar />

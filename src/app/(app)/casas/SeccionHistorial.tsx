@@ -17,8 +17,8 @@ export default function SeccionHistorial({ casa, eventos }: { casa: Casa; evento
   return (
     <section aria-label="Historial" className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-texto">Historial</h2>
-        <Agregar boton="Agregar al historial" titulo="Agregar al historial" guardar={guardar}>
+        <h2 className="text-base font-semibold text-texto-2">Historial</h2>
+        <Agregar variante="suave" boton="Agregar al historial" titulo="Agregar al historial" guardar={guardar}>
           <Field label="¿Qué pasó?"><textarea name="que" maxLength={2000} rows={4} className={`${clasesInput} py-2`} /></Field>
           <Field label="Fecha"><input name="cuando" type="date" defaultValue={hoy()} className={clasesInput} /></Field>
         </Agregar>

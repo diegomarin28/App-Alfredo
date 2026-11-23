@@ -6,8 +6,10 @@ import { Boton, Sheet } from '@/components/ui'
 type Res = { ok: true } | { ok: false; error: string }
 
 /** Botón + hoja con formulario; cada sección pasa sus campos y su acción. */
-export default function Agregar({ boton, titulo, guardar, children }: {
+export default function Agregar({ boton, titulo, guardar, variante, children }: {
   boton: string
+  /** "suave" para los Agregar de cada sección (el principal de la pantalla queda azul) */
+  variante?: 'primario' | 'suave'
   titulo: string
   guardar: (f: FormData) => Promise<Res>
   children: React.ReactNode
@@ -36,7 +38,7 @@ export default function Agregar({ boton, titulo, guardar, children }: {
 
   return (
     <>
-      <Boton onClick={() => { setError(''); setAbierto(true) }}>{boton}</Boton>
+      <Boton variante={variante} className="shrink-0" onClick={() => { setError(''); setAbierto(true) }}>{boton}</Boton>
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={titulo}>
         <form onSubmit={enviar} className="space-y-4" noValidate>
           {children}

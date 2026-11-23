@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Chip, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonAgregar, Chip, Field, Sheet, clasesInput } from '@/components/ui'
 import AvisoChips, { diasAviso } from '@/components/AvisoChips'
 import { agregarVencimiento } from './actions'
 
@@ -40,7 +40,7 @@ export default function FormVencimiento() {
 
   return (
     <>
-      <Boton onClick={abrir}>Agregar vencimiento</Boton>
+      <BotonAgregar nombre="Agregar vencimiento" onClick={abrir} />
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Agregar vencimiento">
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" maxLength={80} className={clasesInput} autoComplete="off" /></Field>

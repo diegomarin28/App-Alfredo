@@ -9,7 +9,7 @@ export default async function Page() {
   return (
     <main className="space-y-4">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-semibold text-texto">Contactos</h1>
+        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Contactos</h1>
         <NuevoContacto />
       </header>
       <Contactos contactos={todos} />

@@ -327,7 +327,7 @@ export default function Claves() {
   return (
     <main className="space-y-5">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-semibold text-texto">Contraseñas</h1>
+        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Contraseñas</h1>
         {paso.t === 'abierta' && <Boton variante="suave" onClick={bloquear}>Bloquear</Boton>}
       </header>
 

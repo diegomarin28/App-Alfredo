@@ -16,8 +16,8 @@ export default function SeccionPersonas({ casa, personas }: { casa: Casa; person
   return (
     <section aria-label="Quién se ocupa" className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-texto">Quién se ocupa</h2>
-        <Agregar boton="Agregar persona" titulo="Agregar persona" guardar={guardar}>
+        <h2 className="text-base font-semibold text-texto-2">Quién se ocupa</h2>
+        <Agregar variante="suave" boton="Agregar persona" titulo="Agregar persona" guardar={guardar}>
           <Field label="Nombre"><input name="nombre" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
           <Field label="Rol" hint="Por ejemplo Limpieza o Jardín"><input name="rol" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
           <Field label="Detalle"><input name="detalle" maxLength={500} className={clasesInput} autoComplete="off" /></Field>

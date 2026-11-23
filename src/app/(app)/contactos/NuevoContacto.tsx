@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Chip, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonAgregar, Chip, Field, Sheet, clasesInput } from '@/components/ui'
 import { agregarContacto } from './actions'
 
 type Tipo = 'cliente' | 'proveedor' | 'otro'
@@ -38,7 +38,7 @@ export default function NuevoContacto() {
 
   return (
     <>
-      <Boton onClick={abrir}>Agregar contacto</Boton>
+      <BotonAgregar nombre="Agregar contacto" onClick={abrir} />
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Agregar contacto">
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Nombre"><input name="nombre" maxLength={80} className={clasesInput} autoComplete="off" /></Field>

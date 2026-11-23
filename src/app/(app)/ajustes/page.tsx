@@ -13,7 +13,7 @@ export default async function Ajustes() {
   const config = await (await getRepo()).getConfig()
   return (
     <main className="space-y-6">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">Ajustes</h1>
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Ajustes</h1>
       <section aria-labelledby="perfil" className="space-y-3">
         <h2 id="perfil" className="text-xl font-semibold">Tu perfil</h2>
         <Perfil nombre={config.nombre} estilo={config.estiloEscritura} />

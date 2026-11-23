@@ -14,8 +14,8 @@ export default function SeccionServicios({ casa, servicios }: { casa: Casa; serv
   return (
     <section aria-label="Servicios" className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-texto">Servicios</h2>
-        <Agregar boton="Agregar servicio" titulo="Agregar servicio" guardar={guardar}>
+        <h2 className="text-base font-semibold text-texto-2">Servicios</h2>
+        <Agregar variante="suave" boton="Agregar servicio" titulo="Agregar servicio" guardar={guardar}>
           <Field label="Servicio" hint="Por ejemplo DirecTV"><input name="clave" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
           <Field label="Dato" hint="Por ejemplo Cliente 123456"><input name="valor" maxLength={500} className={clasesInput} autoComplete="off" /></Field>
         </Agregar>

@@ -12,7 +12,7 @@ export default async function Page() {
   const items = await Promise.all(fotos.map(async (f) => ({ id: f.id, url: await repo.urlArchivo(f.path) })))
   return (
     <main className="space-y-6">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">Fotos de la familia</h1>
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Fotos de la familia</h1>
       <Subir tipo="foto" />
       {items.length === 0 ? <EmptyState>Todavía no hay fotos. Sumá la primera.</EmptyState> : (
         <ul className="grid grid-cols-2 gap-3">

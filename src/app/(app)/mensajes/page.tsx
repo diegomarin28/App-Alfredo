@@ -50,7 +50,7 @@ export default function Page() {
 
   return (
     <main className="space-y-4">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">Mensajes</h1>
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Mensajes</h1>
       <div className="grid grid-cols-2 gap-3">
         <Boton variante={modo === 'responder' ? 'primario' : 'suave'} className="min-h-16" aria-pressed={modo === 'responder'} onClick={() => elegir('responder')}>Me escribieron</Boton>
         <Boton variante={modo === 'escribir' ? 'primario' : 'suave'} className="min-h-16" aria-pressed={modo === 'escribir'} onClick={() => elegir('escribir')}>Quiero escribir</Boton>

@@ -142,7 +142,7 @@ export default function Page() {
 
   return (
     <main className="space-y-5">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">Contame</h1>
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Contame</h1>
       {!montado ? null : (
         <>
           {vista === 'inicio' && (

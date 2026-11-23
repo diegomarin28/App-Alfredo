@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import Link from 'next/link'
 
 export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
-  return <div {...rest} className={`rounded-2xl border border-borde bg-white p-4 ${className}`}>{children}</div>
+  return <div {...rest} className={`rounded-[14px] border border-borde bg-white px-3.5 py-3 ${className}`}>{children}</div>
 }
 
 export function Chip({ children, activo = false, urgente = false, ...rest }: {
@@ -45,6 +45,19 @@ type PropsBoton = ButtonHTMLAttributes<HTMLButtonElement> & { variante?: 'primar
 export function Boton({ variante = 'primario', className = '', ...rest }: PropsBoton) {
   const color = variante === 'primario' ? 'bg-azul text-white hover:bg-azul-osc' : 'bg-gris text-texto'
   return <button type="button" {...rest} className={`min-h-11 rounded-xl px-5 text-base font-semibold ${color} ${className}`} />
+}
+
+/**
+ * Botón "+ Agregar" de la cabecera de cada pantalla. Dice solo "Agregar" para que entre al lado del título en
+ * cualquier teléfono; el nombre completo (p. ej. "Agregar fecha") va en aria-label y lo empieza igual.
+ */
+export function BotonAgregar({ nombre, ...rest }: { nombre: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <Boton {...rest} aria-label={nombre} className="inline-flex shrink-0 items-center gap-1.5 pl-4">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      Agregar
+    </Boton>
+  )
 }
 
 /**

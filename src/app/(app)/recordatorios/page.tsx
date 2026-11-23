@@ -13,20 +13,20 @@ export default async function Recordatorios() {
   const activos = recordatoriosActivos(todos, hoyStr).sort((a, b) => a.dias - b.dias)
 
   return (
-    <main className="space-y-6">
+    <main className="space-y-5">
       <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-semibold text-texto">Recordatorios</h1>
+        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Recordatorios</h1>
         <FormRecordatorio etiqueta="Agregar recordatorio" />
       </header>
 
       <section aria-labelledby="ahora" className="space-y-3">
-        <h2 id="ahora" className="text-xl font-semibold">Para gestionar ahora</h2>
+        <h2 id="ahora" className="text-base font-semibold text-texto-2">Para gestionar ahora</h2>
         {activos.length === 0 && <EmptyState>Nada para gestionar por ahora. Quedate tranquilo.</EmptyState>}
         <ListaActivos items={activos.map((r) => ({ id: r.id, titulo: r.titulo, fecha: fechaLarga(r.dia), dias: r.dias }))} />
       </section>
 
       <section aria-labelledby="anual" className="space-y-3">
-        <h2 id="anual" className="text-xl font-semibold">Se repiten todos los años</h2>
+        <h2 id="anual" className="text-base font-semibold text-texto-2">Se repiten todos los años</h2>
         <ul className="space-y-2">
           {todos.map((r) => (
             <li key={r.id}>

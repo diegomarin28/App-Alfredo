@@ -67,13 +67,13 @@ export default function Pendientes({ items }: { items: ItemPendiente[] }) {
       </form>
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
       <section aria-labelledby="por-hacer" className="space-y-3">
-        <h2 id="por-hacer" className="text-xl font-semibold">Por hacer</h2>
+        <h2 id="por-hacer" className="text-xl font-bold">Por hacer</h2>
         {abiertos.length === 0 && <EmptyState>No hay pendientes. Escribí uno arriba.</EmptyState>}
         <ul className="space-y-2">{abiertos.map(fila)}</ul>
       </section>
       {hechos.length > 0 && (
         <section aria-labelledby="hechos" className="space-y-3">
-          <h2 id="hechos" className="text-xl font-semibold">Hechos</h2>
+          <h2 id="hechos" className="text-xl font-bold">Hechos</h2>
           <ul className="space-y-2">{hechos.map(fila)}</ul>
         </section>
       )}

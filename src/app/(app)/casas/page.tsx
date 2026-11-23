@@ -19,15 +19,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ c
     repo.serviciosCasa.list({ casa }),
   ])
   return (
-    <main className="space-y-6">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">{nombreCasa(casa)}</h1>
-      <nav aria-label="Elegir casa" className="grid grid-cols-2 gap-2">
+    <main className="space-y-5">
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">{nombreCasa(casa)}</h1>
+      {/* selector segmentado del mockup: la casa elegida en blanco sobre la bandeja gris */}
+      <nav aria-label="Elegir casa" className="grid grid-cols-2 gap-1 rounded-[14px] bg-gris p-1">
         {CASAS.map((c) => (
           <Link
             key={c}
             href={`/casas?casa=${c}`}
             aria-current={c === casa ? 'page' : undefined}
-            className={`flex min-h-12 items-center justify-center rounded-xl text-base font-semibold ${c === casa ? 'bg-azul text-white' : 'bg-gris text-texto'}`}
+            className={`flex min-h-11 items-center justify-center rounded-[11px] text-base ${c === casa ? 'bg-white font-semibold text-azul shadow-sm' : 'font-medium text-texto'}`}
           >
             {nombreCasa(c)}
           </Link>

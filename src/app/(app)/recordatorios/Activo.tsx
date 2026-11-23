@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Card } from '@/components/ui'
+import { Boton } from '@/components/ui'
 
 export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number }
 
@@ -35,17 +35,17 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
       {avisos.map((a) => <p key={a.id} role="status" className="rounded-2xl bg-tinte p-4 text-base font-medium">{a.msg}</p>)}
       {items.filter((r) => !hechos.has(r.id)).map((r) => (
-        <Card key={r.id} role="article" aria-label={r.titulo} className="space-y-3">
+        <div key={r.id} role="article" aria-label={r.titulo} className="space-y-3 rounded-[18px] border-2 border-azul bg-white p-3.5 shadow-[0_8px_20px_rgba(31,78,140,0.12)]">
           <div>
-            <h3 className="text-xl font-semibold">{r.titulo}</h3>
+            <h3 className="text-lg font-bold">{r.titulo}</h3>
             <p className="text-base text-texto-2">{r.fecha}</p>
             <p className="text-base font-medium">{r.dias === 0 ? 'Es hoy' : r.dias === 1 ? 'Falta 1 día' : `Faltan ${r.dias} días`}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Boton variante="suave" disabled={enviando} onClick={() => accion(r.id, 'posponer')}>Posponer 15 días</Boton>
-            <Boton disabled={enviando} onClick={() => accion(r.id, 'resolver')}>Resuelto</Boton>
+          <div className="flex gap-2">
+            <Boton variante="suave" className="min-h-12 flex-auto px-4 whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'posponer')}>Posponer 15 días</Boton>
+            <Boton className="min-h-12 flex-auto px-4 whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'resolver')}>Resuelto</Boton>
           </div>
-        </Card>
+        </div>
       ))}
     </div>
   )

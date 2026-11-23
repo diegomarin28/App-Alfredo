@@ -21,7 +21,7 @@ export default async function Page({ params }: { params: Promise<{ carpetaId: st
   })))
   return (
     <main className="space-y-6">
-      <h1 className="text-[28px] leading-tight font-semibold text-texto">{carpeta.nombre}</h1>
+      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">{carpeta.nombre}</h1>
       <Subir tipo="documento" carpetaId={carpeta.id} />
       {items.length === 0 ? <EmptyState>Todavía no hay documentos en esta carpeta.</EmptyState> : <Galeria items={items} />}
     </main>

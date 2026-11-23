@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonAgregar, Field, Sheet, clasesInput } from '@/components/ui'
 import AvisoChips, { claveAviso, diasAviso } from '@/components/AvisoChips'
 import { MESES } from '@/domain/validarFecha'
 import { guardarRecordatorio } from './actions'
@@ -54,7 +54,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
 
   return (
     <>
-      <Boton variante={soloIcono ? 'suave' : 'primario'} onClick={abrir}>{etiqueta}</Boton>
+      {soloIcono ? <Boton variante="suave" onClick={abrir}>{etiqueta}</Boton> : <BotonAgregar nombre={etiqueta} onClick={abrir} />}
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={inicial ? 'Editar recordatorio' : 'Agregar recordatorio'}>
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" defaultValue={inicial?.titulo ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
