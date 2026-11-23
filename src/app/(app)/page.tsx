@@ -49,9 +49,19 @@ export default async function Inicio() {
 
   return (
     <main className="space-y-5">
-      <header>
-        <h1 className="text-[28px] leading-tight font-semibold text-texto">{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
-        <p className="mt-1 text-base text-texto-2">{fechaLarga(hoyStr)}</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[28px] leading-tight font-semibold text-texto">{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
+          <p className="mt-1 text-base text-texto-2">{fechaLarga(hoyStr)}</p>
+        </div>
+        {owner && (
+          <Link href="/ajustes" aria-label="Ajustes" className="flex size-11 shrink-0 items-center justify-center rounded-full text-texto-2 hover:bg-tinte">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+            </svg>
+          </Link>
+        )}
       </header>
 
       <section aria-label="Foto del día">

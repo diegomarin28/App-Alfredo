@@ -149,6 +149,15 @@ export interface Passkey {
   transports?: string[]
 }
 
+/** Suscripción Web Push del iPhone (una por endpoint). */
+export interface Suscripcion {
+  id: string
+  creadoEn?: string
+  endpoint: string
+  p256dh: string
+  auth: string
+}
+
 export interface Config {
   estiloEscritura: string
   nombre: string

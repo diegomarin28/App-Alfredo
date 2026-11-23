@@ -34,6 +34,6 @@ Desde Inicio: Vencimientos, Pendientes, Documentos, Contraseñas, Contactos.
 
 - **Login**: passkey (Face ID). Registro inicial con un código de configuración. Sesión larga en su iPhone.
 - **Modo familia**: link con código que vence (miércoles 25/11 23:59). Solo puede ver/cargar Calendario, Recordatorios, fotos del Inicio y Portofino/Malibú. Nunca Contraseñas, Documentos, Contactos, Vencimientos, Mensajes.
-- **Avisos**: notificaciones push (Web Push, app instalada) una vez por día a las 9:00 hora de Montevideo: cumpleaños (el día y 1 día antes), recordatorios en ventana, vencimientos en ventana.
+- **Avisos**: notificaciones push (Web Push, app instalada) una vez por día a las 11:00 hora de Montevideo: cumpleaños (el día y 1 día antes), recordatorios en ventana, vencimientos en ventana.
 - **IA**: API de Anthropic solo desde el servidor. Presupuesto 20 USD; se registra el costo de cada llamada; al pasar 16 USD se manda un mail a Diego (una sola vez); al llegar a 20 USD las funciones de IA muestran "Se terminó el saldo de la IA, avisale a Diego" sin romperse.
 - **Números**: formato Uruguay → internacional (`099 123 456` → `59899123456`).

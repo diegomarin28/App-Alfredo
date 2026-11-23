@@ -91,6 +91,7 @@ export class SupabaseRepo implements Repo {
   claves!: Repo['claves']
   usoIa!: Repo['usoIa']
   passkeys!: Repo['passkeys']
+  suscripciones!: Repo['suscripciones']
 
   private db: SupabaseClient
 

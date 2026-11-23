@@ -78,6 +78,7 @@ export class MemoryRepo implements Repo {
   claves = new TablaMemoria<never>() as unknown as Repo['claves']
   usoIa = new TablaMemoria<never>() as unknown as Repo['usoIa']
   passkeys = new TablaMemoria<never>() as unknown as Repo['passkeys']
+  suscripciones = new TablaMemoria<never>() as unknown as Repo['suscripciones']
 
   private config: Config = { ...CONFIG_POR_DEFECTO }
   private archivos = new Map<string, { bytes: Uint8Array; tipo: string }>()
