@@ -1,6 +1,6 @@
 import {
-  CARPETAS_INICIALES, CONFIG_POR_DEFECTO, ENTIDADES, RECORDATORIOS_INICIALES,
-  validarPathArchivo, type Entidad, type Nuevo, type Repo, type Tabla,
+  CARPETAS_INICIALES, CONSERVAR_NULL, CONFIG_POR_DEFECTO, ENTIDADES, RECORDATORIOS_INICIALES,
+  validarPathArchivo, type Cambio, type Entidad, type Nuevo, type Repo, type Tabla,
 } from './repo'
 import type { Config } from '@/domain/tipos'
 
@@ -11,7 +11,7 @@ class TablaMemoria<E extends { id: string }> implements Tabla<E> {
   private orden = 0
   private posicion = new Map<string, number>()
 
-  constructor(private nuevoPrimero?: (a: Fila, b: Fila) => number) {}
+  constructor(private nuevoPrimero?: (a: Fila, b: Fila) => number, private conservarNull: string[] = []) {}
 
   vaciar() {
     this.filas.clear()
@@ -39,10 +39,11 @@ class TablaMemoria<E extends { id: string }> implements Tabla<E> {
     return { ...fila } as unknown as E
   }
 
-  async update(id: string, patch: Partial<Omit<E, 'id'>>): Promise<E> {
+  async update(id: string, patch: Cambio<E>): Promise<E> {
     const actual = this.filas.get(id)
     if (!actual) throw new Error(`No existe ${id}`)
-    const fila = { ...actual, ...limpiar(patch), id }
+    const fila: Fila = { ...actual, ...limpiar(patch), id }
+    for (const [k, v] of Object.entries(patch)) if (v === null && !this.conservarNull.includes(k)) delete fila[k]
     this.filas.set(id, fila)
     return { ...fila } as unknown as E
   }
@@ -63,7 +64,7 @@ const masNuevoPrimero = (a: Fila, b: Fila) =>
 
 export class MemoryRepo implements Repo {
   fechas = new TablaMemoria<never>() as unknown as Repo['fechas']
-  recordatorios = new TablaMemoria<never>() as unknown as Repo['recordatorios']
+  recordatorios = new TablaMemoria<never>(undefined, CONSERVAR_NULL.recordatorios) as unknown as Repo['recordatorios']
   vencimientos = new TablaMemoria<never>() as unknown as Repo['vencimientos']
   personasCasa = new TablaMemoria<never>() as unknown as Repo['personasCasa']
   eventosCasa = new TablaMemoria<never>(masNuevoPrimero) as unknown as Repo['eventosCasa']

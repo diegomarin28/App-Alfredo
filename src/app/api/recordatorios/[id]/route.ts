@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 import { hoy, posponer, resolver } from '@/domain/fechas'
-import { validarAccion } from '@/domain/recordatorios'
+import { cambioResolver, validarAccion } from '@/domain/recordatorios'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -20,8 +20,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const repo = await getRepo()
   const actual = await repo.recordatorios.get(id)
   if (!actual) return NextResponse.json({ error: 'No existe ese recordatorio.' }, { status: 404 })
-  const nuevo = accion === 'posponer' ? posponer(actual, hoy()) : resolver(actual, hoy())
-  const { id: _id, ...patch } = nuevo
+  const patch = accion === 'posponer'
+    ? { pospuestoHasta: posponer(actual, hoy()).pospuestoHasta }
+    : cambioResolver(resolver(actual, hoy()))
   const guardado = await repo.recordatorios.update(id, patch)
   return NextResponse.json(guardado)
 }

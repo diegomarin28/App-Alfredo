@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
-import { validarRecordatorio, type EntradaRecordatorio } from '@/domain/recordatorios'
+import { cambioEdicion, validarRecordatorio, type EntradaRecordatorio } from '@/domain/recordatorios'
 
 type Res = { ok: true } | { ok: false; error: string }
 
@@ -19,15 +19,13 @@ async function permitido(): Promise<Res> {
 export async function guardarRecordatorio(id: string | null, entrada: EntradaRecordatorio): Promise<Res> {
   const p = await permitido()
   if (!p.ok) return p
-  const r = validarRecordatorio(entrada)
-  if (!r.ok) return r
   const repo = await getRepo()
-  if (id === null) {
-    await repo.recordatorios.create(r.valor)
-  } else {
-    if (!(await repo.recordatorios.get(id))) return { ok: false, error: 'No existe ese recordatorio.' }
-    await repo.recordatorios.update(id, r.valor)
-  }
+  const actual = id === null ? null : await repo.recordatorios.get(id)
+  if (id !== null && !actual) return { ok: false, error: 'No existe ese recordatorio.' }
+  const r = validarRecordatorio(entrada, actual !== null && actual.dia === null)
+  if (!r.ok) return r
+  if (actual) await repo.recordatorios.update(actual.id, cambioEdicion(actual, r.valor))
+  else await repo.recordatorios.create(r.valor)
   revalidatePath('/recordatorios')
   revalidatePath('/')
   return { ok: true }

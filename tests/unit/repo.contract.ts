@@ -95,6 +95,32 @@ export function repoContract(nombre: string, makeRepo: () => Promise<Repo>, opts
       }
     })
 
+    it('update con null borra el campo opcional', async () => {
+      const repo = await makeRepo()
+      const r = await repo.recordatorios.create({ titulo: 'Test', dia: '01-02', avisarDiasAntes: 30, pospuestoHasta: '2026-12-01', resueltoAnio: 2026 })
+      try {
+        const act = await repo.recordatorios.update(r.id, { pospuestoHasta: null, resueltoAnio: null, titulo: 'Test 2' })
+        expect(act.titulo).toBe('Test 2')
+        expect(act).not.toHaveProperty('pospuestoHasta')
+        expect(act).not.toHaveProperty('resueltoAnio')
+        expect(await repo.recordatorios.get(r.id)).toEqual(act)
+      } finally {
+        await repo.recordatorios.remove(r.id)
+      }
+    })
+
+    it('update con dia null en un recordatorio conserva null (no borra la clave)', async () => {
+      const repo = await makeRepo()
+      const r = await repo.recordatorios.create({ titulo: 'Test', dia: '01-02', avisarDiasAntes: 30 })
+      try {
+        const act = await repo.recordatorios.update(r.id, { dia: null })
+        expect(act.dia).toBeNull()
+        expect((await repo.recordatorios.get(r.id))?.dia).toBeNull()
+      } finally {
+        await repo.recordatorios.remove(r.id)
+      }
+    })
+
     it('update de algo que no existe falla', async () => {
       const repo = await makeRepo()
       await expect(repo.pendientes.update(uid(), { hecho: true })).rejects.toThrow()

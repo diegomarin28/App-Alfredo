@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chipAviso, fechaLarga, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
+import { cambioEdicion, cambioResolver, chipAviso, fechaLarga, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
 import { validarDiaMes } from '@/domain/validarFecha'
 
 describe('chipAviso', () => {
@@ -50,5 +50,35 @@ describe('validarRecordatorio', () => {
     expect(validarRecordatorio({ titulo: 'a', dia: 3, mes: 4, avisarDiasAntes: 366 }).ok).toBe(false)
     expect(validarRecordatorio({ titulo: 'a', dia: 3, mes: 4, avisarDiasAntes: 2.5 }).ok).toBe(false)
     expect(validarRecordatorio({ titulo: 5 as unknown as string, dia: 3, mes: 4, avisarDiasAntes: 30 }).ok).toBe(false)
+  })
+})
+
+describe('sin fecha', () => {
+  const base = { titulo: 'a', avisarDiasAntes: 30 }
+  it('nuevo exige día y mes', () => {
+    expect(validarRecordatorio({ ...base, dia: null, mes: null }).ok).toBe(false)
+    expect(validarRecordatorio({ ...base, dia: 3, mes: null }).ok).toBe(false)
+  })
+  it('editar uno sin fecha permite dejarla en blanco', () => {
+    expect(validarRecordatorio({ ...base, dia: null, mes: null }, true)).toEqual({ ok: true, valor: { titulo: 'a', dia: null, avisarDiasAntes: 30 } })
+    expect(validarRecordatorio({ ...base, dia: 3, mes: null }, true).ok).toBe(false)
+  })
+})
+
+describe('cambioEdicion', () => {
+  const act = { id: 'x', titulo: 'Navidad', dia: '12-25', avisarDiasAntes: 60, resueltoAnio: 2026, pospuestoHasta: '2026-11-10' }
+  it('limpia resuelto y pospuesto si cambia la fecha o el aviso', () => {
+    expect(cambioEdicion(act, { titulo: 'Navidad', dia: '12-30', avisarDiasAntes: 60 })).toMatchObject({ dia: '12-30', resueltoAnio: null, pospuestoHasta: null })
+    expect(cambioEdicion(act, { titulo: 'Navidad', dia: '12-25', avisarDiasAntes: 30 })).toMatchObject({ resueltoAnio: null, pospuestoHasta: null })
+  })
+  it('si solo cambia el título conserva el estado', () => {
+    const c = cambioEdicion(act, { titulo: 'Otro', dia: '12-25', avisarDiasAntes: 60 })
+    expect(c).toEqual({ titulo: 'Otro', dia: '12-25', avisarDiasAntes: 60 })
+  })
+})
+
+describe('cambioResolver', () => {
+  it('marca el año y borra la posposición', () => {
+    expect(cambioResolver({ id: 'x', titulo: 't', dia: '12-25', avisarDiasAntes: 60, resueltoAnio: 2026 })).toEqual({ resueltoAnio: 2026, pospuestoHasta: null })
   })
 })

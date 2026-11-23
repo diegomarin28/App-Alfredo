@@ -11,6 +11,10 @@ const OPCIONES = [
   { clave: 'meses', texto: '2 meses', dias: 60 },
 ] as const
 
+function numeroONulo(v: FormDataEntryValue | null): number | null {
+  return v === null || v === '' ? null : Number(v)
+}
+
 export interface Inicial { id: string; titulo: string; dia: string | null; avisarDiasAntes: number }
 
 export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { inicial?: Inicial; etiqueta: string; soloIcono?: boolean }) {
@@ -37,7 +41,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
     setError('')
     try {
       const r = await guardarRecordatorio(inicial?.id ?? null, {
-        titulo: String(f.get('titulo') ?? ''), dia: Number(f.get('dia')), mes: Number(f.get('mes')), avisarDiasAntes: dias,
+        titulo: String(f.get('titulo') ?? ''), dia: numeroONulo(f.get('dia')), mes: numeroONulo(f.get('mes')), avisarDiasAntes: dias,
       })
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
@@ -50,8 +54,8 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
   }
 
   const mmdd = inicial?.dia ?? null
-  const diaIni = mmdd ? Number(mmdd.slice(3)) : 1
-  const mesIni = mmdd ? Number(mmdd.slice(0, 2)) : 1
+  const diaIni = mmdd ? Number(mmdd.slice(3)) : ''
+  const mesIni = mmdd ? Number(mmdd.slice(0, 2)) : ''
 
   return (
     <>
@@ -62,11 +66,13 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
           <div className="grid grid-cols-2 gap-3">
             <Field label="Día">
               <select name="dia" aria-label="Día" defaultValue={diaIni} className={clasesInput}>
+                <option value="">Elegí</option>
                 {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
               </select>
             </Field>
             <Field label="Mes">
               <select name="mes" aria-label="Mes" defaultValue={mesIni} className={clasesInput}>
+                <option value="">Elegí</option>
                 {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
             </Field>

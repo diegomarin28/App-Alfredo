@@ -1,7 +1,7 @@
 import 'server-only'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import {
-  ENTIDADES, TABLAS, validarPathArchivo, type Entidad, type Nuevo, type Repo, type Tabla,
+  CONSERVAR_NULL, ENTIDADES, TABLAS, validarPathArchivo, type Cambio, type Entidad, type Nuevo, type Repo, type Tabla,
 } from './repo'
 import type { Config } from '@/domain/tipos'
 
@@ -61,7 +61,7 @@ class TablaSupabase<E extends { id: string }> implements Tabla<E> {
     return this.conv(row!)
   }
 
-  async update(id: string, patch: Partial<Omit<E, 'id'>>): Promise<E> {
+  async update(id: string, patch: Cambio<E>): Promise<E> {
     const { data: row, error } = await this.db
       .from(this.tabla).update(filaADb(patch)).eq('id', id).select().maybeSingle()
     falla(error, `${this.tabla}.update`)
@@ -100,7 +100,7 @@ export class SupabaseRepo implements Repo {
     this.db = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } })
     for (const e of ENTIDADES as Entidad[]) {
       ;(this as Record<string, unknown>)[e] = new TablaSupabase(this.db, TABLAS[e], {
-        conservarNull: e === 'recordatorios' ? ['dia'] : [],
+        conservarNull: CONSERVAR_NULL[e] ?? [],
         nuevoPrimero: e === 'eventosCasa',
       })
     }
