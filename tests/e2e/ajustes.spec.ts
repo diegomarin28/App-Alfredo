@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, leerPortapapeles, permitirPortapapeles, resetear } from './helpers'
+import { entrarComo, resetear } from './helpers'
 import { ENTORNO_E2E } from './entorno'
 
 test('Ajustes sin instalar muestra las instrucciones', async ({ page }) => {
@@ -52,22 +52,15 @@ test('Ajustes: cambiar cómo te saludan y cómo escribís; se guarda y se usa', 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Alfre')
 })
 
-test('Ajustes: link para la familia con copiar y WhatsApp', async ({ page, context, browserName }) => {
-  await permitirPortapapeles(context, browserName)
+test('Ajustes: el owner no ve el link de la familia ni su código', async ({ page }) => {
   await resetear(page)
   await entrarComo(page, 'owner')
   await page.goto('/ajustes')
-  const url = `${ENTORNO_E2E.APP_ORIGIN}/familia?codigo=${ENTORNO_E2E.FAMILY_CODE}`
-  const seccion = page.getByRole('region', { name: 'Link para la familia' })
-  await expect(seccion).toContainText(url)
-  await expect(seccion).toContainText('Vale hasta el 31 de diciembre de 2099')
-  const wa = seccion.getByRole('link', { name: 'Enviar por WhatsApp' })
-  const href = await wa.getAttribute('href')
-  expect(href).toContain('wa.me')
-  expect(decodeURIComponent(href!)).toContain(url)
-  await seccion.getByRole('button', { name: 'Copiar' }).click()
-  await expect(seccion.getByText('Copiado')).toBeVisible()
-  expect(await leerPortapapeles(page)).toBe(url)
+  await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Link para la familia' })).toHaveCount(0)
+  const html = await page.content()
+  expect(html).not.toContain(ENTORNO_E2E.FAMILY_CODE)
+  expect(html).not.toContain('/familia?codigo=')
 })
 
 test('Ajustes: Salir cierra la sesión y vuelve a Entrar', async ({ page }) => {

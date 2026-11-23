@@ -68,9 +68,20 @@ Vercel rechaza pedidos de más de 4,5 MB. Por eso las fotos se comprimen en el t
 6. Tocar **Entrar con Face ID** (la app instalada no comparte la sesión de Safari, por eso se entra de nuevo).
 7. En **Ajustes > Activar avisos**, permitir las notificaciones (en iPhone solo funciona desde la app instalada).
 8. En **Ajustes > Cómo escribís**, pegar 3 o 4 mensajes reales suyos, y revisar **Cómo te saludan**.
-9. Para la familia: **Ajustes > Link para la familia** > Enviar por WhatsApp.
+9. Para la familia, ver la sección "Link para la familia" más abajo (la app ya no lo muestra en Ajustes).
 
 Una vez registrada la primera passkey, el `SETUP_CODE` ya no alcanza: `/configurar` dice "Face ID ya está configurado". Para sumar otra passkey (por ejemplo, en un teléfono nuevo sin iCloud Llavero) hay que estar adentro de la app con Face ID y entrar a `/configurar` desde ahí.
+
+## Link para la familia
+
+Alfredo no ve este link: lo arma y lo comparte Diego por WhatsApp. Se arma así:
+
+```
+<APP_ORIGIN>/familia?codigo=<FAMILY_CODE>
+```
+
+- `<APP_ORIGIN>` es la dirección pública de la app y `<FAMILY_CODE>` el valor de la variable, codificado para URL (si tiene caracteres raros, por ejemplo con `encodeURIComponent`; con letras, números y guiones queda igual).
+- El link sirve hasta `FAMILY_EXPIRES_AT`. Después hay que cambiar esa fecha (y, si querés, el código) y volver a compartirlo.
 
 ## 7. Contraseñas: cosas a tener en cuenta
 
@@ -85,7 +96,7 @@ Una vez registrada la primera passkey, el `SETUP_CODE` ya no alcanza: `/configur
 - [ ] Login con Face ID y desbloqueo de Contraseñas (confirmar el camino PRF en iOS 18; si no, PIN).
 - [ ] Dictado de Contame en modo instalado: las pausas no cortan el texto.
 - [ ] Llega un aviso de prueba (llamar a mano a la ruta del cron).
-- [ ] "Enviar por WhatsApp" abre WhatsApp con el texto y el selector de contactos.
+- [ ] El link de familia armado a mano abre `/familia` en el teléfono de la familia.
 - [ ] La cámara se abre desde Documentos.
 - [ ] El modelo real pregunta en Contame en vez de adivinar.
 - [ ] El uso de herramientas funciona con `claude-sonnet-5-5`.
