@@ -1,5 +1,5 @@
 import 'server-only'
-import webpush from 'web-push'
+import { sendNotification } from 'web-push'
 import type { Aviso } from './calcular'
 
 export interface SuscripcionPush {
@@ -21,7 +21,7 @@ export class WebPushSender implements PushSender {
   constructor(private publica: string, private privada: string, private subject: string) {}
 
   async enviar(sub: SuscripcionPush, payload: Aviso): Promise<void> {
-    await webpush.sendNotification(
+    await sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
       { vapidDetails: { subject: this.subject, publicKey: this.publica, privateKey: this.privada }, TTL: 60 * 60 * 12 },
