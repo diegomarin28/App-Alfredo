@@ -22,10 +22,7 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 | `FAMILY_CODE` | Código del link de familia `/familia?codigo=...`. **20 caracteres o más**, al azar (uno más corto no se acepta nunca). Que sea apto para URL: letras, números y guiones. | `openssl rand -hex 16` |
 | `FAMILY_EXPIRES_AT` | Hasta cuándo sirve el link de familia. | `2026-11-25T23:59:00-03:00` |
 | `ANTHROPIC_API_KEY` | Clave de Anthropic (solo servidor). **Obligatoria**: sin ella Contame y Mensajes no andan y la app muestra "La IA no está configurada, avisale a Diego." (la IA falsa es solo para pruebas). | `<clave anthropic>` |
-| `ANTHROPIC_MODEL` | Modelo a usar. | `claude-sonnet-5-5` |
-| `AI_PRICE_INPUT_PER_MTOK` | Precio USD por millón de tokens de entrada (mirar docs.claude.com pricing). Sin esto la IA se niega a funcionar. | `<precio>` |
-| `AI_PRICE_OUTPUT_PER_MTOK` | Precio USD por millón de tokens de salida. | `<precio>` |
-| `AI_BUDGET_USD` | Saldo total de IA en USD. | `20` |
+| `AI_BUDGET_USD` | Saldo total de IA en USD (suma lo gastado por los dos modelos, ver "Modelos y precios de la IA"). | `20` |
 | `AI_ALERT_USD` | Umbral del aviso por mail en USD (se manda una sola vez). | `16` |
 | `ALERT_EMAIL` | Mail que recibe el aviso de saldo. | `tu@mail.com` |
 | `ALERT_FROM` | Remitente del aviso (Resend). | `App Alfredo <onboarding@resend.dev>` |
@@ -35,6 +32,8 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 | `VAPID_PRIVATE_KEY` | Clave privada de avisos push. | `<salida de web-push>` |
 | `VAPID_SUBJECT` | Contacto para el servicio de push. | `mailto:tu@mail.com` |
 | `CRON_SECRET` | Secreto del cron. Vercel lo manda solo como `Authorization: Bearer <CRON_SECRET>`. Largo y al azar. | `<secreto largo al azar>` |
+
+Ya no hacen falta (si quedaron cargadas, se ignoran): `ANTHROPIC_MODEL`, `AI_PRICE_INPUT_PER_MTOK`, `AI_PRICE_OUTPUT_PER_MTOK`.
 
 No cargues en producción: `ENABLE_TEST_ROUTES`, `AI_BACKEND` (`fake`), `TEST_TODAY` ni `SUPABASE_TEST_*`. Son solo para pruebas.
 
@@ -53,6 +52,27 @@ La pública va en `VAPID_PUBLIC_KEY` y en `NEXT_PUBLIC_VAPID_PUBLIC_KEY`; la pri
 ## 4. Duración de las funciones de IA
 
 Las rutas de IA declaran cuánto pueden tardar: `/api/ai/mensajes` hasta **60 s** y `/api/ai/contame` hasta **300 s** (`maxDuration`; Contame hace varias rondas con el modelo). Hace falta un plan de Vercel que permita esas duraciones (Pro). En el plan **Hobby** el máximo es menor: Vercel recorta la duración a su tope y un Contame largo puede cortarse con error. Revisá el tope en Vercel > Project > Settings > Functions.
+
+### Modelos y precios de la IA
+
+Los modelos y sus precios están fijos en el código (`src/ai/client.ts` y `src/ai/precios.ts`), en USD por millón de tokens:
+
+| Uso | Modelo | Entrada | Salida | Leer caché | Escribir caché (5 min) | `max_tokens` |
+|---|---|---|---|---|---|---|
+| Mensajes | `claude-sonnet-5-5` | 2 | 10 | 0,10 | 2,50 | 400 (sin pensar) |
+| Contame | `claude-haiku-5-5` | 0,10 | 0,50 | 0,01 | 0,125 | 800 (herramienta forzada) |
+
+Si un pedido a Haiku pasa de 100.000 tokens de entrada (contando la caché), se cobra 0,50 / 2,50 (caché: 0,05 / 0,625). Cada uso guarda su costo exacto y el saldo (`AI_BUDGET_USD`) y el aviso (`AI_ALERT_USD`) miran la suma de los dos modelos. El prompt de sistema va con caché de 5 minutos (si tiene menos de 512 tokens no se cachea, sin error). Si Anthropic cambia los precios, hay que actualizar `src/ai/precios.ts`.
+
+### Probar Contame con Haiku (API real)
+
+Los tests nunca llaman a Anthropic. Para comprobar con la API real que Contame funciona con Haiku (gasta menos de un centavo):
+
+```
+ANTHROPIC_API_KEY=<clave anthropic> pnpm probar-haiku "Ayer le pagué a Simón. Llamar al plomero."
+```
+
+Manda una clasificación con el mismo prompt, herramientas y opciones que la app e imprime el modelo, el `stop_reason`, la herramienta (`guardar` o `preguntar`) con su input, el uso de tokens (con caché) y el costo. Termina con "OK" (código 0) si respondió con una herramienta. No guarda nada en la base.
 
 ## 5. Límite de 4,5 MB
 
