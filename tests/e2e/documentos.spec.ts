@@ -41,10 +41,23 @@ test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('carpeta inexistente: 404', async ({ page }) => {
+test('carpeta inexistente: 404 con la página en castellano', async ({ page }) => {
   await entrarComo(page, 'owner')
   const res = await page.goto('/documentos/no-existe')
   expect(res?.status()).toBe(404)
+  await expect(page.getByRole('heading', { name: 'No encontramos esa página' })).toBeVisible()
+  const volver = page.getByRole('link', { name: 'Volver al inicio' })
+  expect((await volver.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await volver.click()
+  await expect(page).toHaveURL(/^http:\/\/localhost:3100\/$/)
+})
+
+test('ruta que no existe: página en castellano', async ({ page }) => {
+  await entrarComo(page, 'owner')
+  const res = await page.goto('/esto-no-existe')
+  expect(res?.status()).toBe(404)
+  await expect(page.getByRole('heading', { name: 'No encontramos esa página' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/')
 })
 
 test('fotos: familia sube y Inicio la usa; no accede a documentos', async ({ page }) => {
