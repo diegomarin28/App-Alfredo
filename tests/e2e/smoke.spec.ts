@@ -10,4 +10,5 @@ test('home is served as a Spanish standalone PWA', async ({ page, request }) => 
   expect(manifest.display).toBe('standalone')
   expect(manifest.name).toBe('Alfredo')
   expect(manifest.theme_color).toBe('#1F4E8C')
+  await expect(page.locator('meta[name=apple-mobile-web-app-capable]')).toHaveAttribute('content', 'yes')
 })

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   icons: { apple: '/icon-192.png' },
   appleWebApp: { capable: true, title: 'Alfredo', statusBarStyle: 'default' },
+  other: { 'apple-mobile-web-app-capable': 'yes' },
 }
 
 export const viewport: Viewport = {
