@@ -1,4 +1,5 @@
 import type { Recordatorio } from './tipos'
+import { proximaOcurrencia } from './fechas'
 import { MESES, validarDiaMes } from './validarFecha'
 
 export function chipAviso(dias: number): string {
@@ -55,4 +56,10 @@ export function cambioEdicion(actual: Recordatorio, v: { titulo: string; dia: st
 /** Cambio a guardar al resolver: marca el año y borra cualquier posposición vieja. */
 export function cambioResolver(resuelto: Recordatorio) {
   return { resueltoAnio: resuelto.resueltoAnio, pospuestoHasta: null }
+}
+
+/** "Se repiten todos los años": por próxima ocurrencia desde hoy, los sin fecha al final, empate por título. */
+export function ordenarAnuales<R extends Pick<Recordatorio, 'titulo' | 'dia'>>(rs: R[], hoyStr: string): R[] {
+  const clave = (r: R) => (r.dia === null ? '9999-99-99' : proximaOcurrencia(r.dia, hoyStr))
+  return [...rs].sort((a, b) => clave(a).localeCompare(clave(b)) || a.titulo.localeCompare(b.titulo, 'es'))
 }

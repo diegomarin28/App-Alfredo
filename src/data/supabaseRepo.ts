@@ -4,6 +4,7 @@ import {
   CONSERVAR_NULL, ENTIDADES, TABLAS, validarPathArchivo, type Cambio, type Entidad, type Nuevo, type Repo, type Tabla,
 } from './repo'
 import type { Config } from '@/domain/tipos'
+import { esIdInvalido, falla, leerTodo } from './supabaseUtil'
 
 const BUCKET = 'archivos'
 const URL_SEGUNDOS = 60 * 60
@@ -26,11 +27,8 @@ function dbAFila<T>(row: Record<string, unknown>, conservarNull: string[] = []):
   ) as T
 }
 
-function falla(error: { message: string } | null, donde: string): void {
-  if (error) throw new Error(`Supabase (${donde}): ${error.message}`)
-}
-
-class TablaSupabase<E extends { id: string }> implements Tabla<E> {
+/** Exportada solo para probarla con un cliente falso. */
+export class TablaSupabase<E extends { id: string }> implements Tabla<E> {
   constructor(
     private db: SupabaseClient,
     private tabla: string,
@@ -39,18 +37,21 @@ class TablaSupabase<E extends { id: string }> implements Tabla<E> {
 
   private conv = (row: Record<string, unknown>) => dbAFila<E>(row, this.opts.conservarNull)
 
+  /** Pagina de a 1000 (tope de PostgREST); id desempata para que el orden sea total y estable. */
   async list(filtro?: Partial<E>): Promise<E[]> {
-    let q = this.db.from(this.tabla).select('*').match(filaADb(filtro ?? {}))
-    q = this.opts.nuevoPrimero
-      ? q.order('cuando', { ascending: false }).order('creado_en', { ascending: false })
-      : q.order('creado_en', { ascending: true })
-    const { data, error } = await q
-    falla(error, `${this.tabla}.list`)
-    return (data ?? []).map(this.conv)
+    const filas = await leerTodo<Record<string, unknown>>((desde, hasta) => {
+      let q = this.db.from(this.tabla).select('*').match(filaADb(filtro ?? {}))
+      q = this.opts.nuevoPrimero
+        ? q.order('cuando', { ascending: false }).order('creado_en', { ascending: false })
+        : q.order('creado_en', { ascending: true })
+      return q.order('id', { ascending: true }).range(desde, hasta)
+    }, `${this.tabla}.list`)
+    return filas.map(this.conv)
   }
 
   async get(id: string): Promise<E | null> {
     const { data, error } = await this.db.from(this.tabla).select('*').eq('id', id).maybeSingle()
+    if (esIdInvalido(error)) return null
     falla(error, `${this.tabla}.get`)
     return data ? this.conv(data) : null
   }
@@ -64,6 +65,7 @@ class TablaSupabase<E extends { id: string }> implements Tabla<E> {
   async update(id: string, patch: Cambio<E>): Promise<E> {
     const { data: row, error } = await this.db
       .from(this.tabla).update(filaADb(patch)).eq('id', id).select().maybeSingle()
+    if (esIdInvalido(error)) throw new Error(`No existe ${id}`)
     falla(error, `${this.tabla}.update`)
     if (!row) throw new Error(`No existe ${id}`)
     return this.conv(row)
@@ -71,6 +73,7 @@ class TablaSupabase<E extends { id: string }> implements Tabla<E> {
 
   async remove(id: string): Promise<void> {
     const { error } = await this.db.from(this.tabla).delete().eq('id', id)
+    if (esIdInvalido(error)) return
     falla(error, `${this.tabla}.remove`)
   }
 }

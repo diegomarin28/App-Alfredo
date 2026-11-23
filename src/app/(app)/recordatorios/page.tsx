@@ -1,6 +1,6 @@
 import { getRepo } from '@/data/getRepo'
 import { hoy, recordatoriosActivos } from '@/domain/fechas'
-import { chipAviso, fechaLarga } from '@/domain/recordatorios'
+import { chipAviso, fechaLarga, ordenarAnuales } from '@/domain/recordatorios'
 import { Card, EmptyState } from '@/components/ui'
 import ListaActivos from './Activo'
 import FormRecordatorio from './FormRecordatorio'
@@ -8,8 +8,9 @@ import FormRecordatorio from './FormRecordatorio'
 export const dynamic = 'force-dynamic'
 
 export default async function Recordatorios() {
-  const todos = await (await getRepo()).recordatorios.list()
-  const activos = recordatoriosActivos(todos, hoy()).sort((a, b) => a.dias - b.dias)
+  const hoyStr = hoy()
+  const todos = ordenarAnuales(await (await getRepo()).recordatorios.list(), hoyStr)
+  const activos = recordatoriosActivos(todos, hoyStr).sort((a, b) => a.dias - b.dias)
 
   return (
     <main className="space-y-6">

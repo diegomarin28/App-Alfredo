@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cambioEdicion, cambioResolver, chipAviso, fechaLarga, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
+import { cambioEdicion, cambioResolver, chipAviso, fechaLarga, ordenarAnuales, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
 import { validarDiaMes } from '@/domain/validarFecha'
 
 describe('chipAviso', () => {
@@ -80,5 +80,21 @@ describe('cambioEdicion', () => {
 describe('cambioResolver', () => {
   it('marca el año y borra la posposición', () => {
     expect(cambioResolver({ id: 'x', titulo: 't', dia: '12-25', avisarDiasAntes: 60, resueltoAnio: 2026 })).toEqual({ resueltoAnio: 2026, pospuestoHasta: null })
+  })
+})
+
+describe('ordenarAnuales', () => {
+  const r = (titulo: string, dia: string | null) => ({ id: titulo, titulo, dia, avisarDiasAntes: 30 })
+  it('por próxima ocurrencia desde hoy, sin fecha al final, empate por título', () => {
+    const lista = [r('Sin fecha B', null), r('Navidad', '12-25'), r('Cumple', '11-25'), r('Sin fecha A', null),
+      r('Reyes', '01-06'), r('Fin de año', '12-31'), r('Año nuevo cena', '12-31'), r('Ayer', '11-21')]
+    expect(ordenarAnuales(lista, '2026-11-22').map((x) => x.titulo)).toEqual([
+      'Cumple', 'Navidad', 'Año nuevo cena', 'Fin de año', 'Reyes', 'Ayer', 'Sin fecha A', 'Sin fecha B',
+    ])
+  })
+  it('no muta la lista original', () => {
+    const lista = [r('B', '12-01'), r('A', '11-30')]
+    ordenarAnuales(lista, '2026-11-22')
+    expect(lista.map((x) => x.titulo)).toEqual(['B', 'A'])
   })
 })
