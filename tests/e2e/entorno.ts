@@ -5,6 +5,8 @@ export const ENTORNO_E2E = {
   AI_BACKEND: 'fake',
   SETUP_CODE: 'codigo-de-prueba-123',
   SESSION_SECRET: 'secreto-de-desarrollo-solo-para-pruebas-e2e-0123456789',
+  AI_PRICE_INPUT_PER_MTOK: '3',
+  AI_PRICE_OUTPUT_PER_MTOK: '15',
   FAMILY_CODE: 'familia-prueba-456',
   FAMILY_EXPIRES_AT: '2099-12-31T23:59:00-03:00',
   NEXT_PUBLIC_RP_ID: 'localhost',
