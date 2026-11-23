@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRepo } from '@/data/memoryRepo'
-import { FakeAiClient } from '@/ai/client'
+import { FakeAiClient, MODELO_MENSAJES } from '@/ai/client'
 import { FakeEmailSender } from '@/ai/email'
 import { construirSistema, construirUsuario, generarMensaje, limpiarRespuesta } from '@/ai/mensajes'
 import { getAi, getEmail, IaNoConfiguradaError } from '@/ai'
@@ -51,8 +51,6 @@ describe('limpiarRespuesta', () => {
 
 describe('generarMensaje', () => {
   it('llama a la IA con estilo y mensaje, y devuelve el texto limpio', async () => {
-    vi.stubEnv('AI_PRICE_INPUT_PER_MTOK', '3')
-    vi.stubEnv('AI_PRICE_OUTPUT_PER_MTOK', '15')
     const repo = new MemoryRepo()
     await repo.setConfig({ nombre: 'Alfredo', estiloEscritura: 'Frases cortas.' })
     const ai = new FakeAiClient([{ texto: ' "Dale, nos vemos." ' }])
@@ -60,7 +58,8 @@ describe('generarMensaje', () => {
     expect(t).toBe('Dale, nos vemos.')
     expect(ai.llamadas[0].sistema).toContain('Frases cortas.')
     expect(ai.llamadas[0].mensajes[0].texto).toContain('Nos vemos?')
-    expect(ai.llamadas[0].maxTokens).toBeLessThanOrEqual(500)
+    expect(ai.llamadas[0]).toMatchObject({ modelo: 'claude-sonnet-5-5', maxTokens: 400, sinPensar: true })
+    expect(ai.llamadas[0].herramientas).toBeUndefined()
   })
 })
 
@@ -70,10 +69,10 @@ describe('getAi / getEmail en producción (R26)', () => {
     vi.stubEnv('AI_BACKEND', '')
     vi.stubEnv('ANTHROPIC_API_KEY', '')
     const ai = getAi()
-    await expect(ai.completar({ sistema: '', mensajes: [], maxTokens: 1 })).rejects.toThrow(
+    await expect(ai.completar({ modelo: MODELO_MENSAJES, sistema: '', mensajes: [], maxTokens: 1 })).rejects.toThrow(
       'La IA no está configurada, avisale a Diego.',
     )
-    await expect(ai.completar({ sistema: '', mensajes: [], maxTokens: 1 })).rejects.toBeInstanceOf(IaNoConfiguradaError)
+    await expect(ai.completar({ modelo: MODELO_MENSAJES, sistema: '', mensajes: [], maxTokens: 1 })).rejects.toBeInstanceOf(IaNoConfiguradaError)
   })
   it('AI_BACKEND=fake en producción usa el falso', () => {
     vi.stubEnv('NODE_ENV', 'production')

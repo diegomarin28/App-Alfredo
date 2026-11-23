@@ -5,7 +5,7 @@ import { hoy } from '@/domain/fechas'
 import { fechaLarga, validarRecordatorio } from '@/domain/recordatorios'
 import { validarFecha } from '@/domain/validarFecha'
 import { fechaCompleta, MAX_NOTA, MAX_PENDIENTE, validarNota, validarPendiente, validarVencimiento } from '@/domain/vencimientos'
-import type { AiClient } from './client'
+import { MODELO_CONTAME, type AiArgs, type AiClient } from './client'
 import { construirSistema, construirUsuario, HERRAMIENTAS, type Accion, type ContextoContame, type Opcion } from './contamePrompt'
 import type { EmailSender } from './email'
 import { usarIa } from './presupuesto'
@@ -257,18 +257,29 @@ export async function deshacerLote(repo: Repo, loteId: string): Promise<number> 
 
 // ---------- IA ----------
 
+/**
+ * El pedido de clasificación (también lo usa scripts/probar-haiku.ts).
+ * Haiku 5.5 acepta forzar la herramienta (any): siempre llama a guardar o preguntar,
+ * y forzada no piensa, así que los 800 tokens van a la herramienta.
+ */
+export function pedidoClasificacion(nombre: string, texto: string, respuestas: string[], ctx: ContextoContame): AiArgs {
+  return {
+    modelo: MODELO_CONTAME,
+    sistema: construirSistema(nombre),
+    mensajes: [{ rol: 'user', texto: construirUsuario(texto, respuestas, ctx) }],
+    maxTokens: 800,
+    herramientas: HERRAMIENTAS,
+    forzarHerramienta: true,
+    unaSolaHerramienta: true,
+  }
+}
+
 export async function clasificar(
   repo: Repo, ai: AiClient, email: EmailSender, texto: string, respuestas: string[], ctx: ContextoContame,
 ): Promise<Clasificacion> {
   const config = await repo.getConfig()
-  const r = await usarIa(repo, ai, email, {
-    sistema: construirSistema(config.nombre),
-    mensajes: [{ rol: 'user', texto: construirUsuario(texto, respuestas, ctx) }],
-    maxTokens: 16000,
-    herramientas: HERRAMIENTAS,
-    unaSolaHerramienta: true,
-  })
-  // Cortada por max_tokens: la herramienta puede venir a medias (p. ej. solo las primeras acciones).
+  const r = await usarIa(repo, ai, email, pedidoClasificacion(config.nombre, texto, respuestas, ctx))
+  // Cortada por max_tokens (un texto largo no entra en 800): la herramienta puede venir a medias.
   if (r.stopReason === 'max_tokens') return { cortada: true }
   // Rechazo: puede cortar una herramienta a medias; nunca se usa.
   if (r.stopReason === 'refusal') return { sinClasificar: true }

@@ -30,7 +30,7 @@ export function getAi(): AiClient {
   if (fake()) return (globalThis.__alfredoAi ??= new FakeAiClient())
   if (!key && produccion()) return new AiNoConfigurada()
   if (!key) return (globalThis.__alfredoAi ??= new FakeAiClient())
-  return new AnthropicClient(key, process.env.ANTHROPIC_MODEL)
+  return new AnthropicClient(key)
 }
 
 /** El fake singleton (para la ruta de pruebas); null si se usa la IA real. */

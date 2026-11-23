@@ -1,6 +1,7 @@
 import type { Repo } from '@/data/repo'
 import type { AiArgs, AiClient, AiResultado } from './client'
 import type { EmailSender } from './email'
+import { costoUsd, tokensPrompt } from './precios'
 
 export class SinSaldoError extends Error {
   constructor() {
@@ -16,12 +17,9 @@ export class ConfigIaError extends Error {
   }
 }
 
-function numeroEnv(nombre: string, porDefecto?: number): number {
+function numeroEnv(nombre: string, porDefecto: number): number {
   const crudo = process.env[nombre]
-  if (crudo === undefined || crudo.trim() === '') {
-    if (porDefecto !== undefined) return porDefecto
-    throw new ConfigIaError(`Falta ${nombre} (precio por millón de tokens, ver docs.claude.com/pricing).`)
-  }
+  if (crudo === undefined || crudo.trim() === '') return porDefecto
   const n = Number(crudo)
   if (!Number.isFinite(n) || n < 0) throw new ConfigIaError(`${nombre} inválido: "${crudo}" (debe ser un número ≥ 0).`)
   return n
@@ -29,10 +27,8 @@ function numeroEnv(nombre: string, porDefecto?: number): number {
 
 let avisoSinMail = false
 
-/** Llama a la IA con control de saldo. Lanza SinSaldoError antes de llamar si ya se gastó todo. */
+/** Llama a la IA con control de saldo (suma el costo de todos los modelos). Lanza SinSaldoError antes de llamar si ya se gastó todo. */
 export async function usarIa(repo: Repo, ai: AiClient, email: EmailSender, args: AiArgs): Promise<AiResultado> {
-  const precioIn = numeroEnv('AI_PRICE_INPUT_PER_MTOK')
-  const precioOut = numeroEnv('AI_PRICE_OUTPUT_PER_MTOK')
   const presupuesto = numeroEnv('AI_BUDGET_USD', 20)
   const alerta = numeroEnv('AI_ALERT_USD', 16)
 
@@ -40,8 +36,8 @@ export async function usarIa(repo: Repo, ai: AiClient, email: EmailSender, args:
   if ((await suma()) >= presupuesto) throw new SinSaldoError()
 
   const r = await ai.completar(args)
-  const costoUsd = (r.tokensIn / 1e6) * precioIn + (r.tokensOut / 1e6) * precioOut
-  await repo.usoIa.create({ tokensIn: r.tokensIn, tokensOut: r.tokensOut, costoUsd })
+  // Precio del modelo que respondió; tokensIn guardado = toda la entrada (sin caché + caché).
+  await repo.usoIa.create({ tokensIn: tokensPrompt(r), tokensOut: r.tokensOut, costoUsd: costoUsd(r.modelo, r) })
 
   const total = await suma()
   if (total >= alerta && !(await repo.getConfig()).alertaIaEnviada) {

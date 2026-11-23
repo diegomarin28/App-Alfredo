@@ -1,5 +1,5 @@
 import type { Repo } from '@/data/repo'
-import type { AiClient } from './client'
+import { MODELO_MENSAJES, type AiClient } from './client'
 import type { EmailSender } from './email'
 import { usarIa } from './presupuesto'
 
@@ -45,9 +45,12 @@ export function limpiarRespuesta(texto: string): string {
 export async function generarMensaje(repo: Repo, ai: AiClient, email: EmailSender, entrada: EntradaMensaje): Promise<string> {
   const config = await repo.getConfig()
   const r = await usarIa(repo, ai, email, {
+    modelo: MODELO_MENSAJES,
     sistema: construirSistema(config.nombre, config.estiloEscritura),
     mensajes: [{ rol: 'user', texto: construirUsuario(entrada) }],
     maxTokens: 400,
+    // Sin pensar: los 400 tokens son para el mensaje.
+    sinPensar: true,
   })
   return limpiarRespuesta(r.texto)
 }
