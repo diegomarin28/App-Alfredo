@@ -154,6 +154,89 @@ test('modo PRF en un celular sin PRF: avisa y no toca nada', async ({ page }) =>
   expect(await (await page.request.get('/api/claves/config')).json()).toEqual(config)
 })
 
+/** Simula que la app pasa a segundo plano. Sin evento: como si el aviso se hubiera perdido durante Face ID. */
+async function ocultar(page: Page, { evento = true } = {}) {
+  await page.evaluate((conEvento) => {
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true })
+    if (conEvento) document.dispatchEvent(new Event('visibilitychange'))
+  }, evento)
+}
+const mostrarApp = (page: Page) =>
+  page.evaluate(() => Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true }))
+
+test('si la app se oculta después de Face ID y antes de abrir, queda bloqueada', async ({ page }) => {
+  await registrarFaceId(page, { prf: true })
+  await page.goto('/claves')
+  let alCargar: ((p: Page) => Promise<void>) | null = (p) => ocultar(p)
+  await page.route('**/api/claves', async (route) => {
+    if (route.request().method() === 'GET' && alCargar) {
+      const f = alCargar
+      alCargar = null
+      await f(page)
+    }
+    await route.continue()
+  })
+  const lista = () => page.waitForResponse((r) => new URL(r.url()).pathname === '/api/claves' && r.request().method() === 'GET')
+
+  // 1) Llega el evento "oculta" mientras se carga la lista (después de Face ID).
+  let cargada = lista()
+  await desbloquear(page).click()
+  await cargada
+  await expect(desbloquear(page)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Bloquear', exact: true })).toHaveCount(0)
+  await mostrarApp(page)
+
+  // 2) La app sigue oculta cuando llega la lista, sin evento (se perdió durante Face ID).
+  alCargar = (p) => ocultar(p, { evento: false })
+  cargada = lista()
+  await desbloquear(page).click()
+  await cargada
+  await expect(desbloquear(page)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Bloquear', exact: true })).toHaveCount(0)
+  await mostrarApp(page)
+
+  // 3) Visible: abre normal.
+  await desbloquear(page).click()
+  await expect(page.getByRole('button', { name: 'Bloquear', exact: true })).toBeVisible()
+})
+
+test('bloquear mientras se descifra no deja el texto a la vista ni en el portapapeles', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:3100' })
+  // Descifrado lento a pedido, para poder bloquear en el medio.
+  await page.addInitScript(() => {
+    const original = SubtleCrypto.prototype.decrypt
+    SubtleCrypto.prototype.decrypt = function (this: SubtleCrypto, ...a: Parameters<SubtleCrypto['decrypt']>) {
+      const p = original.apply(this, a)
+      return (window as unknown as { __lento?: boolean }).__lento
+        ? p.then((r) => new Promise<ArrayBuffer>((ok) => setTimeout(() => ok(r), 1500)))
+        : p
+    }
+  })
+  const lento = (v: boolean) => page.evaluate((x) => { (window as unknown as { __lento?: boolean }).__lento = x }, v)
+  await registrarFaceId(page)
+  await page.goto('/claves')
+  await elegirPin(page)
+  await agregar(page, 'Banco', 'alfredo', SECRETO)
+  await page.evaluate(() => navigator.clipboard.writeText('nada'))
+
+  await lento(true)
+  await page.getByRole('listitem').filter({ hasText: 'Banco' }).getByRole('button', { name: 'Mostrar' }).click()
+  await page.getByRole('button', { name: 'Bloquear', exact: true }).click()
+  await page.waitForTimeout(2000)
+  await lento(false)
+  await abrirConPin(page)
+  const item = page.getByRole('listitem').filter({ hasText: 'Banco' })
+  await expect(item).toContainText('••••••••')
+  await expect(item).not.toContainText(SECRETO)
+
+  await lento(true)
+  await item.getByRole('button', { name: 'Copiar' }).click()
+  await page.getByRole('button', { name: 'Bloquear', exact: true }).click()
+  await page.waitForTimeout(2000)
+  await lento(false)
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('nada')
+})
+
 test('PIN equivocado → "PIN incorrecto" y sigue bloqueada', async ({ page }) => {
   await registrarFaceId(page)
   await page.goto('/claves')

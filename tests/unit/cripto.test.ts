@@ -65,4 +65,21 @@ describe('cripto de Contraseñas (WebCrypto)', () => {
     const b = new Uint8Array([0, 1, 2, 250, 255, 128])
     expect(Array.from(deBase64(aBase64(b)))).toEqual(Array.from(b))
   })
+
+  // Vectores fijos generados una vez con esta implementación. Si cambia INFO_HKDF, las iteraciones
+  // o el manejo de la sal, estas pruebas fallan: las contraseñas ya guardadas dejarían de abrirse.
+  describe('vectores conocidos (no regenerar)', () => {
+    const seq = (desde: number) => Uint8Array.from({ length: 32 }, (_, i) => (desde + i) % 256)
+    const TEXTO = 'Clave-de-prueba ñ 2026'
+
+    it('PIN 482915 con sal 0..31', async () => {
+      const key = await derivarClavePin('482915', seq(0))
+      expect(await descifrar(key, { cifrado: 'LzIF4/4EBcHVK8vqCSOlE3yL1WgUdY4v2s02w+WjitWrgoErru31', iv: 'kPFpUMqOGELJjLXv' })).toBe(TEXTO)
+    })
+
+    it('PRF 100..131 con sal 200..231', async () => {
+      const key = await derivarClavePrf(seq(100).buffer, seq(200))
+      expect(await descifrar(key, { cifrado: 'ibPZVAM+PvX1exRFD+cTG363OdW9Nag1ad0QWoBUrSSlcbUVBugJ', iv: 'K/O3qSdxw+yc18L6' })).toBe(TEXTO)
+    })
+  })
 })

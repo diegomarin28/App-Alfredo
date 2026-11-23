@@ -69,8 +69,8 @@ export default function Claves() {
   const clave = useRef<CryptoKey | null>(null)
   /** Cada bloqueo invalida lo que estaba en curso (un Face ID o un PIN que termina tarde no abre nada). */
   const generacion = useRef(0)
-  const pasoActual = useRef(paso)
-  pasoActual.current = paso
+  /** Solo durante navigator.credentials.get: el cartel de Face ID no debe cortar el desbloqueo. */
+  const faceIdEnCurso = useRef(false)
 
   const bloquear = useCallback(() => {
     generacion.current++
@@ -90,10 +90,11 @@ export default function Claves() {
     clave.current = null
   }, [])
 
-  // Al ocultar la app. Mientras se espera Face ID no: el cartel de Face ID no debe cortar el desbloqueo.
+  // Al ocultar la app. Solo se exceptúa el instante del cartel de Face ID; si la app sigue oculta
+  // cuando la clave está lista, abrir() bloquea igual.
   useEffect(() => {
     const alCambiar = () => {
-      if (document.visibilityState === 'hidden' && pasoActual.current.t !== 'esperando') bloquear()
+      if (document.visibilityState === 'hidden' && !faceIdEnCurso.current) bloquear()
     }
     document.addEventListener('visibilitychange', alCambiar)
     return () => document.removeEventListener('visibilitychange', alCambiar)
@@ -129,6 +130,8 @@ export default function Claves() {
     if (!res.ok) throw new Error('lista')
     const lista = (await res.json()) as Item[]
     if (g !== generacion.current) return
+    // Nunca abrir con la app en segundo plano (iOS frena los timers: no se volvería a bloquear).
+    if (document.visibilityState === 'hidden') return bloquear()
     clave.current = key
     setItems(lista)
     setError('')
@@ -163,10 +166,13 @@ export default function Claves() {
       const salt = nueva ? crypto.getRandomValues(new Uint8Array(32)) : deBase64(config.claveSalt!)
 
       let prf: ArrayBuffer | undefined
+      faceIdEnCurso.current = true
       try {
         prf = await pedirFaceId(salt)
       } catch {
         return fallar('No se pudo usar Face ID. Probá de nuevo.', g)
+      } finally {
+        faceIdEnCurso.current = false
       }
       if (g !== generacion.current) return
 
@@ -218,6 +224,7 @@ export default function Claves() {
     try {
       const key = await derivarClavePin(pin, p.salt)
       if (g !== generacion.current) return
+      if (document.visibilityState === 'hidden') return bloquear()
       if (p.t === 'repetirPin') {
         await guardarConfig('pin', p.salt, key)
         return await abrir(key, g)
@@ -271,15 +278,20 @@ export default function Claves() {
     }
   }
 
-  async function textoDe(item: Item): Promise<string> {
-    if (!clave.current) throw new Error('bloqueada')
-    return descifrar(clave.current, item)
+  /** Descifra; null si se bloqueó mientras tanto (el texto se descarta, no llega al estado ni al portapapeles). */
+  async function textoDe(item: Item): Promise<string | null> {
+    const g = generacion.current
+    if (!clave.current) return null
+    const texto = await descifrar(clave.current, item)
+    return g === generacion.current ? texto : null
   }
 
   async function copiar(item: Item) {
     setError('')
     try {
-      await navigator.clipboard.writeText(await textoDe(item))
+      const texto = await textoDe(item)
+      if (texto === null) return
+      await navigator.clipboard.writeText(texto)
       setCopiada(item.id)
       setTimeout(() => setCopiada((c) => (c === item.id ? null : c)), 2000)
     } catch {
@@ -294,6 +306,7 @@ export default function Claves() {
     }
     try {
       const texto = await textoDe(item)
+      if (texto === null) return
       setVisibles((v) => ({ ...v, [item.id]: texto }))
     } catch {
       setError('No se pudo mostrar. Probá de nuevo.')
