@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 import type { Config } from '../../src/domain/tipos'
 import { ENTORNO_E2E } from './entorno'
 
@@ -55,4 +55,82 @@ export async function registrarFaceId(page: Page, opciones: { prf?: boolean } = 
   await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)
   await page.getByRole('button', { name: 'Registrar Face ID' }).click()
   await expect(page).toHaveURL(/^http:\/\/localhost:3100\/$/)
+}
+
+/** Reconocimiento de voz falso, manejable desde la prueba con window.__voz. */
+export function instalarVozFalsa() {
+  type Res = { isFinal: boolean; 0: { transcript: string } }
+  const estado = { instancias: [] as FakeRec[], starts: 0 }
+  class FakeRec {
+    lang = ''
+    continuous = false
+    interimResults = false
+    onresult: ((e: { resultIndex: number; results: Res[] }) => void) | null = null
+    onerror: ((e: { error: string }) => void) | null = null
+    onend: (() => void) | null = null
+    activo = false
+    resultados: Res[] = []
+    constructor() { estado.instancias.push(this) }
+    start() { this.activo = true; this.resultados = []; estado.starts++ }
+    stop() { this.activo = false; setTimeout(() => this.onend?.(), 0) }
+    abort() { this.stop() }
+  }
+  const actual = () => estado.instancias.filter((r) => r.activo).pop()
+  // Chromium trae uno real (también sin prefijo): se reemplazan los dos.
+  ;(window as unknown as Record<string, unknown>).webkitSpeechRecognition = FakeRec
+  ;(window as unknown as Record<string, unknown>).SpeechRecognition = FakeRec
+  ;(window as unknown as Record<string, unknown>).__voz = {
+    decir(texto: string, isFinal = true) {
+      const r = actual()
+      if (!r) throw new Error('no está escuchando')
+      const i = r.resultados.findIndex((x) => !x.isFinal)
+      const idx = i >= 0 ? i : r.resultados.length
+      r.resultados[idx] = { isFinal, 0: { transcript: texto } }
+      r.onresult?.({ resultIndex: idx, results: [...r.resultados] })
+    },
+    /** Safari corta solo en un silencio */
+    cortar() {
+      const r = actual()
+      if (!r) throw new Error('no está escuchando')
+      r.activo = false
+      r.onend?.()
+    },
+    error(codigo: string) {
+      const r = actual()
+      if (!r) throw new Error('no está escuchando')
+      r.onerror?.({ error: codigo })
+      r.activo = false
+      r.onend?.()
+    },
+    starts: () => estado.starts,
+  }
+}
+
+/** Reemplaza la cola de respuestas de la IA falsa (ruta de pruebas). */
+export async function guion(page: Page, respuestas: object[]) {
+  const r = await page.request.post('/api/test/ai', { data: { respuestas } })
+  expect(r.status()).toBe(200)
+}
+
+export const decir = (page: Page, t: string, final = true) =>
+  page.evaluate(([t, f]) => (window as unknown as { __voz: { decir(t: string, f: boolean): void } }).__voz.decir(t as string, f as boolean), [t, final] as const)
+
+/** Junta los errores de consola y de página para revisarlos después con sinErroresNiDesborde. */
+export function vigilarErrores(page: Page): string[] {
+  const errores: string[] = []
+  page.on('console', (m) => { if (m.type() === 'error') errores.push(`console: ${m.text()}`) })
+  page.on('pageerror', (e) => { errores.push(`pageerror: ${e.message}`) })
+  return errores
+}
+
+/** La página no dio errores y no se desborda hacia los costados (iPhone 14: 390 px). */
+export async function sinErroresNiDesborde(page: Page, errores: string[], donde: string): Promise<void> {
+  const ancho = await page.evaluate(() => document.documentElement.scrollWidth)
+  expect(ancho, `desborde horizontal en ${donde}`).toBeLessThanOrEqual(390)
+  expect(errores, `errores de consola en ${donde}`).toEqual([])
+}
+
+/** Espera a que React haya enganchado el elemento (un toque antes de eso no hace nada, sobre todo en `next dev`). */
+export async function hidratado(el: Locator): Promise<void> {
+  await expect.poll(() => el.evaluate((n) => Object.keys(n).some((k) => k.startsWith('__reactProps')))).toBe(true)
 }
