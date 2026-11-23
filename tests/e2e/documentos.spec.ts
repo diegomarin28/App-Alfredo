@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 import path from 'node:path'
 import { entrarComo, resetear } from './helpers'
+import { hoyMontevideo } from '../../src/domain/fechas'
+import { fechaCompleta } from '../../src/domain/vencimientos'
 
 const FOTO = path.join(__dirname, 'fixtures', 'foto.jpg')
 
@@ -33,7 +35,8 @@ test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }
   await expect(page.locator('input[type=file]').first()).toBeEnabled()
   await page.locator('input[type=file]').first().setInputFiles(FOTO)
   await expect(page.getByText('Póliza auto')).toBeVisible()
-  await expect(page.getByText('22 de noviembre de 2026')).toBeVisible()
+  // la fecha de subida es la real (creadoEn), no el "hoy" de prueba
+  await expect(page.getByText(fechaCompleta(hoyMontevideo(new Date())))).toBeVisible()
   const img = page.getByRole('img', { name: 'Póliza auto' })
   await expect(img).toBeVisible()
   await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0)
