@@ -65,3 +65,22 @@ test('familia: sin accesos, vencimientos ni pendientes; barra sin Contame/Mensaj
   await expect(page.getByRole('link', { name: 'Hablar con el asistente' })).toHaveCount(0)
   await expect(page.getByRole('link', { name: 'Mensajes' })).toHaveCount(0)
 })
+
+for (const rol of ['owner', 'familia'] as const) {
+  test(`${rol}: con una foto, Inicio lleva a /fotos (foto y "Agregar fotos")`, async ({ page }) => {
+    await resetear(page, { datos: { fotos: [{ path: 'fotos/a.jpg' }] }, hoy: HOY })
+    await entrarComo(page, rol)
+    await page.goto('/')
+    const foto = page.getByRole('link', { name: 'Foto familiar del día' })
+    await expect(foto).toHaveAttribute('href', '/fotos')
+    const agregar = page.getByRole('link', { name: 'Agregar fotos' })
+    await expect(agregar).toHaveAttribute('href', '/fotos')
+    expect((await agregar.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+    await foto.click()
+    await expect(page).toHaveURL(/\/fotos$/)
+    await page.goto('/')
+    await agregar.click()
+    await expect(page).toHaveURL(/\/fotos$/)
+    await expect(page.getByRole('heading', { name: 'Fotos de la familia' })).toBeVisible()
+  })
+}

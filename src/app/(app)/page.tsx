@@ -66,8 +66,15 @@ export default async function Inicio() {
 
       <section aria-label="Foto del día">
         {fotoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- R21: archivos de /api/archivos con <img> plano
-          <img src={fotoUrl} alt="Foto familiar del día" className="aspect-[4/3] w-full rounded-2xl border border-borde object-cover" />
+          <div className="space-y-3">
+            <Link href="/fotos" className="block rounded-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element -- R21: archivos de /api/archivos con <img> plano */}
+              <img src={fotoUrl} alt="Foto familiar del día" className="aspect-[4/3] w-full rounded-2xl border border-borde object-cover" />
+            </Link>
+            <Link href="/fotos" className="inline-flex min-h-11 items-center rounded-xl px-1 text-base font-semibold text-azul hover:underline">
+              Agregar fotos
+            </Link>
+          </div>
         ) : (
           <EmptyState href="/fotos" accion="Agregar fotos">Todavía no hay fotos de la familia. Sumá algunas y van a aparecer acá, una por día.</EmptyState>
         )}
