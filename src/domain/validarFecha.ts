@@ -6,18 +6,25 @@ export type ResultadoFecha =
   | { ok: true; valor: { nombre: string; tipo: 'cumple' | 'aniversario' | 'otra'; dia: string; anioNacimiento?: number } }
   | { ok: false; error: string }
 
+/** Valida día + mes (29/2 permitido) y devuelve "MM-DD". Compartida por fechas y recordatorios. */
+export function validarDiaMes(dia: number, mes: number): { ok: true; valor: string } | { ok: false; error: string } {
+  if (!Number.isInteger(mes) || mes < 1 || mes > 12) return { ok: false, error: 'Elegí el mes.' }
+  if (!Number.isInteger(dia) || dia < 1) return { ok: false, error: 'Elegí el día.' }
+  if (dia > DIAS_MES[mes - 1]) return { ok: false, error: `${MESES[mes - 1]} no tiene ${dia} días.` }
+  return { ok: true, valor: `${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}` }
+}
+
 export function validarFecha(e: EntradaFecha, anioActual: number): ResultadoFecha {
   const nombre = (e.nombre ?? '').trim()
   if (!nombre) return { ok: false, error: 'Escribí el nombre.' }
   if (e.tipo !== 'cumple' && e.tipo !== 'aniversario' && e.tipo !== 'otra') return { ok: false, error: 'Elegí qué tipo de fecha es.' }
-  if (!Number.isInteger(e.mes) || e.mes < 1 || e.mes > 12) return { ok: false, error: 'Elegí el mes.' }
-  if (!Number.isInteger(e.dia) || e.dia < 1) return { ok: false, error: 'Elegí el día.' }
-  if (e.dia > DIAS_MES[e.mes - 1]) return { ok: false, error: `${MESES[e.mes - 1]} no tiene ${e.dia} días.` }
+  const dm = validarDiaMes(e.dia, e.mes)
+  if (!dm.ok) return dm
   let anioNacimiento: number | undefined
   if (e.anio != null && !Number.isNaN(e.anio)) {
     if (!Number.isInteger(e.anio) || e.anio < 1900 || e.anio > anioActual) return { ok: false, error: `El año tiene que estar entre 1900 y ${anioActual}.` }
     anioNacimiento = e.anio
   }
-  const dia = `${String(e.mes).padStart(2, '0')}-${String(e.dia).padStart(2, '0')}`
+  const dia = dm.valor
   return { ok: true, valor: { nombre, tipo: e.tipo, dia, ...(anioNacimiento ? { anioNacimiento } : {}) } }
 }
