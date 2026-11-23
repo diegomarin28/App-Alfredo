@@ -90,3 +90,45 @@ test('rutas de prueba: entrarComo deja la sesión pedida', async ({ page }) => {
   await page.goto('/claves')
   await expect(page).toHaveURL(/\/claves$/)
 })
+
+test('primera vez: /entrar ofrece configurar Face ID; después ya no', async ({ page }) => {
+  await page.goto('/entrar')
+  const configurar = page.getByRole('link', { name: 'Configurar Face ID por primera vez' })
+  await expect(configurar).toHaveAttribute('href', '/configurar')
+  expect((await configurar.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  await conFaceIdVirtual(page)
+  await configurar.click()
+  await expect(page).toHaveURL(/\/configurar$/)
+  await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)
+  await page.getByRole('button', { name: 'Registrar Face ID' }).click()
+  await expect(page).toHaveURL(RAIZ)
+  await page.request.post('/api/auth/salir')
+  await page.goto('/entrar')
+  await expect(page.getByRole('button', { name: 'Entrar con Face ID' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Configurar Face ID por primera vez' })).toHaveCount(0)
+})
+
+test('con Face ID ya configurado, el SETUP_CODE no sirve sin sesión; el owner sí puede sumar otro', async ({ page, browser }) => {
+  await conFaceIdVirtual(page)
+  await page.goto('/configurar')
+  await page.getByLabel('Código de configuración').fill(ENTORNO_E2E.SETUP_CODE)
+  await page.getByRole('button', { name: 'Registrar Face ID' }).click()
+  await expect(page).toHaveURL(RAIZ)
+
+  // El owner (con sesión) puede pedir opciones para un teléfono nuevo.
+  const owner = await page.request.post('/api/auth/registro/opciones', { data: { codigo: ENTORNO_E2E.SETUP_CODE } })
+  expect(owner.status()).toBe(200)
+
+  // Otro navegador, sin sesión: aunque tenga el código, no registra.
+  const otro = await browser.newContext()
+  const extraño = await otro.newPage()
+  const api = await extraño.request.post('http://localhost:3100/api/auth/registro/opciones', { data: { codigo: ENTORNO_E2E.SETUP_CODE } })
+  expect(api.status()).toBe(403)
+  expect((await api.json()).error).toMatch(/Face ID ya está configurado/)
+  await extraño.goto('http://localhost:3100/configurar')
+  await expect(extraño.getByText('Face ID ya está configurado')).toBeVisible()
+  await expect(extraño.getByLabel('Código de configuración')).toHaveCount(0)
+  await extraño.getByRole('link', { name: 'Ir a entrar' }).click()
+  await expect(extraño).toHaveURL(/\/entrar$/)
+  await otro.close()
+})

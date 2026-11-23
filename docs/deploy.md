@@ -16,10 +16,10 @@ Se cargan en Vercel > Project > Settings > Environment Variables (Production). L
 | `SUPABASE_URL` | URL del proyecto Supabase. | `https://jtvcfwjixvbyzcbhcwkl.supabase.co` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clave `service_role` (solo servidor). | `<clave service_role>` |
 | `SESSION_SECRET` | Secreto de la cookie de sesión, 32+ caracteres al azar. | `openssl rand -base64 48` |
-| `SETUP_CODE` | Código para registrar Face ID en `/configurar`. Largo y al azar (no hay límite de intentos). | `<código largo al azar>` |
+| `SETUP_CODE` | Código para registrar Face ID en `/configurar`. **20 caracteres o más**, al azar (no hay límite de intentos; uno más corto no se acepta nunca). Solo sirve mientras no hay ninguna passkey: después, sumar otra pide estar adentro. | `openssl rand -base64 24` |
 | `NEXT_PUBLIC_RP_ID` | Dominio de la app, sin `https://`. Tiene que coincidir con el dominio real. | `alfredo.vercel.app` |
 | `APP_ORIGIN` | Origen completo de la app. | `https://alfredo.vercel.app` |
-| `FAMILY_CODE` | Código del link de familia `/familia?codigo=...`. Largo y al azar. | `<código largo al azar>` |
+| `FAMILY_CODE` | Código del link de familia `/familia?codigo=...`. **20 caracteres o más**, al azar (uno más corto no se acepta nunca). Que sea apto para URL: letras, números y guiones. | `openssl rand -hex 16` |
 | `FAMILY_EXPIRES_AT` | Hasta cuándo sirve el link de familia. | `2026-11-25T23:59:00-03:00` |
 | `ANTHROPIC_API_KEY` | Clave de Anthropic (solo servidor). Sin ella se usa una IA falsa. | `<clave anthropic>` |
 | `ANTHROPIC_MODEL` | Modelo a usar. | `claude-sonnet-5-5` |
@@ -56,14 +56,17 @@ Vercel rechaza pedidos de más de 4,5 MB. Por eso las fotos se comprimen en el t
 
 ## 5. Primera vez en el iPhone de Alfredo
 
-1. Abrir la URL de la app en **Safari**.
-2. Tocar Compartir > **Agregar a inicio**.
-3. Abrir la app desde el **ícono** (no desde Safari).
-4. Ir a `/configurar` e ingresar el `SETUP_CODE`.
-5. Aceptar **Face ID**.
-6. En **Ajustes > Activar avisos**, permitir las notificaciones.
-7. En **Ajustes > Cómo escribís**, pegar 3 o 4 mensajes reales suyos, y revisar **Cómo te saludan**.
-8. Para la familia: **Ajustes > Link para la familia** > Enviar por WhatsApp.
+1. Abrir la URL de la app en **Safari**. Aparece `/entrar`.
+2. Tocar **Configurar Face ID por primera vez** (lleva a `/configurar`; el link solo aparece mientras no hay ninguna passkey) e ingresar el `SETUP_CODE`.
+3. Aceptar **Face ID**. Queda guardada la passkey y se abre el Inicio.
+4. En Safari, tocar Compartir > **Agregar a inicio**.
+5. Abrir la app desde el **ícono** (no desde Safari).
+6. Tocar **Entrar con Face ID** (la app instalada no comparte la sesión de Safari, por eso se entra de nuevo).
+7. En **Ajustes > Activar avisos**, permitir las notificaciones (en iPhone solo funciona desde la app instalada).
+8. En **Ajustes > Cómo escribís**, pegar 3 o 4 mensajes reales suyos, y revisar **Cómo te saludan**.
+9. Para la familia: **Ajustes > Link para la familia** > Enviar por WhatsApp.
+
+Una vez registrada la primera passkey, el `SETUP_CODE` ya no alcanza: `/configurar` dice "Face ID ya está configurado". Para sumar otra passkey (por ejemplo, en un teléfono nuevo sin iCloud Llavero) hay que estar adentro de la app con Face ID y entrar a `/configurar` desde ahí.
 
 ## 6. Contraseñas: cosas a tener en cuenta
 

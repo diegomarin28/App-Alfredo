@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { esApi, esPublica, familiaVence, puedeVer, sesionVigente } from '@/auth/access'
-import { codigoIgual } from '@/auth/codigos'
+import { esApi, esPublica, familiaVence, puedeVer, registroPermitido, sesionVigente } from '@/auth/access'
+import { codigoConfiguracionValido, codigoFamiliaValido, codigoIgual, MIN_CODIGO } from '@/auth/codigos'
 import { rutasDePruebaHabilitadas } from '@/auth/pruebas'
 
 const ANTES = new Date('2026-11-22T12:00:00-03:00')
@@ -111,6 +111,39 @@ describe('codigoIgual', () => {
     expect(codigoIgual('', '')).toBe(false)
     expect(codigoIgual('x', undefined)).toBe(false)
     expect(codigoIgual(undefined, 'x')).toBe(false)
+  })
+})
+
+describe('códigos de configuración y familia: mínimo 20 caracteres', () => {
+  const LARGO = 'a1b2c3d4e5f6g7h8i9j0'
+  it('con 20 o más caracteres el código correcto sirve', () => {
+    expect(MIN_CODIGO).toBe(20)
+    vi.stubEnv('SETUP_CODE', LARGO)
+    vi.stubEnv('FAMILY_CODE', LARGO + 'x')
+    vi.stubEnv('FAMILY_EXPIRES_AT', '2099-01-01T00:00:00Z')
+    expect(codigoConfiguracionValido(LARGO)).toBe(true)
+    expect(codigoConfiguracionValido(LARGO + 'x')).toBe(false)
+    expect(codigoFamiliaValido(LARGO + 'x', ANTES)).toBe(true)
+  })
+  it('un código configurado de menos de 20 caracteres nunca se acepta (falla cerrado)', () => {
+    const corto = LARGO.slice(0, 19)
+    vi.stubEnv('SETUP_CODE', corto)
+    vi.stubEnv('FAMILY_CODE', corto)
+    vi.stubEnv('FAMILY_EXPIRES_AT', '2099-01-01T00:00:00Z')
+    expect(codigoConfiguracionValido(corto)).toBe(false)
+    expect(codigoFamiliaValido(corto, ANTES)).toBe(false)
+  })
+})
+
+describe('registroPermitido', () => {
+  it('sin passkeys cualquiera (con el código) registra la primera', () => {
+    expect(registroPermitido(0, null)).toBe(true)
+    expect(registroPermitido(0, { rol: 'familia', expira: 'x' })).toBe(true)
+  })
+  it('con una passkey ya guardada, solo una sesión de owner puede sumar otra', () => {
+    expect(registroPermitido(1, null)).toBe(false)
+    expect(registroPermitido(2, { rol: 'familia', expira: 'x' })).toBe(false)
+    expect(registroPermitido(1, { rol: 'owner' })).toBe(true)
   })
 })
 

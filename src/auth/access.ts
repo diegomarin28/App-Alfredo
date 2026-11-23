@@ -56,6 +56,14 @@ export function puedeVer(rol: Rol | null, path: string, ahora: Date): boolean {
   return path === '/' || FAMILIA_PAGINAS.some((b) => bajo(path, b)) || FAMILIA_APIS.some((b) => bajo(path, b))
 }
 
+/**
+ * ¿Se puede registrar una passkey? La primera, sí (con SETUP_CODE). Después, solo desde una sesión de owner:
+ * así el SETUP_CODE deja de dar acceso de owner una vez configurado Face ID.
+ */
+export function registroPermitido(passkeysGuardadas: number, sesion: Sesion | null): boolean {
+  return passkeysGuardadas === 0 || sesion?.rol === 'owner'
+}
+
 /** Valida lo que salió de la cookie. Familia vencida (por env o por su `expira`) → null. */
 export function sesionVigente(datos: unknown, ahora: Date): Sesion | null {
   if (!datos || typeof datos !== 'object') return null

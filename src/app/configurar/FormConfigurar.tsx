@@ -18,7 +18,8 @@ export function FormConfigurar() {
         body: JSON.stringify({ codigo }),
       })
       if (opciones.status === 403) {
-        setError('El código no es correcto.')
+        const j = (await opciones.json().catch(() => null)) as { error?: string } | null
+        setError(j?.error ?? 'El código no es correcto.')
         setOcupado(false)
         return
       }

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { registroPermitido } from '@/auth/access'
 import { codigoConfiguracionValido, codigoFamiliaValido } from '@/auth/codigos'
 import {
   opcionesEntrada, opcionesRegistro, verificarEntrada, verificarRegistro,
@@ -9,6 +10,13 @@ import { getRepo } from '@/data/getRepo'
 type Ctx = { params: Promise<{ accion: string[] }> }
 
 const error = (mensaje: string, status: number) => NextResponse.json({ error: mensaje }, { status })
+
+const YA_CONFIGURADO = 'Face ID ya está configurado. Entrá con Face ID.'
+
+/** I4: con una passkey guardada, solo el owner (ya adentro) puede sumar otra. */
+async function puedeRegistrar(): Promise<boolean> {
+  return registroPermitido((await getRepo().passkeys.list()).length, await getSesion())
+}
 
 async function cuerpo(req: NextRequest): Promise<Record<string, unknown> | null> {
   try {
@@ -24,6 +32,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   try {
     switch (ruta) {
       case 'registro/opciones': {
+        if (!(await puedeRegistrar())) return error(YA_CONFIGURADO, 403)
         const b = await cuerpo(req)
         if (!codigoConfiguracionValido(b?.codigo)) return error('El código no es correcto.', 403)
         const opciones = await opcionesRegistro(getRepo())
@@ -34,6 +43,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         // El desafío de registro solo existe si antes se dio el código de configuración correcto.
         const desafio = await tomarDesafio('registro')
         if (!desafio) return error('Se venció el tiempo. Probá de nuevo.', 400)
+        if (!(await puedeRegistrar())) return error(YA_CONFIGURADO, 403)
         const b = await cuerpo(req)
         if (!b || !(await verificarRegistro(getRepo(), b as never, desafio))) return error('No se pudo registrar.', 400)
         await iniciarSesion('owner')
