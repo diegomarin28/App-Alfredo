@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Vencimientos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4E8C;text-decoration:none}a:hover{color:#183E70}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F5F7FA; font-family: Inter, system-ui, sans-serif; color: #1C1F24; box-sizing: border-box">
+<div style="padding: 28px 20px 0 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px">Vencimientos</h1>
+<button type="button" aria-label="Agregar vencimiento" style="width: 44px; height: 44px; border-radius: 22px; border: none; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+</div>
+<p style="margin: 0; font-size: 15px; color: #5F646B">Te avisa unos días antes de cada fecha.</p>
+<h2 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #5F646B">Empresa</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; font-weight: 600">Aportes BPS</span><span style="font-size: 14px; color: #5F646B">[fecha]</span></span>
+<span style="padding: 6px 10px; border-radius: 12px; background: #FCEBDD; color: #8A4A12; font-size: 13px; font-weight: 600">En 5 días</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; font-weight: 600">Pago DGI</span><span style="font-size: 14px; color: #5F646B">[fecha]</span></span>
+<span style="padding: 6px 10px; border-radius: 12px; background: #ECEFF4; color: #3F434A; font-size: 13px; font-weight: 600">En 18 días</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; font-weight: 600">Seguro de obra · [Obra]</span><span style="font-size: 14px; color: #5F646B">[fecha]</span></span>
+<span style="padding: 6px 10px; border-radius: 12px; background: #ECEFF4; color: #3F434A; font-size: 13px; font-weight: 600">En 1 mes</span>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px">
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; font-weight: 600">Renovación contrato · [Cliente]</span><span style="font-size: 14px; color: #5F646B">[fecha]</span></span>
+<span style="padding: 6px 10px; border-radius: 12px; background: #ECEFF4; color: #3F434A; font-size: 13px; font-weight: 600">En 2 meses</span>
+</div>
+</div>
+<h2 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #5F646B">Personales</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Cédula</span><span style="font-size: 13px; color: #5F646B">[fecha]</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Pasaporte</span><span style="font-size: 13px; color: #5F646B">[fecha]</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Libreta</span><span style="font-size: 13px; color: #5F646B">[fecha]</span></div>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">Patente</span><span style="font-size: 13px; color: #5F646B">[fecha]</span></div>
+</div>
+</div>
+<nav aria-label="Secciones" style="position: absolute; left: 0; right: 0; bottom: 0; height: 76px; background: #FFFFFF; border-top: 1px solid #E3E8EF; display: flex; justify-content: space-around; align-items: center; padding-bottom: 6px; box-sizing: border-box">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg>Inicio</a>
+<a href="Fechas.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Calendario</a>
+<a href="Asistente.dc.html" aria-label="Hablar con el asistente" style="width: 60px; height: 60px; margin-top: -26px; border-radius: 30px; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(31,78,140,0.30); border: 4px solid #FFFFFF"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></a>
+<a href="Contestar.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path><path d="M8 9.5h8M8 12.5h5"></path></svg>Contestar</a>
+<a href="Portofino.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20V10l7-5 7 5v10M10 20v-5h4v5"></path></svg>Portofino</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

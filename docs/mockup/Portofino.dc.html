@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Portofino y Malibú</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4E8C;text-decoration:none}a:hover{color:#183E70}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F5F7FA; font-family: Inter, system-ui, sans-serif; color: #1C1F24; box-sizing: border-box">
+<div style="height: 768px; overflow-y: auto; padding: 28px 20px 24px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px">{{titulo}}</h1>
+<p style="margin: 0; font-size: 15px; color: #5F646B">Punta del Este</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #ECEFF4; border-radius: 14px; padding: 4px; flex-shrink: 0">
+<button type="button" onClick="{{verPorto}}" style="{{tabPorto}}">Portofino</button>
+<button type="button" onClick="{{verMalibu}}" style="{{tabMalibu}}">Malibú</button>
+</div>
+<h2 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #5F646B">Quién se ocupa</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{personas}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 12px; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 10px 10px 10px 14px">
+<span style="display: flex; flex-direction: column; flex-grow: 1"><span style="font-size: 16px; font-weight: 600">{{c.nombre}}</span><span style="font-size: 14px; color: #5F646B">{{c.detalle}}</span></span>
+<a href="#" aria-label="Llamar" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg></a>
+</div>
+</sc-for>
+</div>
+<h2 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #5F646B">Historial</h2>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 4px 14px; display: flex; flex-direction: column">
+<sc-for list="{{historial}}" as="h" hint-placeholder-count="4">
+<div style="display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #ECEFF4">
+<span style="width: 10px; height: 10px; border-radius: 5px; background: #1F4E8C; margin-top: 6px; flex-shrink: 0"></span>
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 600">{{h.que}}</span><span style="font-size: 13px; color: #5F646B">{{h.cuando}}</span></span>
+</div>
+</sc-for>
+</div>
+<h2 style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #5F646B">Servicios</h2>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 14px; padding: 2px 14px; display: flex; flex-direction: column">
+<sc-for list="{{servicios}}" as="d" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; border-bottom: 1px solid #ECEFF4; gap: 12px">
+<span style="font-size: 15px; color: #3F434A">{{d.k}}</span>
+<span style="font-size: 15px; font-weight: 600; text-align: right">{{d.v}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<nav aria-label="Secciones" style="position: absolute; left: 0; right: 0; bottom: 0; height: 76px; background: #FFFFFF; border-top: 1px solid #E3E8EF; display: flex; justify-content: space-around; align-items: center; padding-bottom: 6px; box-sizing: border-box">
+<a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"></rect></svg>Inicio</a>
+<a href="Fechas.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Calendario</a>
+<a href="Asistente.dc.html" aria-label="Hablar con el asistente" style="width: 60px; height: 60px; margin-top: -26px; border-radius: 30px; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(31,78,140,0.30); border: 4px solid #FFFFFF"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg></a>
+<a href="Contestar.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #5F646B; font-size: 12px; font-weight: 500"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"></path><path d="M8 9.5h8M8 12.5h5"></path></svg>Contestar</a>
+<a href="Portofino.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 60px; min-height: 48px; color: #1F4E8C; font-size: 12px; font-weight: 600"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20V10l7-5 7 5v10M10 20v-5h4v5"></path></svg>Portofino</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const malibu = this.state && this.state.casa === 'malibu';
+const on = 'min-height: 44px; border: none; border-radius: 11px; background: #FFFFFF; color: #1F4E8C; font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer';
+const off = 'min-height: 44px; border: none; border-radius: 11px; background: transparent; color: #3F434A; font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer';
+const porto = {
+personas: [
+{ nombre: 'Simón · Jardinero', detalle: 'Último pago: [fecha]' },
+{ nombre: '[Nombre] · Piscinero', detalle: 'Viene cada [días] · última vez [fecha]' },
+{ nombre: '[Nombre] · Empleada', detalle: '[días que va]' },
+{ nombre: '[Nombre] · Riego', detalle: 'Lo llamaste el [fecha]' }
+],
+historial: [
+{ que: 'Le pagaste a Simón', cuando: '[fecha]' },
+{ que: 'Se rompió la bomba de la piscina', cuando: '[fecha] · ¿Se cambió? [sí / no]' },
+{ que: 'Flores para el jardín: [cuáles]', cuando: '[fecha]' },
+{ que: 'Problema con el riego · llamaste a [Nombre]', cuando: '[fecha]' }
+],
+servicios: [
+{ k: 'DirecTV', v: '[n.º cliente]' },
+{ k: 'Wifi', v: '[red] · [clave]' },
+{ k: 'UTE', v: '[n.º cuenta]' },
+{ k: 'OSE', v: '[n.º cuenta]' },
+{ k: 'Mantenimiento riego', v: 'Cada [X] meses' }
+]
+};
+const mali = {
+personas: [
+{ nombre: '[Nombre] · Jardinero', detalle: 'Último pago: [fecha]' },
+{ nombre: '[Nombre] · Empleada', detalle: '[días que va]' }
+],
+historial: [
+{ que: 'Le pagaste al jardinero', cuando: '[fecha]' },
+{ que: '[Lo que pasó]', cuando: '[fecha]' }
+],
+servicios: [
+{ k: 'DirecTV', v: '[n.º cliente]' },
+{ k: 'Wifi', v: '[red] · [clave]' },
+{ k: 'UTE', v: '[n.º cuenta]' },
+{ k: 'OSE', v: '[n.º cuenta]' }
+]
+};
+const casa = malibu ? mali : porto;
+return {
+titulo: malibu ? 'Malibú' : 'Portofino',
+tabPorto: malibu ? off : on,
+tabMalibu: malibu ? on : off,
+verPorto: () => this.setState({ casa: 'porto' }),
+verMalibu: () => this.setState({ casa: 'malibu' }),
+personas: casa.personas,
+historial: casa.historial,
+servicios: casa.servicios
+};
+}
+}
+</script>
+</body>
+</html>
