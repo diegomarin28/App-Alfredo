@@ -1,5 +1,6 @@
 'use client'
 import { useState, useSyncExternalStore } from 'react'
+import { useRouter } from 'next/navigation'
 import { Boton, Card, Field, clasesInput } from '@/components/ui'
 import type { Opcion } from '@/ai/contamePrompt'
 import { useDictado } from '@/voz/useDictado'
@@ -24,6 +25,7 @@ function Alerta({ children }: { children: React.ReactNode }) {
 }
 
 export default function Page() {
+  const router = useRouter()
   const montado = useSyncExternalStore(nada, () => true, () => false)
   const dictado = useDictado({ lang: 'es-UY' })
   const [fase, setFase] = useState<Fase>('inicio')
@@ -84,6 +86,8 @@ export default function Page() {
         setAviso(typeof j.aviso === 'string' ? j.aviso : null)
         setDeshecho(false)
         setFase('listo')
+        // lo guardado cambia otras pantallas (Inicio, Pendientes…): que el menú no muestre lo de antes
+        router.refresh()
       } else if (typeof j.pregunta === 'string' && Array.isArray(j.opciones)) {
         setEnviado(t)
         setRespuestas(resp)
@@ -107,7 +111,7 @@ export default function Page() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ loteId }),
       })
-      if (res.ok) setDeshecho(true)
+      if (res.ok) { setDeshecho(true); router.refresh() }
       else setError(((await res.json().catch(() => ({}))) as { error?: string }).error ?? 'No pude deshacerlo, probá de nuevo.')
     } catch {
       setError('No pude deshacerlo, probá de nuevo.')

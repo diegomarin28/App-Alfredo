@@ -93,7 +93,9 @@ test('"Otra cosa" guarda en Pendientes sin otra llamada a la IA', async ({ page 
   await expect(page.getByText('Pendientes: Arreglar la canilla')).toBeVisible()
   const llamadas = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
   expect(llamadas).toHaveLength(1)
-  await page.goto('/pendientes')
+  // como Alfredo, por el menú: lo guardado tiene que estar (no lo de antes de guardar)
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' }).click()
+  await page.getByRole('navigation', { name: 'Accesos directos' }).getByRole('link', { name: 'Pendientes' }).click()
   await expect(page.getByText('Arreglar la canilla')).toBeVisible()
 })
 
@@ -148,7 +150,8 @@ test('respuesta de la IA cortada: guarda todo como nota y lo avisa', async ({ pa
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
   await expect(page.getByText('Notas: Primera cosa en Portofino. Segunda cosa en Malibú.')).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
-  await page.goto('/casas?casa=portofino')
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Portofino' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Portofino' })).toBeVisible()
   await expect(page.getByText('Primera cosa', { exact: true })).toHaveCount(0)
 })
 

@@ -10,15 +10,15 @@ import Galeria from './Galeria'
 export const dynamic = 'force-dynamic'
 
 export default async function Page({ params }: { params: Promise<{ carpetaId: string }> }) {
-  await soloOwner()
-  const { carpetaId } = await params
+  const [, { carpetaId }] = await Promise.all([soloOwner(), params])
   const repo = getRepo()
-  const carpeta = await repo.carpetas.get(carpetaId)
+  const [carpeta, items] = await Promise.all([
+    repo.carpetas.get(carpetaId),
+    repo.documentos.list({ carpetaId }).then((docs) => Promise.all(docs.map(async (d) => ({
+      id: d.id, titulo: d.titulo, url: await repo.urlArchivo(d.path), fecha: fechaCompleta(hoyMontevideo(new Date(d.creadoEn))),
+    })))),
+  ])
   if (!carpeta) notFound()
-  const docs = await repo.documentos.list({ carpetaId })
-  const items = await Promise.all(docs.map(async (d) => ({
-    id: d.id, titulo: d.titulo, url: await repo.urlArchivo(d.path), fecha: fechaCompleta(hoyMontevideo(new Date(d.creadoEn))),
-  })))
   return (
     <main className="space-y-6">
       <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">{carpeta.nombre}</h1>

@@ -30,6 +30,7 @@ function Pestana({ tab, texto, activo }: { tab: Exclude<Tab, 'contame'>; texto: 
   return (
     <Link
       href={RUTAS[tab]}
+      prefetch
       aria-current={activo ? 'page' : undefined}
       className={`flex min-h-14 min-w-16 flex-auto flex-col items-center justify-center gap-0.5 text-base font-medium lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:text-base ${activo ? 'text-azul lg:bg-tinte' : 'text-texto-2 lg:hover:bg-gris'}`}
     >
@@ -55,6 +56,7 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
           <div className="flex flex-auto justify-center lg:flex-none lg:py-2">
             <Link
               href="/contame"
+              prefetch
               aria-label="Hablar con el asistente"
               aria-current={actual === 'contame' ? 'page' : undefined}
               className="-mt-6 flex size-16 items-center justify-center rounded-full bg-azul text-white shadow-lg ring-4 ring-white hover:bg-azul-osc lg:mt-0 lg:h-14 lg:w-full lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:shadow-md lg:ring-0"

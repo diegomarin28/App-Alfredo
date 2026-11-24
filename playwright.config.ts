@@ -37,8 +37,8 @@ const projects: Project[] = MOTORES.flatMap((browserName) => [
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  // Las capturas (@capturas) solo corren con `pnpm capturas`.
-  grepInvert: process.env.CAPTURAS ? undefined : /@capturas/,
+  // Las capturas (@capturas) solo corren con `pnpm capturas` y la medición (@medir) con `pnpm medir`.
+  grepInvert: new RegExp([!process.env.CAPTURAS && '@capturas', !process.env.MEDIR && '@medir'].filter(Boolean).join('|') || '$^'),
   // Compila todas las pantallas antes de empezar (ver tests/e2e/precalentar.ts).
   globalSetup: './tests/e2e/precalentar.ts',
   workers: 1,
@@ -50,6 +50,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     // Nunca reusar: un servidor ya levantado podría no tener las variables de prueba.
     reuseExistingServer: false,
-    env: { ...ENTORNO_E2E },
+    // `pnpm medir` simula la demora de Supabase visto desde Vercel (iad1 → sa-east-1): 100 ms por consulta,
+    // o MEDIR_LATENCIA_MS.
+    env: { ...ENTORNO_E2E, ...(process.env.MEDIR ? { DATA_LATENCIA_MS: process.env.MEDIR_LATENCIA_MS ?? '100' } : {}) },
   },
 })

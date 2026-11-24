@@ -7,9 +7,9 @@ import Pendientes from './Pendientes'
 export const dynamic = 'force-dynamic'
 
 export default async function PendientesYNotas() {
-  const repo = await getRepo()
-  const pendientes = await repo.pendientes.list()
-  const notas = (await repo.notas.list()).sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
+  const repo = getRepo()
+  const [pendientes, todasLasNotas] = await Promise.all([repo.pendientes.list(), repo.notas.list()])
+  const notas = todasLasNotas.sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
 
   return (
     <main className="space-y-6">

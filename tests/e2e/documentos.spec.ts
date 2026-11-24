@@ -46,11 +46,13 @@ test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('carpeta inexistente: 404 con la página en castellano', async ({ page }) => {
+test('carpeta inexistente: página "no encontrada" en castellano', async ({ page }) => {
   await entrarComo(page, 'owner')
-  const res = await page.goto('/documentos/no-existe')
-  expect(res?.status()).toBe(404)
+  // Con el esqueleto de carga, Next ya empezó a mandar la página cuando ve que la carpeta no existe: responde 200
+  // (no 404) con la página de "no encontrada" y la marca para que no se indexe.
+  await page.goto('/documentos/no-existe')
   await expect(page.getByRole('heading', { name: 'No encontramos esa página' })).toBeVisible()
+  await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached()
   const volver = page.getByRole('link', { name: 'Volver al inicio' })
   expect((await volver.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await volver.click()

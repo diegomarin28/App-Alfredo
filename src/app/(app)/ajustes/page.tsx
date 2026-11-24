@@ -8,9 +8,8 @@ import Salir from './Salir'
 export const dynamic = 'force-dynamic'
 
 export default async function Ajustes() {
-  const sesion = await getSesion()
+  const [sesion, config] = await Promise.all([getSesion(), getRepo().getConfig()])
   if (sesion?.rol !== 'owner') redirect('/')
-  const config = await (await getRepo()).getConfig()
   return (
     <main className="space-y-6">
       <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Ajustes</h1>

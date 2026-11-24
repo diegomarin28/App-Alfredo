@@ -42,16 +42,24 @@ const ACCESOS = [
 ] as const
 
 export default async function Inicio() {
-  const sesion = await getSesion()
-  const owner = sesion?.rol === 'owner'
-  const repo = await getRepo()
+  const repo = getRepo()
   const hoyStr = hoy()
-  const [config, fotos, fechas] = await Promise.all([repo.getConfig(), repo.fotos.list(), repo.fechas.list()])
-  const foto = fotoDelDia(fotos, hoyStr)
-  const fotoUrl = foto ? await repo.urlArchivo(foto.path) : null
+  const sesionP = getSesion()
+  // Todo en paralelo (cada consulta a Supabase es un viaje): lo del owner sale apenas se conoce la sesión.
+  const [sesion, config, fotoUrl, fechas, delOwner] = await Promise.all([
+    sesionP,
+    repo.getConfig(),
+    repo.fotos.list().then((fotos) => {
+      const foto = fotoDelDia(fotos, hoyStr)
+      return foto ? repo.urlArchivo(foto.path) : null
+    }),
+    repo.fechas.list(),
+    sesionP.then((s) => (s?.rol === 'owner' ? Promise.all([repo.vencimientos.list(), repo.pendientes.list()]) : null)),
+  ])
+  const owner = sesion?.rol === 'owner'
   const cumple = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr)[0]
-  const venc = owner ? vencimientosProximos(await repo.vencimientos.list(), hoyStr)[0] : undefined
-  const abiertos = owner ? (await repo.pendientes.list()).filter((p) => !p.hecho).length : 0
+  const venc = delOwner ? vencimientosProximos(delOwner[0], hoyStr)[0] : undefined
+  const abiertos = delOwner ? delOwner[1].filter((p) => !p.hecho).length : 0
 
   return (
     <main className="space-y-5">
