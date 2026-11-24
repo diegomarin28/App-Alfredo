@@ -35,6 +35,14 @@ const projects: Project[] = MOTORES.flatMap((browserName) => [
   },
 ])
 
+// Solo para `pnpm capturas`: iPhone 15 (393 × 852) en WebKit.
+if (process.env.CAPTURAS) {
+  projects.push({
+    name: 'webkit-393x852',
+    use: { ...devices['iPhone 15'], browserName: 'webkit', viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true },
+  })
+}
+
 export default defineConfig({
   testDir: 'tests/e2e',
   // Las capturas (@capturas) solo corren con `pnpm capturas` y la medición (@medir) con `pnpm medir`.

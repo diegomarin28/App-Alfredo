@@ -14,10 +14,12 @@ const DATOS = {
     { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
     { nombre: 'Luis y Marta', tipo: 'aniversario', dia: '12-03' },
     { nombre: 'Marta', tipo: 'cumple', dia: '01-10' },
+    { nombre: 'Sofía Rodríguez', tipo: 'cumple', dia: '12-08', anioNacimiento: 1985 },
     { nombre: 'Día del abuelo', tipo: 'otra', dia: '11-30' },
   ],
   vencimientos: [
     { titulo: 'Patente camioneta', ambito: 'personal', fecha: '2026-12-31', avisarDiasAntes: 30, hecho: false },
+    { titulo: 'Vence el seguro del auto', ambito: 'personal', fecha: '2026-11-29', avisarDiasAntes: 7, hecho: false, loteId: 'lote-contame', creadoEn: '2026-11-22T10:00:01.000Z' },
     { titulo: 'Seguro del local', ambito: 'empresa', fecha: '2026-12-12', avisarDiasAntes: 30, hecho: false },
     { titulo: 'Balance anual', ambito: 'empresa', fecha: '2026-11-25', avisarDiasAntes: 7, hecho: false },
     { titulo: 'Habilitación vieja', ambito: 'empresa', fecha: '2026-11-20', avisarDiasAntes: 7, hecho: false },
@@ -25,7 +27,7 @@ const DATOS = {
   ],
   pendientes: [
     { texto: 'Pagar la luz de Portofino', hecho: false, creadoEn: '2026-11-20T12:00:00.000Z' },
-    { texto: 'Llamar al contador', hecho: false, creadoEn: '2026-11-21T12:00:00.000Z' },
+    { texto: 'Llamar al contador por el balance', hecho: false, creadoEn: '2026-11-22T10:00:02.000Z', loteId: 'lote-contame' },
     { texto: 'Renovar la cédula', hecho: true, creadoEn: '2026-11-18T12:00:00.000Z' },
   ],
   notas: [
@@ -47,10 +49,12 @@ const DATOS = {
   eventosCasa: [
     { casa: 'portofino', que: 'Se cambió el termotanque', cuando: '2026-10-01' },
     { casa: 'portofino', que: 'Pintaron el frente', cuando: '2026-11-20' },
+    { casa: 'portofino', que: 'Simón vino a cortar el pasto', cuando: '2026-11-21', loteId: 'lote-contame', creadoEn: '2026-11-22T10:00:00.000Z' },
     { casa: 'malibu', que: 'Limpiaron la piscina', cuando: '2026-11-15' },
   ],
   serviciosCasa: [
     { casa: 'portofino', clave: 'DirecTV', valor: 'Cliente 123456' },
+    { casa: 'portofino', clave: 'UTE', valor: 'Cuenta 4455667' },
     { casa: 'malibu', clave: 'OSE', valor: 'Cuenta 777' },
   ],
 }
@@ -116,6 +120,7 @@ export async function sembrar(browser: Browser): Promise<string> {
   const href = await page.getByRole('link', { name: 'Seguros' }).getAttribute('href')
   const carpetaId = href!.split('/').pop()!
   await subir(page, { tipo: 'documento', carpetaId, titulo: 'Póliza del auto' })
+  await subir(page, { tipo: 'documento', carpetaId, titulo: 'Seguro del local' })
   await page.close()
   return carpetaId
 }
