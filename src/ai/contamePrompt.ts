@@ -53,7 +53,7 @@ const VARIANTES = [
   variante('servicioCasa', 'Dato de un servicio de una casa (DirecTV, wifi, UTE, OSE, alarma, riego…).', {
     casa: CASA,
     clave: str('Nombre del servicio (ej. UTE).'),
-    valor: str('El dato (ej. número de cuenta, contraseña del wifi, teléfono de la empresa).'),
+    valor: str('El dato (ej. número de cliente, contraseña del wifi, teléfono de la empresa).'),
   }, ['casa', 'clave', 'valor']),
   variante('pendiente', 'Una tarea pendiente: algo que tiene que hacer, o lo que no sabés dónde va.', {
     texto: str('La tarea, corta (hasta 200 letras).'),
