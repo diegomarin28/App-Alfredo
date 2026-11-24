@@ -115,7 +115,7 @@ test('captura calendario el día del cumple y el saludo @capturas', async ({ pag
   await resetear(page, { hoy: '2026-11-25', config: { nombre: 'Alfredo' }, datos: { fechas: [
     { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
     { nombre: 'Día del abuelo', tipo: 'otra', dia: '11-30' },
-    { nombre: 'Luis y Marta', tipo: 'aniversario', dia: '12-03' },
+    { nombre: 'Aniversario de Luis y Marta', tipo: 'otra', dia: '12-03' },
     { nombre: 'Sofía Rodríguez', tipo: 'cumple', dia: '12-08', anioNacimiento: 1985 },
   ] } })
   await entrarComo(page, 'owner')
@@ -234,3 +234,84 @@ test('captura brindis del 25 de noviembre (whisky) @capturas', async ({ page }, 
   await page.waitForTimeout(2600)
   await foto(page, 'detalle-brindis', info.project.name)
 })
+
+// ── Ronda 4 ──────────────────────────────────────────────────────────────────────────────────────────────────────
+test('captura calendario: otra fecha que se repite @capturas', async ({ page }, info) => {
+  await resetear(page, { hoy: '2026-11-22', config: { nombre: 'Alfredo' } })
+  await entrarComo(page, 'owner')
+  await page.goto('/calendario')
+  const agregar = page.getByRole('button', { name: 'Agregar fecha' })
+  await hidratado(agregar)
+  await agregar.click()
+  const hoja = page.getByRole('dialog', { name: 'Nueva fecha' })
+  await hoja.getByLabel('Nombre').fill('Truco en el club')
+  await hoja.getByRole('radio', { name: 'Otra' }).click()
+  await hoja.getByLabel('Se repite').selectOption('semanal')
+  await hoja.getByLabel('Día', { exact: true }).selectOption('5')
+  await hoja.getByLabel('Mes').selectOption('11')
+  await hoja.getByLabel('Año (desde)').fill('2026')
+  await hoja.getByLabel('Hora (opcional)').fill('18:30')
+  await foto(page, 'r4-calendario-otra-se-repite', info.project.name)
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await paginaEntera(page, path.join(RAIZ, info.project.name, 'r4-calendario-lista-repeticion.png'))
+})
+
+test('captura recordatorios: nuevo con "Se repite" y posponer eligiendo cuánto @capturas', async ({ page }, info) => {
+  await resetear(page, { hoy: '2026-10-26', config: { nombre: 'Alfredo' } })
+  await entrarComo(page, 'owner')
+  await page.goto('/recordatorios')
+  const agregar = page.getByRole('button', { name: 'Agregar recordatorio' })
+  await hidratado(agregar)
+  await agregar.click()
+  const hoja = page.getByRole('dialog', { name: 'Agregar recordatorio' })
+  await foto(page, 'r4-recordatorio-nuevo-vacio', info.project.name)
+  await hoja.getByLabel('Título').fill('Pagar la cuota del club')
+  await hoja.getByLabel('Se repite').selectOption('mensual')
+  await hoja.getByLabel('Día', { exact: true }).selectOption('10')
+  await hoja.getByLabel('Mes').selectOption('11')
+  await hoja.getByRole('button', { name: 'Otro' }).click()
+  await hoja.getByLabel('Cantidad').fill('2')
+  await hoja.getByLabel('Unidad').selectOption('dias')
+  await foto(page, 'r4-recordatorio-nuevo', info.project.name)
+  await page.reload()
+  const posponer = page.getByRole('article', { name: 'Gestionar Navidad' }).getByRole('button', { name: 'Posponer' })
+  await hidratado(posponer)
+  await posponer.click()
+  await expect(page.getByRole('dialog', { name: 'Posponer Gestionar Navidad' })).toBeVisible()
+  await page.waitForTimeout(400)
+  await foto(page, 'r4-recordatorio-posponer', info.project.name)
+})
+
+test('captura fotos: vista previa para encuadrar y foto grande @capturas', async ({ page }, info) => {
+  await resetear(page, { hoy: '2026-11-22', config: { nombre: 'Alfredo' } })
+  await entrarComo(page, 'owner')
+  await page.goto('/fotos')
+  await hidratado(page.getByText('Elegir varias'))
+  const f = path.join(__dirname, 'fixtures', 'foto.jpg')
+  await page.locator('input[type=file][multiple]').setInputFiles([f, f, f])
+  const hoja = page.getByRole('dialog', { name: 'Subir fotos' })
+  await expect(hoja.getByRole('button', { name: 'Subir 3 fotos' })).toBeVisible()
+  await page.waitForTimeout(400)
+  await foto(page, 'r4-fotos-vista-previa', info.project.name)
+  await hoja.getByRole('button', { name: 'Subir 3 fotos' }).click()
+  await expect(page.getByRole('img', { name: 'Foto familiar' })).toHaveCount(3)
+  await page.getByRole('button', { name: 'Ver foto' }).nth(1).click()
+  await expect(page.getByRole('dialog', { name: 'Foto' }).getByText('2 de 3')).toBeVisible()
+  await page.waitForTimeout(300)
+  await foto(page, 'r4-fotos-grande', info.project.name)
+  await page.goto('/')
+  await hidratado(page.getByRole('link', { name: 'Ajustes' }))
+  await paginaEntera(page, path.join(RAIZ, info.project.name, 'r4-inicio-accesos-fotos.png'))
+})
+
+for (const escena of ['golf', 'padel'] as const) {
+  test(`captura intro AlfredIA (${escena}) @capturas`, async ({ page }, info) => {
+    await page.addInitScript((e) => localStorage.setItem('alfredia:con-intro', e), escena)
+    await page.goto('/entrar')
+    await expect(page.locator('#intro')).toBeVisible()
+    await page.waitForTimeout(escena === 'golf' ? 1900 : 1500) // el último cuadro (golf4 / padel3)
+    // sin 'animations: disabled': terminaría la animación de salida y la intro ya no se vería
+    await page.screenshot({ path: path.join(RAIZ, info.project.name, `r4-intro-${escena}.png`) })
+  })
+}
