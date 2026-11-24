@@ -55,6 +55,29 @@ test('navegación: barra de abajo en el teléfono, barra lateral en computadora'
   }
 })
 
+test('menú de abajo compacto: bajo, Contame apenas sobresale, toques de 44×44 o más', async ({ page }) => {
+  test.skip(page.viewportSize()!.width >= LG, 'solo en el teléfono')
+  await page.goto('/')
+  const nav = page.getByRole('navigation', { name: 'Principal' })
+  const n = (await nav.boundingBox())!
+  expect(n.height).toBeLessThanOrEqual(52)
+  for (const nombre of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
+    const link = nav.getByRole('link', { name: nombre })
+    const c = (await link.boundingBox())!
+    expect(c.height, nombre).toBeGreaterThanOrEqual(44)
+    expect(c.width, nombre).toBeGreaterThanOrEqual(44)
+    // ícono y texto más chicos que antes (26 px y 16 px)
+    expect((await link.locator('svg').boundingBox())!.height, nombre).toBeLessThanOrEqual(22)
+    expect(await link.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)), nombre).toBe(14)
+  }
+  const contame = nav.getByRole('link', { name: 'Hablar con el asistente' })
+  const c = (await contame.boundingBox())!
+  expect(c.height).toBeGreaterThanOrEqual(44)
+  expect(c.width).toBeGreaterThanOrEqual(44)
+  // sobresale del menú como mucho 12 px (antes 24)
+  expect(n.y - c.y).toBeLessThanOrEqual(12)
+})
+
 test('computadora: a 1024 px el contenido tampoco queda debajo de la barra lateral', async ({ page }) => {
   test.skip(page.viewportSize()!.width < LG, 'solo en computadora')
   await page.setViewportSize({ width: 1024, height: 768 })

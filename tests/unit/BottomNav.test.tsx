@@ -26,12 +26,13 @@ describe('BottomNav', () => {
     expect(screen.getAllByRole('link').map((l) => l.textContent)).toEqual(['Inicio', 'Calendario', 'Portofino'])
   })
 
-  it('etiquetas en text-base (16 px) y cada pestaña del ancho de su texto (entra "Calendario" a 375 px)', () => {
+  it('compacto en el teléfono: etiquetas de 14 px (16 px en lg) y cada pestaña del ancho de su texto', () => {
     render(<BottomNav activo="inicio" rol="owner" />)
     for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
       const link = screen.getByRole('link', { name: n })
-      expect(link).toHaveClass('text-base', 'flex-auto')
-      for (const c of ['text-sm', 'text-xs', 'flex-1']) expect(link).not.toHaveClass(c)
+      expect(link).toHaveClass('text-sm', 'lg:text-base', 'min-h-12', 'flex-auto')
+      expect(link.querySelector('svg')).toHaveAttribute('width', '22')
+      for (const c of ['text-xs', 'flex-1']) expect(link).not.toHaveClass(c)
     }
   })
 })

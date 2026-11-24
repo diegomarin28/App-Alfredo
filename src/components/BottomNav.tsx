@@ -16,8 +16,9 @@ function tabDe(path: string | null): Tab | null {
   return (Object.keys(RUTAS) as Tab[]).find((t) => t !== 'inicio' && (path === RUTAS[t] || path.startsWith(RUTAS[t] + '/'))) ?? null
 }
 
+// Teléfono: menú compacto (íconos de 22 px, texto de 14 px, toques de 48 px). En lg, barra lateral con 16 px.
 const svg = (d: ReactNode) => (
-  <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
 )
 const ICONOS: Record<Exclude<Tab, 'contame'>, ReactNode> = {
   inicio: svg(<path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />),
@@ -32,7 +33,7 @@ function Pestana({ tab, texto, activo }: { tab: Exclude<Tab, 'contame'>; texto: 
       href={RUTAS[tab]}
       prefetch
       aria-current={activo ? 'page' : undefined}
-      className={`flex min-h-14 min-w-16 flex-auto flex-col items-center justify-center gap-0.5 text-base font-medium lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:text-base ${activo ? 'text-azul lg:bg-tinte' : 'text-texto-2 lg:hover:bg-gris'}`}
+      className={`flex min-h-12 min-w-16 flex-auto flex-col items-center justify-center gap-0.5 text-sm leading-tight font-medium lg:min-h-14 lg:flex-none lg:flex-row lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:text-base ${activo ? 'text-azul lg:bg-tinte' : 'text-texto-2 lg:hover:bg-gris'}`}
     >
       {ICONOS[tab]}
       <span>{texto}</span>
@@ -59,9 +60,9 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
               prefetch
               aria-label="Hablar con el asistente"
               aria-current={actual === 'contame' ? 'page' : undefined}
-              className="-mt-6 flex size-16 items-center justify-center rounded-full bg-azul text-white shadow-lg ring-4 ring-white hover:bg-azul-osc lg:mt-0 lg:h-14 lg:w-full lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:shadow-md lg:ring-0"
+              className="-mt-2 flex size-12 items-center justify-center rounded-full bg-azul text-white shadow-md ring-4 ring-white hover:bg-azul-osc lg:mt-0 lg:h-14 lg:w-full lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4 lg:ring-0"
             >
-              <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
               </svg>
               <span className="hidden text-base font-semibold lg:inline">Hablar con el asistente</span>
