@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Backgammon · otra versión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4E8C;text-decoration:none}a:hover{color:#183E70}
+@keyframes tiro1{0%{transform:translate(-80px,-60px) rotate(-200deg)}55%{transform:translate(0,0) rotate(10deg)}65%{transform:translate(0,-6px) rotate(4deg)}75%,100%{transform:translate(0,0) rotate(0)}}
+@keyframes tiro2{0%{transform:translate(-60px,-90px) rotate(160deg)}60%{transform:translate(0,0) rotate(-8deg)}70%{transform:translate(0,-5px) rotate(-3deg)}80%,100%{transform:translate(0,0) rotate(0)}}
+@keyframes nueva{0%,70%{opacity:.25}85%,100%{opacity:1}}
+.d1x{animation:tiro1 2.6s cubic-bezier(.3,.6,.3,1) infinite}.d2x{animation:tiro2 2.6s cubic-bezier(.3,.6,.3,1) infinite}.nv{animation:nueva 2.6s ease-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F5F7FA; font-family: Inter, system-ui, sans-serif; color: #1C1F24; box-sizing: border-box">
+<div style="padding: 56px 20px 0 20px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px"><h1 style="margin: 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.6px">Mensajes</h1></div>
+<div style="display: flex; background: #ECEFF4; border-radius: 12px; padding: 4px; gap: 4px"><a href="#" style="flex: 1 1 0; min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: 15px; font-weight: 600; background: #FFFFFF; color: #1F4E8C; box-shadow: 0 1px 3px rgba(0,0,0,0.10)">Me escribieron</a><a href="#" style="flex: 1 1 0; min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: 15px; font-weight: 600; color: #5F646B">Quiero escribir</a></div>
+<div style="background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 14px">
+<span style="font-size: 16px; font-weight: 600">Otra versión</span>
+<div role="img" aria-label="Se tiran dos dados" style="height: 92px; border-radius: 12px; background: #EAF0F8; display: flex; align-items: center; justify-content: center; gap: 18px">
+<span class="d1x" style="display: flex"><svg width="54" height="54" viewBox="0 0 100 100" aria-hidden="true"><rect x="4" y="4" width="92" height="92" rx="18" fill="#FFFFFF" stroke="#1F4E8C" stroke-width="5"/><circle cx="28" cy="25" r="8" fill="#1F4E8C"/><circle cx="72" cy="25" r="8" fill="#1F4E8C"/><circle cx="28" cy="50" r="8" fill="#1F4E8C"/><circle cx="72" cy="50" r="8" fill="#1F4E8C"/><circle cx="28" cy="75" r="8" fill="#1F4E8C"/><circle cx="72" cy="75" r="8" fill="#1F4E8C"/></svg></span><span class="d2x" style="display: flex"><svg width="54" height="54" viewBox="0 0 100 100" aria-hidden="true"><rect x="4" y="4" width="92" height="92" rx="18" fill="#FFFFFF" stroke="#1F4E8C" stroke-width="5"/><circle cx="28" cy="28" r="8" fill="#1F4E8C"/><circle cx="72" cy="28" r="8" fill="#1F4E8C"/><circle cx="28" cy="72" r="8" fill="#1F4E8C"/><circle cx="72" cy="72" r="8" fill="#1F4E8C"/></svg></span></div>
+<div class="nv"><div style="border: 1px solid #E3E8EF; border-radius: 12px; padding: 12px 14px; font-size: 17px; line-height: 1.45; min-height: 96px; box-sizing: border-box; background: #F5F7FA">Hola Martín, confirmado para el viernes. El jueves te paso el horario. Un saludo, Alfredo.</div></div>
+<div style="display: flex; gap: 10px"><a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 12px; background: #1F4E8C; color: #FFFFFF; font-size: 16px; font-weight: 600; white-space: nowrap; flex: 1 1 0; "><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/></svg>WhatsApp</a><a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 12px; background: #E3EBF6; color: #1F4E8C; font-size: 16px; font-weight: 600; white-space: nowrap; flex: 1 1 0; "><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Copiar</a></div>
+</div></div>
+<nav aria-label="Secciones" style="position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.96); border-top: 1px solid #E3E8EF; padding: 6px 8px 30px 8px; display: flex; justify-content: space-around; align-items: center"><a href="Main.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 64px; min-height: 48px; color: #5F646B; font-size: 13px; font-weight: 500"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>Inicio</a><a href="Calendario.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 64px; min-height: 48px; color: #5F646B; font-size: 13px; font-weight: 500"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendario</a><a href="Contame.dc.html" aria-label="Contame" style="width: 56px; height: 56px; margin-top: -14px; border-radius: 28px; background: #1F4E8C; color: #FFFFFF; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(31,78,140,0.28)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></a><a href="Mensajes.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 64px; min-height: 48px; color: #1F4E8C; font-size: 13px; font-weight: 600"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/></svg>Mensajes</a><a href="Casas.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 64px; min-height: 48px; color: #5F646B; font-size: 13px; font-weight: 500"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M5 20V10l7-5 7 5v10M10 20v-5h4v5"/></svg>Casas</a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

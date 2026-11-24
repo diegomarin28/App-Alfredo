@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pádel · Contame guardando</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4E8C;text-decoration:none}a:hover{color:#183E70}
+@keyframes px{0%{transform:translateX(0)}50%{transform:translateX(150px)}100%{transform:translateX(0)}}
+@keyframes py{0%,100%{transform:translateY(0)}25%{transform:translateY(-70px)}50%{transform:translateY(-30px)}75%{transform:translateY(-70px)}}
+@keyframes sombra{0%,50%,100%{transform:scaleX(1);opacity:.35}25%,75%{transform:scaleX(.5);opacity:.15}}
+@keyframes puntos{0%,100%{opacity:.25}50%{opacity:1}}
+.bx{animation:px 1.6s linear infinite}.by{animation:py 1.6s cubic-bezier(.4,0,.6,1) infinite}.sh{transform-origin:center;animation:sombra 1.6s cubic-bezier(.4,0,.6,1) infinite}
+.d1{animation:puntos 1.2s infinite}.d2{animation:puntos 1.2s .2s infinite}.d3{animation:puntos 1.2s .4s infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F5F7FA; font-family: Inter, system-ui, sans-serif; color: #1C1F24; box-sizing: border-box">
+<div style="padding: 56px 20px 0 20px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px"><h1 style="margin: 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.6px">Contame</h1></div>
+<p style="margin: -4px 0 0 0; font-size: 17px; color: #5F646B">Simón viene el jueves a cortar el pasto de Portofino…</p>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 18px; padding-top: 60px">
+<div style="position: relative; width: 250px; height: 150px">
+<div style="position: absolute; right: 0; top: 10px; bottom: 18px; width: 14px; border-radius: 4px; background: #C9D6E6"></div>
+<div style="position: absolute; right: 14px; top: 10px; bottom: 18px; width: 2px; background: #AFC2DA"></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 16px; height: 2px; background: #D3D9E1"></div>
+<div class="bx" style="position: absolute; left: 50px; bottom: 18px; width: 26px; height: 120px">
+<div class="sh" style="position: absolute; left: 1px; bottom: -6px; width: 24px; height: 6px; border-radius: 50%; background: #1C1F24"></div>
+<div class="by" style="position: absolute; left: 0; bottom: 0">
+<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="12" fill="#D8E64C" stroke="#B5C23A" stroke-width="1"/><path d="M4 7 Q13 13 4 20 M22 7 Q13 13 22 20" fill="none" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/></svg></div></div>
+</div>
+<span style="font-size: 20px; font-weight: 600">Guardando<span class="d1">.</span><span class="d2">.</span><span class="d3">.</span></span>
+<span style="font-size: 16px; color: #5F646B">Estoy ordenando lo que me contaste.</span>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
