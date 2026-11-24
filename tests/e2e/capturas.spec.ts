@@ -1,7 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { readdirSync } from 'node:fs'
 import path from 'node:path'
-import { decir, entrarComo, guion, hidratado, instalarVozFalsa } from './helpers'
+import { decir, entrarComo, guion, hidratado, instalarVozFalsa, resetear } from './helpers'
 import { abrir, PANTALLAS, sembrar } from './pantallas'
 
 /**
@@ -56,19 +56,31 @@ async function paginaEntera(page: Page, archivo: string) {
 const foto = (page: Page, nombre: string, proyecto: string) =>
   page.screenshot({ path: path.join(RAIZ, proyecto, `${nombre}.png`), animations: 'disabled' })
 
-test('captura calendario: saludo y agregar fecha @capturas', async ({ page }, info) => {
+test('captura calendario: nueva fecha @capturas', async ({ page }, info) => {
   await entrarComo(page, 'owner')
   await page.goto('/calendario')
   const agregar = page.getByRole('button', { name: 'Agregar fecha' })
-  // la página ya enganchada: la captura oculta el cursor de los campos y React lo notaría al hidratar
   await hidratado(agregar)
-  await hidratado(page.getByRole('textbox', { name: 'Saludo' }))
-  const saludo = page.getByRole('region', { name: 'Próximo cumpleaños' })
-  await saludo.screenshot({ path: path.join(RAIZ, info.project.name, 'calendario-saludo.png'), animations: 'disabled' })
   await agregar.click()
-  await expect(page.getByRole('dialog', { name: 'Agregar fecha' })).toBeVisible()
-  await page.getByLabel('Nombre').fill('Sofía Rodríguez')
-  await foto(page, 'calendario-agregar-fecha', info.project.name)
+  const hoja = page.getByRole('dialog', { name: 'Nueva fecha' })
+  await hoja.getByLabel('Nombre').fill('Sofía Rodríguez')
+  await hoja.getByLabel('Día', { exact: true }).selectOption('8')
+  await hoja.getByLabel('Mes').selectOption('12')
+  await hoja.getByLabel('Año de nacimiento (opcional)').fill('1985')
+  await foto(page, 'calendario-nueva-fecha', info.project.name)
+})
+
+test('captura documento nuevo (foto primero) @capturas', async ({ page }, info) => {
+  await entrarComo(page, 'owner')
+  await page.goto(`/documentos/${carpetaId}`)
+  const mas = page.getByRole('button', { name: 'Agregar documento' })
+  await hidratado(mas)
+  await mas.click()
+  const hoja = page.getByRole('dialog', { name: 'Nuevo documento' })
+  await hoja.locator('input[type=file]:not([capture])').setInputFiles(path.join(__dirname, 'fixtures', 'foto.jpg'))
+  await hoja.getByLabel('Título').fill('Póliza de la camioneta')
+  await expect(hoja.getByText('Foto lista')).toBeVisible()
+  await foto(page, 'documento-nuevo', info.project.name)
 })
 
 test('captura contame con transcripción @capturas', async ({ page }, info) => {
@@ -78,23 +90,40 @@ test('captura contame con transcripción @capturas', async ({ page }, info) => {
   const hablar = page.getByRole('button', { name: 'Tocá para hablar' })
   await hidratado(hablar)
   await hablar.click()
-  await decir(page, 'Ayer le pagué a Rosa la limpieza de Portofino. Mañana llamar al contador por el balance.')
-  await expect(page.getByText('Ayer le pagué a Rosa')).toBeVisible()
+  await decir(page, 'Simón viene el jueves a cortar el pasto de Portofino. Vence el seguro del auto el 29 y anotá que tengo que llamar a DirecTV.')
+  await expect(page.getByText('Simón viene el jueves')).toBeVisible()
   await foto(page, 'contame-escuchando', info.project.name)
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
   await expect(page.getByLabel('Lo que entendí · podés corregirlo')).toBeVisible()
-  await foto(page, 'contame-transcripcion', info.project.name)
+  await foto(page, 'contame-revisar', info.project.name)
 })
 
 test('captura mensajes con respuesta @capturas', async ({ page }, info) => {
   await entrarComo(page, 'owner')
   await guion(page, [{ texto: 'Estimado Martín: sí, el viernes cerramos sin problema. Le confirmo el horario durante la semana. Saludos cordiales, Alfredo.' }])
   await page.goto('/mensajes')
-  const escribieron = page.getByRole('button', { name: 'Me escribieron' })
-  await hidratado(escribieron)
-  await escribieron.click()
-  await page.getByLabel('Pegá el mensaje que te mandaron').fill('Hola Alfredo, ¿cerramos el viernes lo del pedido?')
-  await page.getByRole('button', { name: 'Sugerir respuesta' }).click()
+  const sugerir = page.getByRole('button', { name: 'Sugerir respuesta' })
+  await hidratado(sugerir)
+  await page.getByLabel('Pegá el mensaje que te mandaron').fill('Hola Alfredo, ¿cerramos el viernes lo del pedido de hormigón?')
+  await sugerir.click()
   await expect(page.getByLabel('Mensaje sugerido')).toHaveValue(/Estimado Martín/)
   await paginaEntera(page, path.join(RAIZ, info.project.name, 'mensajes-respuesta.png'))
+})
+
+// Último: cambia "hoy" al día del cumple de Ana (para "Mandar saludo"), así que va al final.
+test('captura calendario el día del cumple y el saludo @capturas', async ({ page }, info) => {
+  await resetear(page, { hoy: '2026-11-25', config: { nombre: 'Alfredo' }, datos: { fechas: [
+    { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
+    { nombre: 'Día del abuelo', tipo: 'otra', dia: '11-30' },
+    { nombre: 'Luis y Marta', tipo: 'aniversario', dia: '12-03' },
+    { nombre: 'Sofía Rodríguez', tipo: 'cumple', dia: '12-08', anioNacimiento: 1985 },
+  ] } })
+  await entrarComo(page, 'owner')
+  await page.goto('/calendario')
+  const mandar = page.getByRole('button', { name: 'Mandar saludo' })
+  await hidratado(mandar)
+  await paginaEntera(page, path.join(RAIZ, info.project.name, 'calendario-dia-del-cumple.png'))
+  await mandar.click()
+  await expect(page.getByRole('dialog', { name: 'Saludo para Ana' })).toBeVisible()
+  await foto(page, 'calendario-saludo', info.project.name)
 })
