@@ -1,5 +1,6 @@
 import { getRepo } from '@/data/getRepo'
 import { fechaCorta } from '@/domain/vencimientos'
+import { hoy } from '@/domain/fechas'
 import { EmptyState, Seccion, Titulo } from '@/components/ui'
 import { Icono } from '@/components/iconos'
 import NuevaNota from './NuevaNota'
@@ -9,14 +10,14 @@ export const dynamic = 'force-dynamic'
 
 export default async function PendientesYNotas() {
   const repo = getRepo()
-  const [pendientes, todasLasNotas] = await Promise.all([repo.pendientes.list(), repo.notas.list()])
+  const [pendientes, todasLasNotas, config] = await Promise.all([repo.pendientes.list(), repo.notas.list(), repo.getConfig()])
   const notas = todasLasNotas.sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
 
   return (
     <main className="space-y-5">
       <Titulo accion={<NuevoPendiente />}>Pendientes</Titulo>
       {/* los que creó Contame (vienen de un dictado) llevan el micrófono */}
-      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId) }))} />
+      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId) }))} nombre={config.nombre || 'Alfredo'} hoy={hoy()} />
       <Seccion id="notas" titulo="Notas" accion={<NuevaNota />}>
         {notas.length === 0 && <EmptyState>Todavía no hay notas.</EmptyState>}
         <ul className="space-y-2.5">

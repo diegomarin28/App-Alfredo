@@ -1,4 +1,5 @@
 'use client'
+import { Icono } from '@/components/iconos'
 /**
  * Contraseñas. La clave vive solo en memoria de esta pantalla (un ref): nunca se guarda, se manda ni se registra.
  * Al servidor solo van { sitio, usuario, cifrado, iv } y la configuración (sal, modo, control "ok" cifrado).
@@ -332,11 +333,12 @@ export default function Claves() {
       </header>
 
       {(paso.t === 'bloqueada' || paso.t === 'esperando') && (
-        <Card className="space-y-4">
-          <p className="text-base text-texto">
-            Tus contraseñas están guardadas bajo llave. Solo se abren con tu Face ID y se vuelven a cerrar
-            al salir de esta pantalla o a los 2 minutos sin usarla.
-          </p>
+        <div className="flex flex-col items-center gap-5 pt-6 text-center">
+          {/* ronda 3: candado grande arriba y un texto corto */}
+          <span aria-hidden="true" className="flex size-24 items-center justify-center rounded-full bg-tinte text-azul">
+            <Icono nombre="candado" tamano={44} trazo={2} />
+          </span>
+          <p className="max-w-xs text-[17px] text-texto">Solo se abren con tu Face ID. Se cierran solas a los 2 minutos.</p>
           {alerta}
           <button
             type="button"
@@ -346,7 +348,7 @@ export default function Claves() {
           >
             Desbloquear con Face ID
           </button>
-        </Card>
+        </div>
       )}
 
       {(paso.t === 'elegirPin' || paso.t === 'repetirPin' || paso.t === 'pedirPin') && (

@@ -1,7 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonMas, EmptyState, Lista, Sheet, clasesInput, clasesSeparador } from '@/components/ui'
+import { Boton, BotonMas, Lista, Sheet, clasesInput, clasesSeparador } from '@/components/ui'
+import { Flor, Flotante, Golf } from '@/components/detalles'
+import { contarTildado, tocaFlor, type CuentaDelDia } from '@/domain/detalles'
 import { Circulo } from '@/components/controles'
 import { Icono } from '@/components/iconos'
 import { agregarPendiente, tildarPendiente } from './actions'
@@ -53,8 +55,23 @@ export function NuevoPendiente() {
   )
 }
 
-/** Lista de pendientes (mockup v2): una tarjeta con círculos para tildar; los hechos, plegados abajo. */
-export default function Pendientes({ items }: { items: ItemPendiente[] }) {
+/** Cuánto queda a la vista la Flor (~1,6 s de animación y un respiro). */
+const FLOR_MS = 2600
+const CLAVE_CUENTA = 'alfredo:tildados-del-dia'
+
+/** La cuenta del día vive en el teléfono (localStorage); sin acceso (modo privado), la Flor no sale. */
+function leerCuenta(): CuentaDelDia | null {
+  try { return JSON.parse(localStorage.getItem(CLAVE_CUENTA) ?? 'null') as CuentaDelDia | null } catch { return null }
+}
+function guardarCuenta(c: CuentaDelDia) {
+  try { localStorage.setItem(CLAVE_CUENTA, JSON.stringify(c)) } catch { /* sin almacenamiento: no pasa nada */ }
+}
+
+/**
+ * Lista de pendientes (mockup v2): una tarjeta con círculos para tildar; los hechos, plegados abajo.
+ * Detalles: al tildar el tercero del día, ¡Flor! (truco); al tildar el último, la pelota entra al hoyo (golf).
+ */
+export default function Pendientes({ items, nombre, hoy }: { items: ItemPendiente[]; nombre: string; hoy: string }) {
   const router = useRouter()
   const [error, setError] = useState('')
   // estado optimista por id: sobrevive hasta que llegan los datos nuevos del servidor
@@ -64,9 +81,25 @@ export default function Pendientes({ items }: { items: ItemPendiente[] }) {
   const lista = items.map((i) => ({ ...i, hecho: cambios[i.id] ?? i.hecho }))
   const abiertos = lista.filter((i) => !i.hecho)
   const hechos = lista.filter((i) => i.hecho)
+  const [flor, setFlor] = useState(false)
+  // el golf se anima solo cuando el último se tilda acá (si no, el hoyo quieto); después de la Flor si coinciden
+  const [golf, setGolf] = useState<{ esperaMs: number } | null>(null)
 
   async function tildar(id: string, hecho: boolean) {
     setTocados((t) => ({ ...t, [id]: hecho }))
+    if (hecho) {
+      const cuenta = contarTildado(leerCuenta(), hoy)
+      const conFlor = tocaFlor(cuenta)
+      guardarCuenta(conFlor ? { ...cuenta, flor: true } : cuenta)
+      if (conFlor) {
+        setFlor(true)
+        setTimeout(() => setFlor(false), FLOR_MS)
+      }
+      const quedan = abiertos.filter((i) => i.id !== id && !tocados[i.id]).length
+      if (quedan === 0) setGolf({ esperaMs: conFlor ? 1600 : 0 })
+    } else {
+      setGolf(null)
+    }
     setError('')
     const guardado = tildarPendiente(id, hecho)
     await new Promise((r) => setTimeout(r, REBOTE_MS))
@@ -93,8 +126,11 @@ export default function Pendientes({ items }: { items: ItemPendiente[] }) {
   return (
     <div className="space-y-3">
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
+      {flor && <Flotante><Flor /></Flotante>}
       <section aria-label="Por hacer">
-        {abiertos.length === 0 ? <EmptyState>No hay pendientes. Tocá el + para sumar uno.</EmptyState> : <Lista>{abiertos.map(fila)}</Lista>}
+        {abiertos.length === 0
+          ? <Golf nombre={nombre} animar={golf !== null} esperaMs={golf?.esperaMs ?? 0} />
+          : <Lista>{abiertos.map(fila)}</Lista>}
       </section>
       {hechos.length > 0 && (
         <details className="group">

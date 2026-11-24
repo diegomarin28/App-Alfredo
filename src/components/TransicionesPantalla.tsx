@@ -21,6 +21,28 @@ export default function TransicionesPantalla() {
     terminar.current = null
   }, [ruta])
 
+  // Cuadros de texto que crecen solos: donde el navegador no tiene `field-sizing: content`, se ajusta el alto
+  // al escribir, al entrar y cuando aparece un cuadro nuevo.
+  useEffect(() => {
+    if (typeof CSS !== 'undefined' && CSS.supports('field-sizing', 'content')) return
+    const ajustar = (t: HTMLTextAreaElement) => {
+      t.style.height = 'auto'
+      t.style.height = `${t.scrollHeight + 2}px`
+    }
+    const alEscribir = (e: Event) => { if (e.target instanceof HTMLTextAreaElement) ajustar(e.target) }
+    const todos = () => document.querySelectorAll('textarea').forEach(ajustar)
+    document.addEventListener('input', alEscribir)
+    document.addEventListener('focusin', alEscribir)
+    const obs = new MutationObserver(todos)
+    obs.observe(document.body, { childList: true, subtree: true })
+    todos()
+    return () => {
+      document.removeEventListener('input', alEscribir)
+      document.removeEventListener('focusin', alEscribir)
+      obs.disconnect()
+    }
+  }, [])
+
   // Listas (mockup v2): una fila que se agrega a una lista que ya estaba aparece con un fundido. Al cambiar de
   // pantalla lo que entra es la pantalla entera (no una fila suelta), así que no se anima fila por fila.
   useEffect(() => {

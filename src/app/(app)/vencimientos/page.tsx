@@ -2,7 +2,8 @@ import { getRepo } from '@/data/getRepo'
 import { hoy, vencimientosProximos } from '@/domain/fechas'
 import { chipVencimiento } from '@/domain/vencimientos'
 import { MESES } from '@/domain/validarFecha'
-import { EmptyState, Seccion, Titulo } from '@/components/ui'
+import { Seccion, Titulo } from '@/components/ui'
+import { Swing } from '@/components/detalles'
 import FormVencimiento from './FormVencimiento'
 import Lista from './Lista'
 
@@ -21,9 +22,9 @@ export default async function Vencimientos() {
       id: v.id, titulo: v.titulo, fecha: fechaCorta(v.fecha), chip: chipVencimiento(v.dias),
       tono: v.dias < 0 ? 'rojo' as const : v.urgente ? 'naranja' as const : 'gris' as const,
     }))
+    // Siempre montada (el mismo árbol): así el "Deshacer" sobrevive aunque la sección quede vacía; vacía, sin título.
     return (
-      <Seccion id={id} titulo={titulo}>
-        {/* Siempre montada: así el "Deshacer" sobrevive aunque la sección quede vacía. */}
+      <Seccion id={id} titulo={titulo} sinTitulo={items.length === 0}>
         <Lista items={items} />
       </Seccion>
     )
@@ -32,7 +33,8 @@ export default async function Vencimientos() {
   return (
     <main className="space-y-5">
       <Titulo accion={<FormVencimiento />}>Vencimientos</Titulo>
-      {todos.length === 0 && <EmptyState>No hay vencimientos pendientes. Agregá el primero con el + de arriba.</EmptyState>}
+      {/* golf (mockup v2): sin nada por vencer, un swing */}
+      {todos.length === 0 && <Swing />}
       {seccion('empresa', 'Empresa', 'empresa')}
       {seccion('personales', 'Personales', 'personal')}
     </main>

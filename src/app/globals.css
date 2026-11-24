@@ -54,6 +54,12 @@ html {
   font-size: 16px;
 }
 
+/* Cuadros de texto (ronda 3): sin la esquina para estirar; crecen solos con lo que se escribe. */
+textarea {
+  resize: none;
+  field-sizing: content;
+}
+
 body {
   background: var(--color-fondo);
   color: var(--color-texto);
@@ -126,4 +132,86 @@ body {
   .plegandose {
     transition: opacity 200ms ease-out;
   }
+}
+
+/*
+ * Detalles personales (mockup v2, ronda 3): golf, pádel, whisky, truco y backgammon.
+ * El estilo de reposo de cada pieza es el cuadro FINAL; la animación arranca de otro lado (fill-mode both). Así,
+ * con "reducir movimiento" (animación apagada) se ve directamente cómo termina, sin moverse.
+ */
+@keyframes dt-rodar {
+  0% { transform: translate(-120px, 0); opacity: 1; }
+  55% { transform: translate(0, 0); opacity: 1; }
+  62% { transform: translate(0, 2px) scale(0.9); opacity: 1; }
+  72%, 100% { transform: translate(0, 8px) scale(0.4); opacity: 0; }
+}
+@keyframes dt-bandera { 0%, 100% { transform: skewY(0deg); } 25% { transform: skewY(-6deg); } 75% { transform: skewY(5deg); } }
+@keyframes dt-aparece { 0%, 62% { opacity: 0; transform: translateY(8px); } 75%, 100% { opacity: 1; transform: translateY(0); } }
+/* subida (la cabeza del palo va hacia atrás), golpe al pasar por abajo y terminación del otro lado */
+@keyframes dt-swing { 0% { transform: rotate(0deg); } 32% { transform: rotate(38deg); } 60% { transform: rotate(-38deg); } 100% { transform: rotate(-30deg); } }
+@keyframes dt-vuela {
+  0%, 52% { transform: translate(0, 0); opacity: 1; }
+  85% { transform: translate(110px, -60px); opacity: 1; }
+  100% { transform: translate(130px, -56px); opacity: 0; }
+}
+@keyframes dt-px { 0% { transform: translateX(0); } 50% { transform: translateX(150px); } 100% { transform: translateX(0); } }
+@keyframes dt-py { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-70px); } 50% { transform: translateY(-30px); } 75% { transform: translateY(-70px); } }
+@keyframes dt-sombra { 0%, 50%, 100% { transform: scaleX(1); opacity: 0.35; } 25%, 75% { transform: scaleX(0.5); opacity: 0.15; } }
+@keyframes dt-puntos { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes dt-izq { 0%, 20% { transform: rotate(0) translateX(0); } 45% { transform: rotate(14deg) translateX(30px); } 52% { transform: rotate(10deg) translateX(26px); } 75%, 100% { transform: rotate(0) translateX(0); } }
+@keyframes dt-der { 0%, 20% { transform: rotate(0) translateX(0); } 45% { transform: rotate(-14deg) translateX(-30px); } 52% { transform: rotate(-10deg) translateX(-26px); } 75%, 100% { transform: rotate(0) translateX(0); } }
+@keyframes dt-chispa { 0%, 42% { opacity: 0; transform: scale(0.6); } 50% { opacity: 1; transform: scale(1); } 66%, 100% { opacity: 0; transform: scale(1.2); } }
+@keyframes dt-texto { 0%, 45% { opacity: 0; transform: translateY(10px); } 60%, 100% { opacity: 1; transform: translateY(0); } }
+@keyframes dt-cae {
+  0% { transform: translateY(-34px) rotate(-20deg); opacity: 0; }
+  15% { opacity: 1; }
+  55% { transform: translateY(6px) rotate(8deg); }
+  65% { transform: translateY(2px) rotate(4deg); }
+  75%, 100% { transform: translateY(4px) rotate(6deg); opacity: 1; }
+}
+@keyframes dt-gota { 0%, 52% { opacity: 0; transform: translateY(0); } 60% { opacity: 1; } 80%, 100% { opacity: 0; transform: translateY(-10px); } }
+@keyframes dt-tiro1 { 0% { transform: translate(-80px, -60px) rotate(-200deg); } 55% { transform: translate(0, 0) rotate(10deg); } 65% { transform: translate(0, -6px) rotate(4deg); } 75%, 100% { transform: translate(0, 0) rotate(0); } }
+@keyframes dt-tiro2 { 0% { transform: translate(-60px, -90px) rotate(160deg); } 60% { transform: translate(0, 0) rotate(-8deg); } 70% { transform: translate(0, -5px) rotate(-3deg); } 80%, 100% { transform: translate(0, 0) rotate(0); } }
+@keyframes dt-carta1 { 0%, 10% { transform: translateY(60px) rotate(0); opacity: 0; } 70%, 100% { transform: translateY(0) rotate(-14deg); opacity: 1; } }
+@keyframes dt-carta2 { 0%, 18% { transform: translateY(60px); opacity: 0; } 78%, 100% { transform: translateY(-10px); opacity: 1; } }
+@keyframes dt-carta3 { 0%, 26% { transform: translateY(60px) rotate(0); opacity: 0; } 86%, 100% { transform: translateY(0) rotate(14deg); opacity: 1; } }
+@keyframes dt-grito { 0%, 60% { opacity: 0; transform: scale(0.6); } 80% { opacity: 1; transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+
+/* Golf: la pelota termina en el hoyo; la bandera quieta. */
+.dt-pelota { transform-box: fill-box; transform-origin: center; transform: translate(0, 8px) scale(0.4); opacity: 0; }
+.dt-bandera { transform-box: fill-box; transform-origin: 0 50%; }
+.dt-golf-anima .dt-pelota { animation: dt-rodar 2s cubic-bezier(0.25, 0.7, 0.3, 1) both; animation-delay: var(--dt-espera, 0s); }
+.dt-golf-anima .dt-bandera { animation: dt-bandera 1s ease-in-out 2 both; animation-delay: var(--dt-espera, 0s); }
+.dt-golf-anima .dt-mensaje { animation: dt-aparece 2s ease-out both; animation-delay: var(--dt-espera, 0s); }
+/* Swing: el palo termina arriba y la pelota se fue. */
+.dt-palo { transform-box: fill-box; transform-origin: 50% 0; transform: rotate(-30deg); animation: dt-swing 1.6s cubic-bezier(0.5, 0, 0.3, 1) both; }
+.dt-vuelo { transform-box: fill-box; transform: translate(130px, -56px); opacity: 0; animation: dt-vuela 1.6s cubic-bezier(0.2, 0.6, 0.4, 1) both; }
+/* Pádel: rebota mientras espera. */
+.dt-px { animation: dt-px 1.6s linear infinite; }
+.dt-py { animation: dt-py 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+.dt-sombra { transform-origin: center; animation: dt-sombra 1.6s cubic-bezier(0.4, 0, 0.6, 1) infinite; opacity: 0.35; }
+.dt-punto { animation: dt-puntos 1.2s infinite; }
+.dt-punto:nth-child(2) { animation-delay: 0.2s; }
+.dt-punto:nth-child(3) { animation-delay: 0.4s; }
+/* Whisky: los vasos brindan una vez y quedan quietos. */
+.dt-vaso-izq { transform-box: fill-box; transform-origin: 50% 100%; animation: dt-izq 2.4s ease-in-out both; }
+.dt-vaso-der { transform-box: fill-box; transform-origin: 50% 100%; animation: dt-der 2.4s ease-in-out both; }
+.dt-chispa { transform-box: fill-box; transform-origin: center; opacity: 0; animation: dt-chispa 2.4s ease-out both; }
+.dt-brindis-texto { animation: dt-texto 2.4s ease-out both; }
+/* Hielo: cae en el vaso mientras actualiza. */
+.dt-cubo { transform-box: fill-box; transform-origin: center; transform: translateY(4px) rotate(6deg); }
+.dt-hielo-anima .dt-cubo { animation: dt-cae 1.8s cubic-bezier(0.3, 0.6, 0.4, 1) infinite; }
+.dt-gotas { transform-box: fill-box; opacity: 0; }
+.dt-hielo-anima .dt-gotas { animation: dt-gota 1.8s ease-out infinite; }
+/* Dados: ruedan mientras escribe otra versión. */
+.dt-dado1 { animation: dt-tiro1 1.3s cubic-bezier(0.3, 0.6, 0.3, 1) infinite; }
+.dt-dado2 { animation: dt-tiro2 1.3s cubic-bezier(0.3, 0.6, 0.3, 1) infinite; }
+/* Truco: tres cartas en abanico y "¡Flor!". */
+.dt-carta1 { transform-origin: 50% 100%; transform: rotate(-14deg); animation: dt-carta1 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.dt-carta2 { transform-origin: 50% 100%; transform: translateY(-10px); animation: dt-carta2 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.dt-carta3 { transform-origin: 50% 100%; transform: rotate(14deg); animation: dt-carta3 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
+.dt-grito { animation: dt-grito 1.6s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='dt-'] { animation: none !important; }
 }

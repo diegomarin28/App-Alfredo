@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Boton, Card, IconoTile, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
 import { Icono, type NombreIcono } from '@/components/iconos'
 import type { Guardado } from '@/domain/ultimos'
+import { Padel } from '@/components/detalles'
 import type { Opcion } from '@/ai/contamePrompt'
 import { useDictado } from '@/voz/useDictado'
 
@@ -293,7 +294,8 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
             </Card>
           )}
 
-          {cargando && <p role="status" className="text-base text-texto-2">Guardando…</p>}
+          {/* pádel (mockup v2): la pelota rebota contra la pared mientras guarda */}
+          {cargando && <Padel texto="Guardando" detalle="Estoy ordenando lo que me contaste." />}
           {error && <Alerta>{error}</Alerta>}
         </>
       )}

@@ -2,7 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getSesion } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
-import { Icono } from '@/components/iconos'
+import { Vasos } from '@/components/detalles'
+import { BrindisHecho } from '@/components/Brindis'
+import { hoy } from '@/domain/fechas'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,9 +26,9 @@ export default async function Bienvenida() {
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-gradient-to-b from-azul to-azul-osc px-6 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] text-white">
       {PAPELITOS.map(([x, y, c]) => <span key={x + y} aria-hidden="true" style={{ left: x, top: y }} className={`absolute ${c}`} />)}
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-5">
-        <span aria-hidden="true" className="flex size-[72px] items-center justify-center rounded-[20px] bg-white/15">
-          <Icono nombre="torta" tamano={36} />
-        </span>
+        {/* whisky (mockup v2): el brindis va arriba de la Bienvenida */}
+        <Vasos ancho={240} />
+        <BrindisHecho hoy={hoy()} />
         <h1 className="text-[40px] leading-[1.05] font-bold tracking-[-0.8px]">¡Feliz cumpleaños, {nombre || 'Alfredo'}!</h1>
         <p className="text-[17px] leading-relaxed text-white/90">
           Esta app es tu regalo. La hicimos para que tengas todo en un solo lugar: fechas, casas, documentos, y alguien

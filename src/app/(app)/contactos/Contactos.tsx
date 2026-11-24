@@ -79,6 +79,8 @@ export default function Contactos({ contactos, grupos }: { contactos: Contacto[]
           <Chip key={g.id} activo={filtro === g.id} aria-pressed={filtro === g.id} onClick={() => setFiltro(g.id)}>{g.nombre}</Chip>
         ))}
         <NuevoGrupo />
+        {/* 20 px de margen al final para que "+ Grupo" se vea entero al deslizar */}
+        <span aria-hidden="true" className="w-3 shrink-0" />
       </div>
       {lista.length === 0 ? (
         <EmptyState>{contactos.length === 0 ? 'Todavía no hay contactos. Tocá el + para agregar el primero.' : 'No hay contactos que coincidan.'}</EmptyState>

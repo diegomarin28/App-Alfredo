@@ -10,6 +10,7 @@ const TRAZOS = {
   mas: <path d="M12 5v14M5 12h14" />,
   cerrar: <path d="M6 6l12 12M18 6L6 18" />,
   flecha: <path d="M9 6l6 6-6 6" />,
+  atras: <path d="M15 6l-6 6 6 6" />,
   abajo: <path d="M6 9l6 6 6-6" />,
   camara: <><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>,
   torta: <path d="M4 21h16v-8H4zM4 16c2 1 4 1 5.3 0s4 1 5.4 0 3.3 1 5.3 0M12 13V9M12 6.5a1.5 1.5 0 0 1-1.5-1.5c0-1 1.5-2.5 1.5-2.5s1.5 1.5 1.5 2.5A1.5 1.5 0 0 1 12 6.5" />,

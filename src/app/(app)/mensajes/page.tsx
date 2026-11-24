@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { Boton, Card, Field, clasesInput } from '@/components/ui'
 import { Segmentado } from '@/components/controles'
+import { Dados, Padel } from '@/components/detalles'
 import { Icono } from '@/components/iconos'
 import IconoWhatsApp from '@/components/IconoWhatsApp'
 import { waLink } from '@/domain/telefono'
@@ -16,10 +17,13 @@ export default function Page() {
   const [idea, setIdea] = useState('')
   const [texto, setTexto] = useState<string | null>(null)
   const [cargando, setCargando] = useState(false)
+  // qué se está pidiendo: la respuesta (pádel), otra versión (dados) o más formal
+  const [pedido, setPedido] = useState<'nueva' | 'formal' | 'otra'>('nueva')
   const [error, setError] = useState<string | null>(null)
   const [copiado, setCopiado] = useState(false)
 
   async function pedir(variante?: 'formal' | 'otra') {
+    setPedido(variante ?? 'nueva')
     setCargando(true)
     setError(null)
     setCopiado(false)
@@ -90,13 +94,18 @@ export default function Page() {
         </div>
       )}
 
-      {cargando && <p role="status" className="text-base text-texto-2">Escribiendo…</p>}
+      {cargando && pedido === 'nueva' && <Padel texto="Escribiendo" />}
+      {cargando && pedido === 'formal' && <p role="status" className="text-base text-texto-2">Escribiendo…</p>}
       {error && <div role="alert" className="rounded-2xl bg-urg-bg p-4 text-base text-urg-tx">{error}</div>}
 
       {texto !== null && (
         <Card className="space-y-3 motion-safe:animate-entrar">
-          <label htmlFor="sugerido" className="block text-base font-semibold text-texto">Respuesta sugerida</label>
-          <textarea id="sugerido" aria-label="Mensaje sugerido" className={`${clasesInput} min-h-32 bg-fondo py-3 leading-snug`} value={texto} onChange={(e) => { setTexto(e.target.value); setCopiado(false) }} />
+          <label htmlFor="sugerido" className="block text-base font-semibold text-texto">
+            {cargando && pedido === 'otra' ? 'Otra versión' : 'Respuesta sugerida'}
+          </label>
+          {/* backgammon (mockup v2): los dados ruedan mientras escribe otra versión */}
+          {cargando && pedido === 'otra' && <><Dados /><span role="status" className="sr-only">Escribiendo otra versión…</span></>}
+          <textarea id="sugerido" aria-label="Mensaje sugerido" className={`${clasesInput} min-h-32 bg-fondo py-3 leading-snug transition-opacity duration-300 ${cargando && pedido !== 'nueva' ? 'opacity-25' : ''}`} value={texto} onChange={(e) => { setTexto(e.target.value); setCopiado(false) }} />
           <div className="grid grid-cols-2 gap-2.5">
             <a
               href={waLink(texto)} target="_blank" rel="noopener noreferrer" aria-label="Enviar por WhatsApp"

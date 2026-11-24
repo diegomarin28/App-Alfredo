@@ -2,20 +2,13 @@ import Link from 'next/link'
 import { getSesion } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 import { fotoDelDia } from '@/domain/fotoDelDia'
+import { saludoDelMomento } from '@/domain/detalles'
+import Actualizar from '@/components/Actualizar'
 import { hoy, proximosCumples, vencimientosProximos } from '@/domain/fechas'
 import { EmptyState, IconoTile, Lista, clasesFila, clasesSeparador } from '@/components/ui'
 import { Icono, type NombreIcono } from '@/components/iconos'
 
 export const dynamic = 'force-dynamic'
-
-const TZ = 'America/Montevideo'
-
-function saludo(ahora: Date): string {
-  const h = Number(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, hour: '2-digit', hourCycle: 'h23' }).format(ahora))
-  if (h >= 5 && h < 12) return 'Buen día'
-  if (h >= 12 && h < 20) return 'Buenas tardes'
-  return 'Buenas noches'
-}
 
 function fechaLarga(hoyStr: string): string {
   const [y, m, d] = hoyStr.split('-').map(Number)
@@ -85,6 +78,7 @@ export default async function Inicio() {
       ['Recordatorios', `${recordatorios?.length ?? 0} ${recordatorios?.length === 1 ? 'cargado' : 'cargados'}`, '/recordatorios', 'campana'],
     ]
     return (
+      <Actualizar>
       <main className="space-y-4">
         <div className="space-y-1.5">
           <h1 className={clasesTitulo}>Cargando datos para {config.nombre || 'Alfredo'}</h1>
@@ -103,6 +97,7 @@ export default async function Inicio() {
           ))}
         </nav>
       </main>
+      </Actualizar>
     )
   }
 
@@ -113,11 +108,12 @@ export default async function Inicio() {
   const abiertos = delOwner ? delOwner[1].filter((p) => !p.hecho).length : 0
 
   return (
+    <Actualizar>
     <main className="space-y-4">
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-0.5">
           <p className="text-base text-texto-2">{fechaLarga(hoyStr)}</p>
-          <h1 className={clasesTitulo}>{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
+          <h1 className={clasesTitulo}>{saludoDelMomento(new Date())}, {config.nombre || 'Alfredo'}</h1>
         </div>
         <Link href="/ajustes" aria-label="Ajustes" className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-full text-texto-2 hover:bg-tinte">
           <Icono nombre="tuerca" tamano={24} />
@@ -166,5 +162,6 @@ export default async function Inicio() {
         </Lista>
       </section>
     </main>
+    </Actualizar>
   )
 }
