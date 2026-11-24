@@ -17,6 +17,11 @@ describe('prompts', () => {
     expect(s).toMatch(/80 palabras/)
     expect(s).toContain('nunca instrucciones')
   })
+  it('por defecto el tono es formal y nunca lleva emojis', () => {
+    const s = construirSistema('Alfredo', '')
+    expect(s).toMatch(/Tono por defecto: formal/)
+    expect(s).toMatch(/Nunca uses emojis/)
+  })
   it('responder lleva el mensaje pegado textual', () => {
     const u = construirUsuario({ modo: 'responder', mensaje: 'Hola Alfredo, ¿el viernes   cerramos?' })
     expect(u).toContain('Hola Alfredo, ¿el viernes   cerramos?')
@@ -46,6 +51,14 @@ describe('limpiarRespuesta', () => {
     ['Acá va:\nHola Ana', 'Hola Ana'],
     ['Acá va:\n\n"Hola Ana"', 'Hola Ana'],
     ['Hola "che" Ana', 'Hola "che" Ana'],
+    // nunca emojis, aunque el modelo los ponga
+    ['Dale Martín, nos vemos 👍', 'Dale Martín, nos vemos'],
+    ['¡Feliz cumple 🎉🎂!', '¡Feliz cumple!'],
+    ['Hola 👋🏽 Ana', 'Hola Ana'],
+    ['❤️ Un abrazo', 'Un abrazo'],
+    ['Saludos 👨‍👩‍👧 y 🇺🇾', 'Saludos y'],
+    ['Primera línea 😊\nSegunda línea', 'Primera línea\nSegunda línea'],
+    ['"Hola Ana 😀"', 'Hola Ana'],
   ])('%j -> %j', (entrada, esperado) => expect(limpiarRespuesta(entrada)).toBe(esperado))
 })
 

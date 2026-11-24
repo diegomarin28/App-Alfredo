@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Boton, Card, Field, clasesInput } from '@/components/ui'
+import IconoWhatsApp from '@/components/IconoWhatsApp'
 import { waLink } from '@/domain/telefono'
 
 type Modo = 'responder' | 'escribir'
@@ -86,7 +87,12 @@ export default function Page() {
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Boton onClick={copiar}>{copiado ? 'Copiado' : 'Copiar'}</Boton>
-            <a href={waLink(texto)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-azul px-5 text-base font-semibold text-white hover:bg-azul-osc">Enviar por WhatsApp</a>
+            <a
+              href={waLink(texto)} target="_blank" rel="noopener noreferrer" aria-label="Enviar por WhatsApp"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-azul px-4 text-base font-semibold whitespace-nowrap text-white hover:bg-azul-osc"
+            >
+              <IconoWhatsApp />WhatsApp
+            </a>
             <Boton variante="suave" disabled={cargando} onClick={() => pedir('formal')}>Más formal</Boton>
             <Boton variante="suave" disabled={cargando} onClick={() => pedir('otra')}>Otra</Boton>
           </div>

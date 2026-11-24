@@ -24,10 +24,17 @@ test('Me escribieron: sugiere respuesta con Copiar, WhatsApp, Más formal y Otra
 
   const resultado = page.getByLabel('Mensaje sugerido')
   await expect(resultado).toHaveValue('Dale Martín, el viernes cerramos.')
-  await expect(page.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('href', waLink('Dale Martín, el viernes cerramos.'))
+  const whatsapp = page.getByRole('link', { name: 'Enviar por WhatsApp' })
+  await expect(whatsapp).toHaveAttribute('href', waLink('Dale Martín, el viernes cerramos.'))
+  // ícono + "WhatsApp", en una sola línea
+  await expect(whatsapp).toHaveText('WhatsApp')
+  await expect(whatsapp.locator('svg')).toBeVisible()
+  expect((await whatsapp.boundingBox())!.height).toBeLessThan(48)
 
   const llamadas = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
   expect(llamadas[0].sistema).toContain(ESTILO)
+  expect(llamadas[0].sistema).toContain('Tono por defecto: formal')
+  expect(llamadas[0].sistema).toContain('Nunca uses emojis')
   expect(llamadas[0].mensajes[0].texto).toContain('Hola Alfredo, ¿cerramos el viernes?')
 
   // el enlace sigue las ediciones
