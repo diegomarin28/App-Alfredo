@@ -29,6 +29,8 @@ test('próximo cumple destacado: los otros días sin "Mandar saludo"', async ({ 
 test('el día del cumple: "Mandar saludo" abre el saludo Formal, editable, con tonos Cercano y Breve', async ({ page }) => {
   await resetear(page, { datos: DATOS, hoy: '2026-11-25', config: { nombre: 'Alfredo' } })
   await entrarComo(page, 'owner')
+  // el 25/11 también es el cumple de Alfredo: el brindis ya se vio hoy (tiene su prueba en detalles)
+  await page.addInitScript(() => { try { localStorage.setItem('alfredo:brindis', '2026-11-25') } catch { /* nada */ } })
   await page.goto('/calendario')
   const card = page.getByRole('region', { name: 'Próximo cumpleaños' })
   await expect(card).toContainText('Hoy cumple Ana Pérez')

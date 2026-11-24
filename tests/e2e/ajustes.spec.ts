@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, resetear } from './helpers'
 import { ENTORNO_E2E } from './entorno'
 
 test('Ajustes sin instalar muestra las instrucciones', async ({ page }) => {
@@ -65,6 +65,7 @@ test('Ajustes: Salir cierra la sesión y vuelve a Entrar', async ({ page }) => {
   await resetear(page)
   await entrarComo(page, 'owner')
   await page.goto('/ajustes')
+  await hidratado(page.getByRole('button', { name: 'Salir' }))
   await page.getByRole('button', { name: 'Salir' }).click()
   await expect(page).toHaveURL(/\/entrar/)
   await page.goto('/ajustes')
