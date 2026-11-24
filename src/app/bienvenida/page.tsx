@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { NombreApp } from '@/components/Marca'
 import { redirect } from 'next/navigation'
 import { getSesion } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
@@ -25,6 +26,7 @@ export default async function Bienvenida() {
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-gradient-to-b from-azul to-azul-osc px-6 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] text-white">
       {PAPELITOS.map(([x, y, c]) => <span key={x + y} aria-hidden="true" style={{ left: x, top: y }} className={`absolute ${c}`} />)}
+      <NombreApp oscuro className="relative mx-auto w-full max-w-md text-[22px]" />
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-5">
         {/* whisky (mockup v2): el brindis va arriba de la Bienvenida */}
         <Vasos ancho={240} />

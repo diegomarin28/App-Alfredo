@@ -1,13 +1,14 @@
 {
-  "name": "Alfredo",
-  "short_name": "Alfredo",
+  "name": "AlfredIA",
+  "short_name": "AlfredIA",
   "display": "standalone",
-  "theme_color": "#1F4E8C",
-  "background_color": "#F5F7FA",
+  "theme_color": "#112A50",
+  "background_color": "#112A50",
   "start_url": "/",
   "lang": "es",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
