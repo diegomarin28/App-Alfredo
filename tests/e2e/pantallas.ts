@@ -14,6 +14,7 @@ const DATOS = {
     { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
     { nombre: 'Luis y Marta', tipo: 'otra', dia: '12-03' },
     { nombre: 'Marta', tipo: 'cumple', dia: '01-10' },
+    { nombre: 'Sofía Rodríguez', tipo: 'cumple', dia: '12-08', anioNacimiento: 1985 },
     { nombre: 'Día del abuelo', tipo: 'otra', dia: '11-30' },
   ],
   vencimientos: [
@@ -51,6 +52,7 @@ const DATOS = {
   ],
   serviciosCasa: [
     { casa: 'portofino', clave: 'DirecTV', valor: 'Cliente 123456' },
+    { casa: 'portofino', clave: 'UTE', valor: 'Cuenta 4455667' },
     { casa: 'malibu', clave: 'OSE', valor: 'Cuenta 777' },
   ],
 }
