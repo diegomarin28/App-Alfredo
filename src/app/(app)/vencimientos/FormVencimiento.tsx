@@ -1,7 +1,8 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonAgregar, Chip, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonMas, Field, Sheet, clasesInput } from '@/components/ui'
+import { Segmentado } from '@/components/controles'
 import AvisoChips, { diasAviso } from '@/components/AvisoChips'
 import { agregarVencimiento } from './actions'
 
@@ -40,16 +41,13 @@ export default function FormVencimiento() {
 
   return (
     <>
-      <BotonAgregar nombre="Agregar vencimiento" onClick={abrir} />
-      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Agregar vencimiento">
+      <BotonMas nombre="Agregar vencimiento" onClick={abrir} />
+      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nuevo vencimiento">
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-          <div role="group" aria-label="Ámbito" className="space-y-2">
-            <p className="text-base font-medium">Ámbito</p>
-            <div className="flex gap-2">
-              <Chip activo={ambito === 'empresa'} aria-pressed={ambito === 'empresa'} onClick={() => setAmbito('empresa')}>Empresa</Chip>
-              <Chip activo={ambito === 'personal'} aria-pressed={ambito === 'personal'} onClick={() => setAmbito('personal')}>Personal</Chip>
-            </div>
+          <div>
+            <span className="mb-1.5 block text-base font-semibold text-texto">Ámbito</span>
+            <Segmentado etiqueta="Ámbito" opciones={[['empresa', 'Empresa'], ['personal', 'Personal']] as const} valor={ambito} onCambio={setAmbito} />
           </div>
           <Field label="Fecha"><input name="fecha" type="date" className={clasesInput} /></Field>
           <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} />

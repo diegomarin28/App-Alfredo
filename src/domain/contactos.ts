@@ -24,7 +24,7 @@ export function formatearTelUY(tel: string): string {
   return l.startsWith('9') ? `0${l.slice(0, 2)} ${l.slice(2, 5)} ${l.slice(5)}` : `${l.slice(0, 4)} ${l.slice(4)}`
 }
 
-export interface EntradaContacto { nombre: string; tipo: string; empresa?: string; telefono?: string; nota?: string }
+export interface EntradaContacto { nombre: string; grupoId?: string; empresa?: string; telefono?: string; nota?: string }
 export type ResultadoContacto =
   | { ok: true; valor: Omit<Contacto, 'id' | 'loteId' | 'creadoEn'> }
   | { ok: false; error: string }
@@ -35,7 +35,6 @@ export function validarContacto(e: EntradaContacto): ResultadoContacto {
   const nombre = txt(e.nombre)
   if (!nombre) return { ok: false, error: 'Escribí el nombre.' }
   if (nombre.length > MAX_NOMBRE_CONTACTO) return { ok: false, error: `El nombre puede tener hasta ${MAX_NOMBRE_CONTACTO} letras.` }
-  if (e.tipo !== 'cliente' && e.tipo !== 'proveedor' && e.tipo !== 'otro') return { ok: false, error: 'Elegí el tipo de contacto.' }
   const empresa = txt(e.empresa)
   if (empresa.length > MAX_EMPRESA) return { ok: false, error: `La empresa puede tener hasta ${MAX_EMPRESA} letras.` }
   const nota = txt(e.nota)
@@ -47,9 +46,22 @@ export function validarContacto(e: EntradaContacto): ResultadoContacto {
     if (!n) return { ok: false, error: 'Revisá el número' }
     telefono = n
   }
-  const valor: Omit<Contacto, 'id' | 'loteId' | 'creadoEn'> = { nombre, tipo: e.tipo }
+  const valor: Omit<Contacto, 'id' | 'loteId' | 'creadoEn'> = { nombre }
+  const grupoId = txt(e.grupoId)
+  if (grupoId) valor.grupoId = grupoId
   if (empresa) valor.empresa = empresa
   if (telefono) valor.telefono = telefono
   if (nota) valor.nota = nota
   return { ok: true, valor }
+}
+
+export const MAX_NOMBRE_GRUPO = 30
+
+/** Nombre de un grupo nuevo: obligatorio, corto y sin repetir (sin importar mayúsculas ni tildes). */
+export function validarGrupo(nombre: string, existentes: string[]): { ok: true; valor: string } | { ok: false; error: string } {
+  const n = txt(nombre).replace(/\s+/g, ' ')
+  if (!n) return { ok: false, error: 'Escribí el nombre del grupo.' }
+  if (n.length > MAX_NOMBRE_GRUPO) return { ok: false, error: `El nombre puede tener hasta ${MAX_NOMBRE_GRUPO} letras.` }
+  if (existentes.some((e) => normalizarBusqueda(e) === normalizarBusqueda(n))) return { ok: false, error: 'Ya hay un grupo con ese nombre.' }
+  return { ok: true, valor: n }
 }

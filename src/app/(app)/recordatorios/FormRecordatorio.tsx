@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonAgregar, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonIcono, BotonMas, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
 import AvisoChips, { claveAviso, diasAviso } from '@/components/AvisoChips'
 import { MESES } from '@/domain/validarFecha'
 import { guardarRecordatorio } from './actions'
@@ -54,19 +54,19 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
 
   return (
     <>
-      {soloIcono ? <Boton variante="suave" onClick={abrir}>{etiqueta}</Boton> : <BotonAgregar nombre={etiqueta} onClick={abrir} />}
+      {soloIcono ? <BotonIcono nombre={etiqueta} icono="lapiz" tono="nada" onClick={abrir} /> : <BotonMas nombre={etiqueta} onClick={abrir} />}
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={inicial ? 'Editar recordatorio' : 'Agregar recordatorio'}>
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" defaultValue={inicial?.titulo ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Día">
-              <select name="dia" aria-label="Día" defaultValue={diaIni} className={clasesInput}>
+              <select name="dia" aria-label="Día" defaultValue={diaIni} className={clasesSelect}>
                 <option value="">Elegí</option>
                 {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
               </select>
             </Field>
             <Field label="Mes">
-              <select name="mes" aria-label="Mes" defaultValue={mesIni} className={clasesInput}>
+              <select name="mes" aria-label="Mes" defaultValue={mesIni} className={clasesSelect}>
                 <option value="">Elegí</option>
                 {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>

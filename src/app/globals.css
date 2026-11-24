@@ -5,22 +5,48 @@
   --color-azul-osc: #183e70;
   --color-fondo: #f5f7fa;
   --color-borde: #e3e8ef;
+  --color-borde-fuerte: #c9d3e0;
   --color-tinte: #e3ebf6;
+  --color-tinte-claro: #eaf0f8;
   --color-gris: #eceff4;
   --color-texto: #1c1f24;
   --color-texto-2: #5f646b;
   --color-urg-bg: #fcebdd;
   --color-urg-tx: #8a4a12;
+  /* mockup v2: borrar y vencido en rojo, casas y WhatsApp en verde */
+  --color-rojo: #b3261e;
+  --color-rojo-bg: #fdecec;
+  --color-verde: #1e6b3a;
+  --color-verde-bg: #e4f3ea;
+  --color-amarillo: #f2c14e;
   --font-sans: var(--font-inter), system-ui, sans-serif;
 
-  /* Paneles (Sheet, confirmación de borrar): el fondo aparece y el panel sube. */
-  --animate-aparecer: aparecer 160ms ease-out;
-  --animate-subir: subir 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Paneles (mockup v2): el fondo se oscurece en 200 ms y la hoja sube desde abajo en 260 ms. */
+  --animate-aparecer: aparecer 200ms ease-out;
+  --animate-subir: subir 260ms cubic-bezier(0.32, 0.72, 0, 1);
+  /* Listas: lo nuevo aparece con un fundido. */
+  --animate-entrar: entrar 220ms ease-out;
+  /* Tildar: el círculo se llena con un rebote. */
+  --animate-rebote: rebote 220ms ease-out;
+  /* Contame escuchando: anillos que respiran. */
+  --animate-respirar: respirar 2s ease-in-out infinite;
   @keyframes aparecer {
     from { opacity: 0; }
   }
   @keyframes subir {
-    from { opacity: 0; transform: translateY(32px); }
+    from { transform: translateY(100%); }
+  }
+  @keyframes entrar {
+    from { opacity: 0; transform: translateY(6px); }
+  }
+  @keyframes rebote {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  @keyframes respirar {
+    0%, 100% { transform: scale(1); opacity: 0.55; }
+    50% { transform: scale(1.12); opacity: 1; }
   }
 }
 
@@ -34,35 +60,70 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Respuesta al tocar: mientras se aprieta, lo tocado se aclara y (si se puede mover) se achica un poco. */
-:where(a[href], button, [role='button'], summary, label:has(input)) {
+/*
+ * Respuesta al tocar (mockup v2): al apretar, escala 0.97 y opacidad 0.85 en 90 ms; vuelve en 160 ms.
+ * Sin el retraso de 300 ms del doble toque (touch-action: manipulation).
+ */
+:where(a[href], button, [role='button'], [role='radio'], [role='tab'], summary, label:has(input)) {
   -webkit-tap-highlight-color: transparent;
-  transition: transform 120ms ease-out, opacity 120ms ease-out;
+  touch-action: manipulation;
+  transition: transform 160ms ease-out, opacity 160ms ease-out;
 }
-:where(a[href], button, [role='button'], summary, label:has(input)):not(:disabled):active {
-  opacity: 0.8;
+:where(a[href], button, [role='button'], [role='radio'], [role='tab'], summary, label:has(input)):not(:disabled):active {
+  opacity: 0.85;
+  transition-duration: 90ms;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  :where(a[href], button, [role='button'], summary, label:has(input)):not(:disabled):active {
+  :where(a[href], button, [role='button'], [role='radio'], [role='tab'], summary, label:has(input)):not(:disabled):active {
     transform: scale(0.97);
   }
 
-  /* Entre pantallas (View Transitions, ver TransicionesPantalla): la vieja se va y la nueva entra subiendo apenas. */
+  /* Entre pantallas (View Transitions, ver TransicionesPantalla): fundido y 8 px de desplazamiento, 180 ms. */
   ::view-transition-old(root) {
-    animation: 140ms ease-out both pantalla-sale;
+    animation: 180ms ease-out both pantalla-sale;
   }
   ::view-transition-new(root) {
-    animation: 200ms ease-out both pantalla-entra;
+    animation: 180ms ease-out both pantalla-entra;
   }
-  /* El menú queda quieto. */
+  /* El menú no se mueve. */
   ::view-transition-group(menu) {
     animation: none;
   }
 }
+
+/* Con "reducir movimiento": nada se mueve; lo que respira solo cambia de opacidad. */
+@media (prefers-reduced-motion: reduce) {
+  @keyframes respirar {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 1; }
+  }
+}
+
 @keyframes pantalla-sale {
   to { opacity: 0; }
 }
 @keyframes pantalla-entra {
   from { opacity: 0; transform: translateY(8px); }
+}
+
+/* Al agregar: la fila nueva aparece con un fundido (ver TransicionesPantalla). */
+.aparece {
+  animation: entrar 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .aparece {
+    animation: aparecer 220ms ease-out;
+  }
+}
+
+/* Al borrar: la fila se pliega en 200 ms (ver BotonBorrar). */
+.plegandose {
+  overflow: hidden;
+  transition: height 200ms ease-out, opacity 200ms ease-out, margin 200ms ease-out, padding 200ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .plegandose {
+    transition: opacity 200ms ease-out;
+  }
 }

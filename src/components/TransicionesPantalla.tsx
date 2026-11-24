@@ -21,6 +21,18 @@ export default function TransicionesPantalla() {
     terminar.current = null
   }, [ruta])
 
+  // Listas (mockup v2): una fila que se agrega a una lista que ya estaba aparece con un fundido. Al cambiar de
+  // pantalla lo que entra es la pantalla entera (no una fila suelta), así que no se anima fila por fila.
+  useEffect(() => {
+    const obs = new MutationObserver((cambios) => {
+      for (const c of cambios) {
+        for (const n of c.addedNodes) if (n instanceof HTMLElement && n.hasAttribute('data-fila')) n.classList.add('aparece')
+      }
+    })
+    obs.observe(document.body, { childList: true, subtree: true })
+    return () => obs.disconnect()
+  }, [])
+
   useEffect(() => {
     if (typeof document.startViewTransition !== 'function') return
     const reducir = matchMedia('(prefers-reduced-motion: reduce)')

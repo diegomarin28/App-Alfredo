@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { saludos } from '@/domain/saludos'
+import { saludos, TONOS } from '@/domain/saludos'
 
-describe('saludos', () => {
-  it('textos exactos con el nombre puesto', () => {
-    const s = saludos('Martín')
-    expect(s.calido).toBe('¡Feliz cumple, Martín! Que lo pases bárbaro. Un abrazo grande.')
-    expect(s.formal).toBe('Muy feliz cumpleaños, Martín. Te deseo un gran año, con salud y alegría.')
-    expect(s.corto).toBe('¡Feliz cumple, Martín! Que se cumplan todos tus deseos.')
+describe('saludos (mockup v2)', () => {
+  it('tres tonos, Formal primero (por defecto), firmados por quien manda', () => {
+    expect(TONOS.map(([t, e]) => `${t}:${e}`)).toEqual(['formal:Formal', 'cercano:Cercano', 'breve:Breve'])
+    const s = saludos('Martín', 'Alfredo')
+    expect(s.formal).toBe('Martín, te deseo un muy feliz cumpleaños. Que tengas un lindo día junto a los tuyos. Un fuerte abrazo, Alfredo.')
+    expect(s.cercano).toBe('¡Feliz cumpleaños, Martín! Que pases un lindo día con los tuyos. Un abrazo grande, Alfredo.')
+    expect(s.breve).toBe('¡Feliz cumpleaños, Martín! Un abrazo, Alfredo.')
+  })
+
+  it('nunca juvenil: sin emojis ni jerga', () => {
+    for (const t of Object.values(saludos('Ana', 'Alfredo'))) {
+      expect(t).not.toMatch(/\p{Extended_Pictographic}/u)
+      expect(t).not.toMatch(/bárbaro|genial|crack|cumple\b/i)
+    }
   })
 })

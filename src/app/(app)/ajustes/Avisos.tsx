@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Card } from '@/components/ui'
+import { Boton, IconoTile } from '@/components/ui'
 
 type Estado = 'cargando' | 'no-instalada' | 'lista' | 'activando' | 'activados' | 'sin-permiso' | 'error'
 
@@ -47,20 +47,31 @@ export default function Avisos({ vapidPublica }: { vapidPublica: string }) {
   }
 
   if (estado === 'cargando') return null
-  if (estado === 'no-instalada') {
-    return <Card><p className="text-base">Para recibir avisos, primero instalá la app: en Safari tocá Compartir › Agregar a inicio, y abrila desde el ícono.</p></Card>
-  }
+  const detalle = {
+    'no-instalada': 'Para recibirlos, instalá la app: en Safari tocá Compartir › Agregar a inicio, y abrila desde el ícono.',
+    lista: 'Te aviso de vencimientos, recordatorios y cumpleaños.',
+    activando: 'Activando…',
+    activados: 'Activados · todos los días a las 11',
+    'sin-permiso': 'No diste permiso. Podés activarlo en Configuración del iPhone.',
+    error,
+  }[estado]
   return (
-    <Card className="space-y-3">
-      {estado === 'activados' && <p role="status" className="text-base font-medium">Avisos activados</p>}
-      {estado === 'sin-permiso' && <p role="alert" className="text-base">No diste permiso para avisos. Podés activarlo en Configuración del iPhone.</p>}
-      {estado === 'error' && <p role="alert" className="text-base text-urg-tx">{error}</p>}
-      {estado !== 'activados' && (
-        <button type="button" onClick={activar} disabled={estado === 'activando'}
-          className="min-h-11 rounded-xl bg-azul px-4 text-base font-medium text-white hover:bg-azul-osc disabled:opacity-60">
+    <div className="space-y-3 rounded-2xl border border-borde bg-white p-4">
+      <div className="flex items-center gap-3">
+        <IconoTile nombre="campana" />
+        <div className="min-w-0">
+          <p className="text-base font-semibold text-texto">Avisos</p>
+          <p role={estado === 'activados' ? 'status' : estado === 'sin-permiso' || estado === 'error' ? 'alert' : undefined}
+            className={`text-base ${estado === 'error' ? 'text-urg-tx' : 'text-texto-2'}`}>
+            {detalle}
+          </p>
+        </div>
+      </div>
+      {(estado === 'lista' || estado === 'activando' || estado === 'error' || estado === 'sin-permiso') && (
+        <Boton className="w-full" onClick={activar} disabled={estado === 'activando'}>
           {estado === 'activando' ? 'Activando…' : 'Activar avisos'}
-        </button>
+        </Boton>
       )}
-    </Card>
+    </div>
   )
 }

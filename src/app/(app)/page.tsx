@@ -3,7 +3,8 @@ import { getSesion } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 import { fotoDelDia } from '@/domain/fotoDelDia'
 import { hoy, proximosCumples, vencimientosProximos } from '@/domain/fechas'
-import { Card, EmptyState } from '@/components/ui'
+import { EmptyState, IconoTile, Lista, clasesFila, clasesSeparador } from '@/components/ui'
+import { Icono, type NombreIcono } from '@/components/iconos'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,63 +31,111 @@ function enDias(n: number): string {
   return `En ${n} días`
 }
 
-const icono = (d: React.ReactNode) => (
-  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-azul">{d}</svg>
-)
-const ACCESOS = [
-  ['Vencimientos', '/vencimientos', icono(<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>)],
-  ['Pendientes', '/pendientes', icono(<path d="M4 12l5 5L20 6" />)],
-  ['Documentos', '/documentos', icono(<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />)],
-  ['Contraseñas', '/claves', icono(<><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>)],
-  ['Contactos', '/contactos', icono(<><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2" /></>)],
-] as const
+/** Accesos de Inicio (mockup v2): 2 columnas, ícono + texto, 52 px de alto. */
+const ACCESOS: [string, string, NombreIcono][] = [
+  ['Vencimientos', '/vencimientos', 'reloj'],
+  ['Pendientes', '/pendientes', 'tilde'],
+  ['Recordatorios', '/recordatorios', 'campana'],
+  ['Contactos', '/contactos', 'personas'],
+  ['Documentos', '/documentos', 'carpeta'],
+  ['Contraseñas', '/claves', 'candado'],
+]
+
+const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
+
+/** Fila de "Lo próximo": ícono, qué, cuándo y flecha. */
+function Proximo({ href, icono, tono, titulo, detalle, urgente = false }: {
+  href: string; icono: NombreIcono; tono: 'azul' | 'naranja' | 'gris'; titulo: string; detalle: string; urgente?: boolean
+}) {
+  return (
+    <li className={clasesSeparador}>
+      <Link href={href} className="flex min-h-16 w-full items-center gap-3 px-4 py-2.5">
+        <IconoTile nombre={icono} tono={tono} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold text-texto">{titulo}</span>
+          <span className={`block text-base ${urgente ? 'text-urg-tx' : 'text-texto-2'}`}>{detalle}</span>
+        </span>
+        <Icono nombre="flecha" tamano={18} className="text-texto-2" />
+      </Link>
+    </li>
+  )
+}
 
 export default async function Inicio() {
   const repo = getRepo()
   const hoyStr = hoy()
   const sesionP = getSesion()
   // Todo en paralelo (cada consulta a Supabase es un viaje): lo del owner sale apenas se conoce la sesión.
-  const [sesion, config, fotoUrl, fechas, delOwner] = await Promise.all([
+  const [sesion, config, fotos, fechas, delOwner, recordatorios] = await Promise.all([
     sesionP,
     repo.getConfig(),
-    repo.fotos.list().then((fotos) => {
-      const foto = fotoDelDia(fotos, hoyStr)
-      return foto ? repo.urlArchivo(foto.path) : null
-    }),
+    repo.fotos.list(),
     repo.fechas.list(),
     sesionP.then((s) => (s?.rol === 'owner' ? Promise.all([repo.vencimientos.list(), repo.pendientes.list()]) : null)),
+    sesionP.then((s) => (s?.rol === 'familia' ? repo.recordatorios.list() : null)),
   ])
   const owner = sesion?.rol === 'owner'
+
+  // Modo familia (mockup v2): pantalla de carga, con lo que ya hay de cada cosa.
+  if (!owner) {
+    const tarjetas: [string, string, string, NombreIcono][] = [
+      ['Cumpleaños y fechas', `${fechas.length} ${fechas.length === 1 ? 'cargada' : 'cargadas'}`, '/calendario', 'torta'],
+      ['Fotos de la familia', `${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'}`, '/fotos', 'imagen'],
+      ['Portofino y Malibú', 'Personas y servicios', '/casas', 'casa'],
+      ['Recordatorios', `${recordatorios?.length ?? 0} ${recordatorios?.length === 1 ? 'cargado' : 'cargados'}`, '/recordatorios', 'campana'],
+    ]
+    return (
+      <main className="space-y-4">
+        <div className="space-y-1.5">
+          <h1 className={clasesTitulo}>Cargando datos para {config.nombre || 'Alfredo'}</h1>
+          <p className="text-base text-texto-2">Gracias por ayudar. {config.nombre || 'Alfredo'} no ve esta pantalla: solo lo que cargues.</p>
+        </div>
+        <nav aria-label="Qué cargar" className="space-y-3">
+          {tarjetas.map(([titulo, detalle, href, icono]) => (
+            <Link key={href} href={href} className="flex min-h-[88px] items-center gap-3.5 rounded-2xl border border-borde bg-white px-4">
+              <IconoTile nombre={icono} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-texto">{titulo}</span>
+                <span className="block text-base text-texto-2">{detalle}</span>
+              </span>
+              <Icono nombre="flecha" tamano={18} className="text-texto-2" />
+            </Link>
+          ))}
+        </nav>
+      </main>
+    )
+  }
+
+  const foto = fotoDelDia(fotos, hoyStr)
+  const fotoUrl = foto ? await repo.urlArchivo(foto.path) : null
   const cumple = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr)[0]
   const venc = delOwner ? vencimientosProximos(delOwner[0], hoyStr)[0] : undefined
   const abiertos = delOwner ? delOwner[1].filter((p) => !p.hecho).length : 0
 
   return (
-    <main className="space-y-5">
+    <main className="space-y-4">
       <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="mb-1 text-base text-texto-2">{fechaLarga(hoyStr)}</p>
-          <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
+        <div className="space-y-0.5">
+          <p className="text-base text-texto-2">{fechaLarga(hoyStr)}</p>
+          <h1 className={clasesTitulo}>{saludo(new Date())}, {config.nombre || 'Alfredo'}</h1>
         </div>
-        {owner && (
-          <Link href="/ajustes" aria-label="Ajustes" className="flex size-11 shrink-0 items-center justify-center rounded-full text-texto-2 hover:bg-tinte">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-            </svg>
-          </Link>
-        )}
+        <Link href="/ajustes" aria-label="Ajustes" className="-mr-2 flex size-11 shrink-0 items-center justify-center rounded-full text-texto-2 hover:bg-tinte">
+          <Icono nombre="tuerca" tamano={24} />
+        </Link>
       </header>
 
       <section aria-label="Foto del día">
         {fotoUrl ? (
-          <div className="space-y-3">
-            <Link href="/fotos" className="block rounded-2xl">
+          <div className="relative overflow-hidden rounded-[20px]">
+            <Link href="/fotos" className="block">
               {/* eslint-disable-next-line @next/next/no-img-element -- R21: archivos de /api/archivos con <img> plano */}
-              <img src={fotoUrl} alt="Foto familiar del día" className="aspect-[4/3] w-full rounded-2xl border border-borde object-cover" />
+              <img src={fotoUrl} alt="Foto familiar del día" className="aspect-[16/9] w-full object-cover" />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pt-10 pb-3 text-base font-semibold text-white">
+                Foto del día
+              </span>
             </Link>
-            <Link href="/fotos" className="inline-flex min-h-11 items-center rounded-xl px-1 text-base font-semibold text-azul hover:underline">
-              Agregar fotos
+            <Link href="/fotos" aria-label="Agregar fotos" className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur">
+              <Icono nombre="imagen" tamano={20} />
             </Link>
           </div>
         ) : (
@@ -94,44 +143,27 @@ export default async function Inicio() {
         )}
       </section>
 
-      {owner && (
-        <nav aria-label="Accesos directos" className="grid grid-cols-2 gap-3">
-          {/* con un número impar de accesos, el último ocupa las dos columnas */}
-          {ACCESOS.map(([nombre, href, svg]) => (
-            <Link key={href} href={href} className="flex min-h-14 items-center gap-2.5 rounded-[14px] border border-borde bg-white px-3.5 text-base font-semibold text-texto last:odd:col-span-2 hover:bg-tinte">
-              {svg}{nombre}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <nav aria-label="Accesos directos" className="grid grid-cols-2 gap-2.5">
+        {ACCESOS.map(([nombre, href, icono]) => (
+          <Link key={href} href={href} className="flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-borde bg-white px-3 text-base font-semibold text-texto hover:bg-tinte-claro">
+            <IconoTile nombre={icono} tamano={32} />{nombre}
+          </Link>
+        ))}
+      </nav>
 
-      <section aria-labelledby="proximo" className="space-y-3">
-        <h2 id="proximo" className="text-lg font-bold">Lo próximo</h2>
-        <Card>
-          {cumple ? (
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-base font-medium">Cumple de {cumple.nombre}</span>
-              <span className="text-base text-texto-2">{enDias(cumple.dias)}</span>
-            </div>
-          ) : <p className="text-base text-texto-2">No hay cumpleaños cargados.</p>}
-        </Card>
-        {owner && (
-          <>
-            <Card className={venc?.urgente ? 'border-transparent bg-urg-bg text-urg-tx' : ''}>
-              {venc ? (
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-base font-medium">{venc.titulo}</span>
-                  <span className="text-base">{enDias(venc.dias)}</span>
-                </div>
-              ) : <p className="text-base text-texto-2">No hay vencimientos pendientes.</p>}
-            </Card>
-            <Card>
-              {abiertos > 0
-                ? <p className="text-base font-medium">{abiertos} {abiertos === 1 ? 'pendiente' : 'pendientes'}</p>
-                : <p className="text-base text-texto-2">No hay pendientes.</p>}
-            </Card>
-          </>
-        )}
+      <section aria-labelledby="proximo" className="space-y-2.5">
+        <h2 id="proximo" className="text-[17px] font-bold">Lo próximo</h2>
+        <Lista>
+          {cumple
+            ? <Proximo href="/calendario" icono="torta" tono="azul" titulo={`Cumple de ${cumple.nombre}`} detalle={[enDias(cumple.dias), cumple.edad ? `cumple ${cumple.edad}` : ''].filter(Boolean).join(' · ')} />
+            : <li className={`${clasesFila} text-base text-texto-2`}>No hay cumpleaños cargados.</li>}
+          {venc
+            ? <Proximo href="/vencimientos" icono="reloj" tono={venc.urgente ? 'naranja' : 'gris'} titulo={venc.titulo} detalle={venc.dias < 0 ? enDias(venc.dias) : `Vence ${enDias(venc.dias).toLowerCase()}`} urgente={venc.urgente} />
+            : <li className={`${clasesFila} text-base text-texto-2`}>No hay vencimientos pendientes.</li>}
+          {abiertos > 0
+            ? <Proximo href="/pendientes" icono="tilde" tono="gris" titulo={`${abiertos} ${abiertos === 1 ? 'pendiente' : 'pendientes'}`} detalle="Para hacer" />
+            : <li className={`${clasesFila} text-base text-texto-2`}>No hay pendientes.</li>}
+        </Lista>
       </section>
     </main>
   )

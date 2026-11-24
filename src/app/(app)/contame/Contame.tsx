@@ -1,7 +1,9 @@
 'use client'
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Card, Field, clasesInput } from '@/components/ui'
+import { Boton, Card, IconoTile, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
+import { Icono, type NombreIcono } from '@/components/iconos'
+import type { Guardado } from '@/domain/ultimos'
 import type { Opcion } from '@/ai/contamePrompt'
 import { useDictado } from '@/voz/useDictado'
 
@@ -13,21 +15,35 @@ const MAX = 8000
 const ERROR_GENERICO = 'No pude guardarlo, probá de nuevo.'
 const nada = () => () => {}
 
-const icono = (hijos: React.ReactNode, tam = 48) => (
-  <svg viewBox="0 0 24 24" width={tam} height={tam} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{hijos}</svg>
-)
-const MICROFONO = <><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>
-const PARAR = <rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor" />
-const CHECK = <path d="M5 12.5l4.5 4.5L19 7.5" />
-
 function Alerta({ children }: { children: React.ReactNode }) {
   return <div role="alert" className="rounded-2xl bg-urg-bg p-4 text-base text-urg-tx">{children}</div>
 }
 
-export default function Page() {
+const ICONO_CLASE: Record<Guardado['clase'], [NombreIcono, 'azul' | 'naranja' | 'verde' | 'gris']> = {
+  casa: ['casa', 'verde'], vencimiento: ['reloj', 'naranja'], pendiente: ['tilde', 'gris'], nota: ['mensaje', 'gris'],
+  contacto: ['personas', 'azul'], fecha: ['torta', 'azul'], recordatorio: ['campana', 'naranja'],
+}
+
+/** 0:12 */
+const reloj = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+/** Segundos desde que empezó a escuchar (para "Te escucho · 0:12"). */
+function useSegundos(activo: boolean): number {
+  const [s, setS] = useState(0)
+  useEffect(() => {
+    if (!activo) return
+    setS(0)
+    const t = setInterval(() => setS((x) => x + 1), 1000)
+    return () => clearInterval(t)
+  }, [activo])
+  return s
+}
+
+export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
   const router = useRouter()
   const montado = useSyncExternalStore(nada, () => true, () => false)
   const dictado = useDictado({ lang: 'es-UY' })
+  const segundos = useSegundos(dictado.escuchando)
   const [fase, setFase] = useState<Fase>('inicio')
   const [origen, setOrigen] = useState<Origen>('voz')
   const [editado, setEditado] = useState<string | null>(null)
@@ -144,73 +160,93 @@ export default function Page() {
 
   const vista = fase === 'inicio' && teclado ? 'revisar' : fase
 
+  const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
   return (
-    <main className="space-y-5">
-      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Contame</h1>
+    <main className="space-y-4">
+      <h1 className={clasesTitulo}>Contame</h1>
       {!montado ? null : (
         <>
           {vista === 'inicio' && (
             <div className="space-y-5">
-              <p className="text-base text-texto-2">Contame lo que pasó: un pago, un arreglo, algo para acordarte. Yo lo guardo donde va.</p>
-              <button
-                type="button"
-                onClick={dictado.escuchando ? terminar : dictado.empezar}
-                aria-pressed={dictado.escuchando}
-                className="mx-auto flex flex-col items-center gap-3"
-              >
-                <span
-                  className={`flex size-28 items-center justify-center rounded-full text-white shadow-lg ${
-                    dictado.escuchando ? 'bg-azul-osc ring-8 ring-tinte' : 'bg-azul hover:bg-azul-osc'
-                  }`}
+              {!dictado.escuchando && <p className="text-base text-texto-2">Contame qué pasó y yo lo guardo donde va.</p>}
+              <div className="flex flex-col items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={dictado.escuchando ? terminar : dictado.empezar}
+                  aria-pressed={dictado.escuchando}
+                  aria-label={dictado.escuchando ? 'Tocá para terminar' : 'Tocá para hablar'}
+                  className="relative flex size-40 items-center justify-center rounded-full"
                 >
-                  {icono(dictado.escuchando ? PARAR : MICROFONO)}
-                </span>
-                <span className="text-xl font-semibold text-texto">{dictado.escuchando ? 'Tocá para terminar' : 'Tocá para hablar'}</span>
-              </button>
+                  {/* anillos: quietos esperando; respiran mientras escucha (con "reducir movimiento", solo cambian de opacidad) */}
+                  <span aria-hidden="true" className={`absolute inset-0 rounded-full bg-tinte ${dictado.escuchando ? 'animate-respirar' : ''}`} />
+                  {dictado.escuchando && <span aria-hidden="true" className="absolute inset-3 rounded-full bg-borde-fuerte/60 animate-respirar [animation-delay:400ms]" />}
+                  <span aria-hidden="true" className="relative flex size-28 items-center justify-center rounded-full bg-azul text-white shadow-[0_8px_24px_rgba(31,78,140,0.28)]">
+                    <Icono nombre={dictado.escuchando ? 'parar' : 'microfono'} tamano={dictado.escuchando ? 44 : 40} trazo={2} />
+                  </span>
+                </button>
+                {dictado.escuchando ? (
+                  <div className="text-center">
+                    <p aria-hidden="true" className="text-[17px] font-bold text-texto">Te escucho · {reloj(segundos)}</p>
+                    <p className="text-base text-texto-2">Podés hacer pausas. Tocá para terminar.</p>
+                  </div>
+                ) : (
+                  <p aria-hidden="true" className="text-[17px] font-bold text-texto">Tocá para hablar</p>
+                )}
+                {!dictado.escuchando && (
+                  <button type="button" onClick={escribir} className="min-h-11 rounded-xl px-3 text-base font-semibold text-azul">Prefiero escribir</button>
+                )}
+              </div>
               {dictado.escuchando && (
-                <Card className="space-y-2">
-                  <p className="text-base font-medium text-azul">Te escucho… podés hacer pausas.</p>
-                  <p aria-live="polite" className="min-h-12 text-lg text-texto">{dictado.texto}</p>
+                <Card>
+                  <p aria-live="polite" className="min-h-12 text-[17px] leading-relaxed text-texto">{dictado.texto}</p>
                 </Card>
               )}
               {!dictado.escuchando && dictado.texto && (
                 <Card className="space-y-3">
-                  <p className="text-lg text-texto">{dictado.texto}</p>
-                  <Boton className="min-h-12 w-full" onClick={revisar}>Revisar y enviar</Boton>
+                  <p className="text-[17px] text-texto">{dictado.texto}</p>
+                  <Boton className="w-full" onClick={revisar}>Revisar y enviar</Boton>
                 </Card>
               )}
               {dictado.error && <Alerta>{dictado.error}</Alerta>}
-              {!dictado.escuchando && (
-                <Boton variante="suave" className="w-full" onClick={escribir}>Escribir o pegar texto</Boton>
+              {!dictado.escuchando && !dictado.texto && ultimos.length > 0 && (
+                <Seccion id="ultimo" titulo="Lo último que guardé">
+                  <Lista>
+                    {ultimos.map((u) => (
+                      <li key={u.id} className={clasesFila}>
+                        <IconoTile nombre={ICONO_CLASE[u.clase][0]} tono={ICONO_CLASE[u.clase][1]} />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-base font-semibold text-texto">{u.titulo}</span>
+                          <span className="block text-base text-texto-2">{u.detalle}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </Lista>
+                </Seccion>
               )}
             </div>
           )}
 
           {vista === 'revisar' && (
-            <Card className="space-y-3">
-              <Field
-                label={teclado ? 'Escribí o dictá con el teclado' : 'Lo que entendí · podés corregirlo'}
-                hint={teclado ? 'También podés pegar un texto largo.' : undefined}
-              >
-                <textarea
-                  className={`${clasesInput} min-h-40 py-2 text-lg`}
-                  maxLength={MAX}
-                  value={texto}
-                  onChange={(e) => setEditado(e.target.value)}
-                />
-              </Field>
-              <div className="grid grid-cols-2 gap-3">
-                {dictado.soportado && !teclado && <Boton variante="suave" onClick={grabarDeNuevo}>Grabar de nuevo</Boton>}
-                {dictado.soportado && teclado && <Boton variante="suave" onClick={grabarDeNuevo}>Usar el micrófono</Boton>}
-                <Boton
-                  className={dictado.soportado ? '' : 'col-span-2'}
-                  disabled={cargando || !texto.trim()}
-                  onClick={() => enviar(texto.trim(), [])}
-                >
-                  Enviar
-                </Boton>
-              </div>
-            </Card>
+            <div className="space-y-4">
+              <p className="text-base text-texto-2">
+                {teclado ? 'Escribí o pegá lo que querés guardar.' : 'Esto entendí. Podés corregirlo antes de mandar.'}
+              </p>
+              <textarea
+                aria-label={teclado ? 'Escribí o dictá con el teclado' : 'Lo que entendí · podés corregirlo'}
+                className={`${clasesInput} min-h-40 py-3 text-[17px] leading-relaxed`}
+                maxLength={MAX}
+                value={texto}
+                onChange={(e) => setEditado(e.target.value)}
+              />
+              <Boton className="w-full" disabled={cargando || !texto.trim()} onClick={() => enviar(texto.trim(), [])}>Enviar</Boton>
+              {dictado.soportado && (
+                <div className="flex justify-center">
+                  <button type="button" onClick={grabarDeNuevo} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul">
+                    <Icono nombre={teclado ? 'microfono' : 'repetir'} tamano={18} />{teclado ? 'Usar el micrófono' : 'Repetir'}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {vista === 'pregunta' && pregunta && (
@@ -241,8 +277,8 @@ export default function Page() {
                   <p className="text-xl font-semibold text-texto">Listo, lo guardé:</p>
                   <ul className="space-y-3">
                     {guardado.map((g) => (
-                      <li key={g.id} className="flex items-start gap-3 text-base text-texto">
-                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-tinte text-azul">{icono(CHECK, 18)}</span>
+                      <li key={g.id} className="flex items-start gap-3 text-base text-texto motion-safe:animate-entrar">
+                        <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-tinte text-azul"><Icono nombre="tilde" tamano={16} trazo={2.4} /></span>
                         <span>{g.descripcion}</span>
                       </li>
                     ))}
@@ -251,8 +287,8 @@ export default function Page() {
                 </>
               )}
               <div className="flex flex-col gap-3">
-                {!deshecho && <Boton variante="suave" className="min-h-12 w-full" disabled={cargando} onClick={deshacer}>Deshacer</Boton>}
-                <Boton className="min-h-12 w-full" onClick={otraCosa}>Contar otra cosa</Boton>
+                {!deshecho && <Boton variante="suave" className="w-full" disabled={cargando} onClick={deshacer}>Deshacer</Boton>}
+                <Boton className="w-full" onClick={otraCosa}>Contar otra cosa</Boton>
               </div>
             </Card>
           )}

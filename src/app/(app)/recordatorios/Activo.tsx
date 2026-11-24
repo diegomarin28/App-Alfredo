@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton } from '@/components/ui'
+import { Icono } from '@/components/iconos'
 
 export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number }
 
@@ -33,17 +34,23 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
   return (
     <div className="space-y-3">
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
-      {avisos.map((a) => <p key={a.id} role="status" className="rounded-2xl bg-tinte p-4 text-base font-medium">{a.msg}</p>)}
+      {avisos.map((a) => <p key={a.id} role="status" className="rounded-2xl bg-tinte p-4 text-base font-semibold text-azul motion-safe:animate-entrar">{a.msg}</p>)}
       {items.filter((r) => !hechos.has(r.id)).map((r) => (
-        <div key={r.id} role="article" aria-label={r.titulo} className="space-y-3 rounded-[18px] border-2 border-azul bg-white p-3.5 shadow-[0_8px_20px_rgba(31,78,140,0.12)]">
-          <div>
-            <h3 className="text-lg font-bold">{r.titulo}</h3>
-            <p className="text-base text-texto-2">{r.fecha}</p>
-            <p className="text-base font-medium">{r.dias === 0 ? 'Es hoy' : r.dias === 1 ? 'Falta 1 día' : `Faltan ${r.dias} días`}</p>
+        <div key={r.id} role="article" aria-label={r.titulo} className="space-y-3 rounded-[20px] bg-tinte p-3.5">
+          <div className="flex items-center gap-3">
+            <span aria-hidden="true" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-azul">
+              <Icono nombre="campana" tamano={20} />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-texto">{r.titulo}</h3>
+              <p className={`text-base ${r.dias <= 7 ? 'text-urg-tx' : 'text-texto-2'}`}>
+                {r.fecha} · {r.dias === 0 ? 'es hoy' : r.dias === 1 ? 'falta 1 día' : `faltan ${r.dias} días`}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Boton variante="suave" className="min-h-12 flex-auto px-4 whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'posponer')}>Posponer 15 días</Boton>
-            <Boton className="min-h-12 flex-auto px-4 whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'resolver')}>Resuelto</Boton>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Boton variante="blanco" className="whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'posponer')}>Posponer 15 días</Boton>
+            <Boton className="whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'resolver')}><Icono nombre="tilde" tamano={18} trazo={2.2} />Resuelto</Boton>
           </div>
         </div>
       ))}

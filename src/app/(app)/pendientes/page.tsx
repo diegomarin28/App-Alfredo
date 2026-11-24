@@ -1,8 +1,9 @@
 import { getRepo } from '@/data/getRepo'
 import { fechaCorta } from '@/domain/vencimientos'
-import { Card, EmptyState } from '@/components/ui'
+import { EmptyState, Seccion, Titulo } from '@/components/ui'
+import { Icono } from '@/components/iconos'
 import NuevaNota from './NuevaNota'
-import Pendientes from './Pendientes'
+import Pendientes, { NuevoPendiente } from './Pendientes'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,24 +13,24 @@ export default async function PendientesYNotas() {
   const notas = todasLasNotas.sort((a, b) => b.creadoEn.localeCompare(a.creadoEn))
 
   return (
-    <main className="space-y-6">
-      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Pendientes y notas</h1>
-      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho }))} />
-      <section aria-labelledby="notas" className="space-y-3">
-        <h2 id="notas" className="text-xl font-bold">Notas</h2>
-        <NuevaNota />
+    <main className="space-y-5">
+      <Titulo accion={<NuevoPendiente />}>Pendientes</Titulo>
+      {/* los que creó Contame (vienen de un dictado) llevan el micrófono */}
+      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId) }))} />
+      <Seccion id="notas" titulo="Notas" accion={<NuevaNota />}>
         {notas.length === 0 && <EmptyState>Todavía no hay notas.</EmptyState>}
-        <ul className="space-y-2">
+        <ul className="space-y-2.5">
           {notas.map((n) => (
-            <li key={n.id}>
-              <Card className="space-y-1">
-                <p className="text-base text-texto-2">{n.origen === 'voz' ? 'Nota de voz' : 'Escrita'} · {fechaCorta(n.creadoEn)}</p>
-                <p className="text-base whitespace-pre-wrap">{n.texto}</p>
-              </Card>
+            <li key={n.id} data-fila className="space-y-1 rounded-2xl border border-borde bg-white px-4 py-3">
+              <p className="flex items-center gap-1.5 text-base text-texto-2">
+                {n.origen === 'voz' && <><Icono nombre="microfono" tamano={16} />Nota de voz ·</>}
+                {n.origen === 'voz' ? ` ${fechaCorta(n.creadoEn)}` : fechaCorta(n.creadoEn)}
+              </p>
+              <p className="text-base whitespace-pre-wrap text-texto">{n.texto}</p>
             </li>
           ))}
         </ul>
-      </section>
+      </Seccion>
     </main>
   )
 }

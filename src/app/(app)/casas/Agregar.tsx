@@ -1,15 +1,16 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Sheet } from '@/components/ui'
+import { Boton, BotonMas, LinkAgregar, Sheet } from '@/components/ui'
 
 type Res = { ok: true } | { ok: false; error: string }
 
-/** Botón + hoja con formulario; cada sección pasa sus campos y su acción. */
-export default function Agregar({ boton, titulo, guardar, variante, children }: {
+/** Link "+ Agregar" de la sección (mockup v2) + hoja con formulario; cada sección pasa sus campos y su acción. */
+export default function Agregar({ boton, titulo, guardar, children, forma = 'link' }: {
+  /** nombre completo para lectores de pantalla y pruebas, p. ej. "Agregar persona" */
   boton: string
-  /** "suave" para los Agregar de cada sección (el principal de la pantalla queda azul) */
-  variante?: 'primario' | 'suave'
+  /** "link": "+ Agregar" de una sección; "mas": el "+" redondo del título */
+  forma?: 'link' | 'mas'
   titulo: string
   guardar: (f: FormData) => Promise<Res>
   children: React.ReactNode
@@ -38,7 +39,9 @@ export default function Agregar({ boton, titulo, guardar, variante, children }: 
 
   return (
     <>
-      <Boton variante={variante} className="shrink-0" onClick={() => { setError(''); setAbierto(true) }}>{boton}</Boton>
+      {forma === 'mas'
+        ? <BotonMas nombre={boton} onClick={() => { setError(''); setAbierto(true) }} />
+        : <LinkAgregar nombre={boton} onClick={() => { setError(''); setAbierto(true) }} />}
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={titulo}>
         <form onSubmit={enviar} className="space-y-4" noValidate>
           {children}
