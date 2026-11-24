@@ -49,6 +49,6 @@ Cada uno es una animación corta, en los colores de la app, en SVG/CSS (sin imá
 - DetalleWhisky: el 25 de noviembre (su cumple), al abrir la app por primera vez ese día: dos vasos con hielo brindan y "¡Salud, Alfredo! Feliz cumpleaños." con botón "Gracias". También va arriba de la Bienvenida de la primera vez.
 - DetalleHielo: el gesto de deslizar hacia abajo para actualizar en Inicio muestra un hielo que cae en el vaso (reemplaza al indicador de carga).
 - Viernes después de las 18 h, el saludo de Inicio dice "Buen viernes, Alfredo".
-- DetalleTruco: al tocar "Resuelto" en un recordatorio se da vuelta el ancho de espada y aparece "¡Quiero!" (~1,5 s, después la tarjeta pasa a resuelta).
+- DetalleTruco: cuando Contame termina de guardar, lo guardado aparece como una mano de truco: hasta 3 cartas que se reparten en abanico (cada una con el ícono y el texto de su sección) y "Repartido · Guardé 3 cosas, cada una en su lugar." con "Deshacer". Si guardó más de 3, la tercera carta dice "y N más". (~1,5 s)
 - DetalleDados: "Otra versión" en Mensajes tira dos dados (como en el backgammon) mientras genera la nueva respuesta.
 Ninguna animación bloquea: se puede seguir tocando mientras corre.
