@@ -29,6 +29,8 @@ export const viewport: Viewport = {
   themeColor: '#1F4E8C',
   width: 'device-width',
   initialScale: 1,
+  // Sin esto, en el iPhone instalado env(safe-area-inset-*) vale 0 y el menú de abajo queda pegado al borde.
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

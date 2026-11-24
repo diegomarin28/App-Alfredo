@@ -12,7 +12,7 @@ export default async function Entrar() {
   // Solo mientras no hay ninguna passkey: después /configurar ya no sirve sin sesión (I4).
   const primeraVez = (await getRepo().passkeys.list()).length === 0
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5 py-10">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5 pt-[calc(2.5rem+env(safe-area-inset-top))] pb-[calc(2.5rem+env(safe-area-inset-bottom))]">
       <div className="flex items-center gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- ícono fijo de public/ */}
         <img src="/apple-touch-icon.png" alt="" width={72} height={72} className="size-[72px] rounded-[20px]" />
