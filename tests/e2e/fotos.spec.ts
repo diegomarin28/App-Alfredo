@@ -7,6 +7,7 @@ const FOTO = path.join(__dirname, 'fixtures', 'foto.jpg') // 800×600: en el mar
 
 /** Arrastra con el mouse (eventos de puntero) desde el centro de `zona`. */
 async function arrastrar(page: Page, zona: Locator, dx: number, dy: number) {
+  await zona.scrollIntoViewIfNeeded()
   const c = (await zona.boundingBox())!
   const x = c.x + c.width / 2, y = c.y + c.height / 2
   await page.mouse.move(x, y)
@@ -29,6 +30,8 @@ for (const rol of ['owner', 'familia'] as const) {
     const caja = (await marcos.first().boundingBox())!
     expect(caja.width / caja.height).toBeCloseTo(16 / 9, 1)
     await expect(hoja.getByRole('button', { name: 'Subir 3 fotos' })).toBeVisible()
+    // con varias fotos el botón queda a la vista, sin tener que bajar
+    await expect(hoja.getByRole('button', { name: 'Subir 3 fotos' })).toBeInViewport({ ratio: 1 })
 
     await hoja.getByRole('button', { name: 'Quitar' }).nth(2).click()
     await expect(marcos).toHaveCount(2)

@@ -120,10 +120,13 @@ export default function Fotos({ items }: { items: ItemFoto[] }) {
               </li>
             ))}
           </ul>
-          {progreso && <p role="status" className="text-base text-texto-2">Subiendo {progreso.va} de {progreso.de}…</p>}
-          <Boton className="w-full" disabled={ocupado || porSubir.length === 0} onClick={subir}>
-            {porSubir.length === 1 ? 'Subir 1 foto' : `Subir ${porSubir.length} fotos`}
-          </Boton>
+          {/* el botón queda siempre a la vista, aunque haya muchas fotos para bajar */}
+          <div className="sticky -bottom-[calc(1.25rem+env(safe-area-inset-bottom))] -mx-5 space-y-2 border-t border-borde bg-white px-5 pt-3 pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:-bottom-5 lg:pb-5">
+            {progreso && <p role="status" className="text-base text-texto-2">Subiendo {progreso.va} de {progreso.de}…</p>}
+            <Boton className="w-full" disabled={ocupado || porSubir.length === 0} onClick={subir}>
+              {porSubir.length === 1 ? 'Subir 1 foto' : `Subir ${porSubir.length} fotos`}
+            </Boton>
+          </div>
         </div>
       </Sheet>
     </div>
