@@ -12,10 +12,10 @@ import { usarIa } from './presupuesto'
 
 export type { Accion, Opcion } from './contamePrompt'
 
-export const OPCION_OTRA_COSA: Opcion = { etiqueta: 'Otra cosa · guardar en Pendientes', respuesta: 'otra cosa' }
+export const OPCION_OTRA_COSA: Opcion = { etiqueta: 'Otra cosa · guardar en Tareas pendientes', respuesta: 'otra cosa' }
 export const MAX_TEXTO_CONTAME = 8000
 export const MAX_RESPUESTA = 500
-/** Preguntas como máximo; después se guarda en Pendientes. */
+/** Preguntas como máximo; después se guarda en Tareas pendientes. */
 export const MAX_RONDAS = 3
 const MAX_ACCIONES = 200
 const MAX_OPCIONES = 5
@@ -163,14 +163,14 @@ function textoLibre(texto: string, comoNota = false): Accion[] {
 // ---------- guardar ----------
 
 const recortar = (t: string, max: number) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t)
-const NOMBRE_FECHA = { cumple: 'cumpleaños', aniversario: 'aniversario', otra: 'fecha' } as const
+const NOMBRE_FECHA = { cumple: 'cumpleaños', otra: 'fecha' } as const
 
 export function describir(a: Accion): string {
   switch (a.tipo) {
     case 'eventoCasa': return `Historial de ${nombreCasa(a.casa)}: ${recortar(a.que, 120)} (${fechaLarga(a.cuando.slice(5))})`
     case 'personaCasa': return `Quién se ocupa en ${nombreCasa(a.casa)}: ${a.nombre} (${a.rol})`
     case 'servicioCasa': return `Servicios de ${nombreCasa(a.casa)}: ${a.clave}, ${recortar(a.valor, 80)}`
-    case 'pendiente': return `Pendientes: ${a.texto}`
+    case 'pendiente': return `Tareas pendientes: ${a.texto}`
     case 'nota': return `Notas: ${recortar(a.texto, 120)}`
     case 'contacto': return `Contactos: ${a.nombre}${a.empresa ? ` (${a.empresa})` : ''}`
     case 'fecha': return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${fechaLarga(a.dia)})`
@@ -204,7 +204,7 @@ async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
   }
 }
 
-/** Valida y guarda todo con un mismo loteId. Lo inválido va a Pendientes; nada se pierde. */
+/** Valida y guarda todo con un mismo loteId. Lo inválido va a Tareas pendientes; nada se pierde. */
 export async function guardarAcciones(
   repo: Repo, crudas: unknown[], texto: string, hoyStr: string, comoNota = false,
 ): Promise<Guardados> {

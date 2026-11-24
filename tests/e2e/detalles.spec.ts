@@ -48,9 +48,10 @@ test.describe('golf y truco en Pendientes', () => {
     await expect(flor).toContainText('Tres resueltos en el día.')
     // no bloquea: se puede seguir tocando mientras está
     await tildar(page, 'Cuatro')
-    // el último: el golf espera a que termine la Flor
-    await expect(page.locator('[data-detalle="golf"]')).toHaveAttribute('data-animando', 'true')
+    // el último: el golf ("Todo al día") no se ve detrás de la Flor; aparece cuando ella se va
+    await expect(page.locator('[data-detalle="golf"]')).toHaveCount(0)
     await expect(flor).toHaveCount(0, { timeout: 5000 })
+    await expect(page.locator('[data-detalle="golf"]')).toHaveAttribute('data-animando', 'true')
 
     // una vez por día: reabrir y volver a tildar no la repite
     await page.getByText('Hechos (4)').click()
@@ -59,7 +60,7 @@ test.describe('golf y truco en Pendientes', () => {
     await expect(page.locator('[data-detalle="flor"]')).toHaveCount(0)
   })
 
-  test('si el tercero es también el último: primero la Flor y después el golf', async ({ page }) => {
+  test('si el tercero es también el último: primero la Flor sola (sin "Todo al día" detrás) y después el golf', async ({ page }) => {
     await resetear(page, { hoy: HOY, datos: { pendientes: [pendiente('Uno'), pendiente('Dos'), pendiente('Tres')] } })
     await entrarComo(page, 'owner')
     await page.goto('/pendientes')
@@ -67,9 +68,12 @@ test.describe('golf y truco en Pendientes', () => {
     await tildar(page, 'Dos')
     await tildar(page, 'Tres')
     await expect(page.locator('[data-detalle="flor"]')).toBeVisible()
+    await expect(page.getByText('Todo al día')).toHaveCount(0)
+    await expect(page.locator('[data-detalle="golf"]')).toHaveCount(0)
+    await expect(page.locator('[data-detalle="flor"]')).toHaveCount(0, { timeout: 5000 })
     const golf = page.locator('[data-detalle="golf"]')
     await expect(golf).toHaveAttribute('data-animando', 'true')
-    expect(await golf.evaluate((el) => el.style.getPropertyValue('--dt-espera'))).toBe('1600ms')
+    await expect(golf).toContainText('Todo al día')
   })
 })
 

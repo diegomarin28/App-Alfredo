@@ -52,7 +52,7 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   await page.getByRole('button', { name: 'Enviar' }).click()
 
   await expect(page.getByText('¿Es en Portofino, en Malibú, o es otra cosa?')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Otra cosa · guardar en Pendientes' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' })).toBeVisible()
   await page.getByRole('button', { name: 'Malibú', exact: true }).click()
 
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
@@ -78,7 +78,7 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
 })
 
-test('"Otra cosa" guarda en Pendientes sin otra llamada a la IA', async ({ page }) => {
+test('"Otra cosa" guarda en Tareas pendientes sin otra llamada a la IA', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await guion(page, [{
     texto: '',
@@ -89,13 +89,13 @@ test('"Otra cosa" guarda en Pendientes sin otra llamada a la IA', async ({ page 
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await page.getByLabel('Escribí o dictá con el teclado').fill('Arreglar la canilla')
   await page.getByRole('button', { name: 'Enviar' }).click()
-  await page.getByRole('button', { name: 'Otra cosa · guardar en Pendientes' }).click()
-  await expect(page.getByText('Pendientes: Arreglar la canilla')).toBeVisible()
+  await page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' }).click()
+  await expect(page.getByText('Tareas pendientes: Arreglar la canilla')).toBeVisible()
   const llamadas = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
   expect(llamadas).toHaveLength(1)
   // como Alfredo, por el menú: lo guardado tiene que estar (no lo de antes de guardar)
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' }).click()
-  await page.getByRole('navigation', { name: 'Accesos directos' }).getByRole('link', { name: 'Pendientes' }).click()
+  await page.getByRole('navigation', { name: 'Accesos directos' }).getByRole('link', { name: 'Tareas pendientes' }).click()
   await expect(page.getByText('Arreglar la canilla')).toBeVisible()
 })
 
@@ -109,7 +109,7 @@ test('sin reconocimiento de voz: se puede escribir o pegar', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toHaveCount(0)
   await page.getByLabel('Escribí o dictá con el teclado').fill('Comprar pilas')
   await page.getByRole('button', { name: 'Enviar' }).click()
-  await expect(page.getByText('Pendientes: Comprar pilas')).toBeVisible()
+  await expect(page.getByText('Tareas pendientes: Comprar pilas')).toBeVisible()
 })
 
 test('permiso de micrófono denegado: aviso claro, sin perder lo dictado', async ({ page }) => {

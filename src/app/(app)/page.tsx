@@ -27,11 +27,12 @@ function enDias(n: number): string {
 /** Accesos de Inicio (mockup v2): 2 columnas, ícono + texto, 52 px de alto. */
 const ACCESOS: [string, string, NombreIcono][] = [
   ['Vencimientos', '/vencimientos', 'reloj'],
-  ['Pendientes', '/pendientes', 'tilde'],
+  ['Tareas pendientes', '/pendientes', 'tilde'],
   ['Recordatorios', '/recordatorios', 'campana'],
   ['Contactos', '/contactos', 'personas'],
   ['Documentos', '/documentos', 'carpeta'],
   ['Contraseñas', '/claves', 'candado'],
+  ['Fotos', '/fotos', 'imagen'],
 ]
 
 const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
@@ -125,9 +126,13 @@ export default async function Inicio() {
           <div className="relative overflow-hidden rounded-[20px]">
             <Link href="/fotos" className="block">
               {/* eslint-disable-next-line @next/next/no-img-element -- R21: archivos de /api/archivos con <img> plano */}
-              <img src={fotoUrl} alt="Foto familiar del día" className="aspect-[16/9] w-full object-cover" />
-              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/55 to-transparent px-4 pt-10 pb-3 text-base font-semibold text-white">
-                Foto del día
+              <img
+                src={fotoUrl} alt="Foto familiar del día" className="aspect-[16/9] w-full object-cover"
+                style={{ objectPosition: `${(foto?.focoX ?? 0.5) * 100}% ${(foto?.focoY ?? 0.5) * 100}%` }}
+              />
+              <span aria-hidden="true" className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/55 to-transparent px-4 pt-10 pb-3 text-white">
+                <span className="text-base font-semibold">Foto del día</span>
+                <span className="rounded-full bg-black/35 px-3 py-0.5 text-base font-semibold backdrop-blur">Ver todas</span>
               </span>
             </Link>
             <Link href="/fotos" aria-label="Agregar fotos" className="absolute top-3 right-3 flex size-11 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur">
@@ -140,9 +145,12 @@ export default async function Inicio() {
       </section>
 
       <nav aria-label="Accesos directos" className="grid grid-cols-2 gap-2.5">
-        {ACCESOS.map(([nombre, href, icono]) => (
-          <Link key={href} href={href} className="flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-borde bg-white px-3 text-base font-semibold text-texto hover:bg-tinte-claro">
-            <IconoTile nombre={icono} tamano={32} />{nombre}
+        {ACCESOS.map(([nombre, href, icono], i) => (
+          <Link
+            key={href} href={href}
+            className={`flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-borde bg-white px-3 py-2 text-base leading-tight font-semibold text-texto hover:bg-tinte-claro ${ACCESOS.length % 2 === 1 && i === ACCESOS.length - 1 ? 'col-span-2' : ''}`}
+          >
+            <IconoTile nombre={icono} tamano={32} /><span className="min-w-0 [overflow-wrap:anywhere]">{nombre}</span>
           </Link>
         ))}
       </nav>
@@ -157,8 +165,8 @@ export default async function Inicio() {
             ? <Proximo href="/vencimientos" icono="reloj" tono={venc.urgente ? 'naranja' : 'gris'} titulo={venc.titulo} detalle={venc.dias < 0 ? enDias(venc.dias) : `Vence ${enDias(venc.dias).toLowerCase()}`} urgente={venc.urgente} />
             : <li className={`${clasesFila} text-base text-texto-2`}>No hay vencimientos pendientes.</li>}
           {abiertos > 0
-            ? <Proximo href="/pendientes" icono="tilde" tono="gris" titulo={`${abiertos} ${abiertos === 1 ? 'pendiente' : 'pendientes'}`} detalle="Para hacer" />
-            : <li className={`${clasesFila} text-base text-texto-2`}>No hay pendientes.</li>}
+            ? <Proximo href="/pendientes" icono="tilde" tono="gris" titulo={`${abiertos} ${abiertos === 1 ? 'tarea pendiente' : 'tareas pendientes'}`} detalle="Para hacer" />
+            : <li className={`${clasesFila} text-base text-texto-2`}>No hay tareas pendientes.</li>}
         </Lista>
       </section>
     </main>

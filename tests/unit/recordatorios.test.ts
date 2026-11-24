@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cambioEdicion, cambioResolver, chipAviso, fechaLarga, ordenarAnuales, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
+import { cambioEdicion, cambioResolver, chipAviso, destinoPosponer, fechaLarga, ordenarAnuales, validarAccion, validarRecordatorio } from '@/domain/recordatorios'
+import { diasAviso } from '@/domain/avisoDias'
 import { validarDiaMes } from '@/domain/validarFecha'
 
 describe('chipAviso', () => {
@@ -40,7 +41,7 @@ describe('validarAccion', () => {
 describe('validarRecordatorio', () => {
   it('válido', () => {
     expect(validarRecordatorio({ titulo: ' Cena ', dia: 3, mes: 4, avisarDiasAntes: 30 }))
-      .toEqual({ ok: true, valor: { titulo: 'Cena', dia: '04-03', avisarDiasAntes: 30 } })
+      .toEqual({ ok: true, valor: { titulo: 'Cena', dia: '04-03', avisarDiasAntes: 30, repeticion: 'anual', posponerDias: 15 } })
   })
   it('rechaza', () => {
     expect(validarRecordatorio({ titulo: ' ', dia: 3, mes: 4, avisarDiasAntes: 30 }).ok).toBe(false)
@@ -60,7 +61,7 @@ describe('sin fecha', () => {
     expect(validarRecordatorio({ ...base, dia: 3, mes: null }).ok).toBe(false)
   })
   it('editar uno sin fecha permite dejarla en blanco', () => {
-    expect(validarRecordatorio({ ...base, dia: null, mes: null }, true)).toEqual({ ok: true, valor: { titulo: 'a', dia: null, avisarDiasAntes: 30 } })
+    expect(validarRecordatorio({ ...base, dia: null, mes: null }, true)).toEqual({ ok: true, valor: { titulo: 'a', dia: null, avisarDiasAntes: 30, repeticion: 'anual', posponerDias: 15 } })
     expect(validarRecordatorio({ ...base, dia: 3, mes: null }, true).ok).toBe(false)
   })
 })
@@ -96,5 +97,47 @@ describe('ordenarAnuales', () => {
     const lista = [r('B', '12-01'), r('A', '11-30')]
     ordenarAnuales(lista, '2026-11-22')
     expect(lista.map((x) => x.titulo)).toEqual(['B', 'A'])
+  })
+})
+
+describe('ronda 4b: repetición, avisos y posponer', () => {
+  const base = { titulo: 'Pagar BPS', dia: 10, mes: 12, avisarDiasAntes: 7 }
+
+  it('guarda la repetición (todos los años por defecto), el año y el posponer por defecto (15)', () => {
+    expect(validarRecordatorio(base)).toEqual({ ok: true, valor: { titulo: 'Pagar BPS', dia: '12-10', avisarDiasAntes: 7, repeticion: 'anual', posponerDias: 15 } })
+    expect(validarRecordatorio({ ...base, repeticion: 'mensual', anio: 2026, posponerDias: 3 }))
+      .toEqual({ ok: true, valor: { titulo: 'Pagar BPS', dia: '12-10', avisarDiasAntes: 7, repeticion: 'mensual', anio: 2026, posponerDias: 3 } })
+  })
+
+  it('si no se repite, pide la fecha completa (el año)', () => {
+    expect(validarRecordatorio({ ...base, repeticion: 'nunca' })).toEqual({ ok: false, error: 'Elegí el año.' })
+    expect(validarRecordatorio({ ...base, repeticion: 'nunca', anio: 2027 }).ok).toBe(true)
+  })
+
+  it('rechaza repeticiones y posponer inválidos', () => {
+    expect(validarRecordatorio({ ...base, repeticion: 'quincenal' as never }).ok).toBe(false)
+    expect(validarRecordatorio({ ...base, posponerDias: 0 }).ok).toBe(false)
+  })
+
+  it('chipAviso con días, semanas y meses', () => {
+    expect(chipAviso(3)).toBe('3 días antes')
+    expect(chipAviso(14)).toBe('2 semanas antes')
+    expect(chipAviso(90)).toBe('3 meses antes')
+  })
+
+  it('diasAviso: las opciones y "Otro" con N días, semanas o meses', () => {
+    expect(diasAviso('dia', '', 'dias')).toBe(1)
+    expect(diasAviso('tres', '', 'dias')).toBe(3)
+    expect(diasAviso('otro', '2', 'semanas')).toBe(14)
+    expect(diasAviso('otro', '3', 'meses')).toBe(90)
+    expect(diasAviso('otro', '10', 'dias')).toBe(10)
+  })
+
+  it('destino de "Posponer": por días o hasta una fecha (que tiene que ser después de hoy)', () => {
+    expect(destinoPosponer({ dias: 3 }, '2026-11-24')).toEqual({ ok: true, hasta: '2026-11-27' })
+    expect(destinoPosponer({ hasta: '2026-12-20' }, '2026-11-24')).toEqual({ ok: true, hasta: '2026-12-20' })
+    expect(destinoPosponer({ hasta: '2026-11-24' }, '2026-11-24').ok).toBe(false)
+    expect(destinoPosponer({ dias: 0 }, '2026-11-24').ok).toBe(false)
+    expect(destinoPosponer({}, '2026-11-24').ok).toBe(false)
   })
 })

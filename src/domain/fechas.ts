@@ -1,4 +1,5 @@
 import type { Fecha, Recordatorio, Vencimiento } from './tipos'
+import { posponerPor, proximaDeRecordatorio, resolverRecordatorio } from './repeticion'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -52,10 +53,6 @@ export function proximaOcurrencia(diaMMDD: string, hoyStr: string): string {
   return esteAnio >= hoyStr ? esteAnio : ocurrenciaEn(diaMMDD, anio + 1)
 }
 
-function sumarDias(fecha: string, dias: number): string {
-  return new Date(aUtc(fecha).getTime() + dias * DIA_MS).toISOString().slice(0, 10)
-}
-
 export function edadQueCumple(f: Fecha, hoyStr: string): number | null {
   if (f.anioNacimiento == null) return null
   return Number(proximaOcurrencia(f.dia, hoyStr).slice(0, 4)) - f.anioNacimiento
@@ -73,25 +70,25 @@ export function proximosCumples(fechas: Fecha[], hoyStr: string) {
 export function recordatoriosActivos(rs: Recordatorio[], hoyStr: string) {
   const activos: Array<Recordatorio & { proxima: string; dias: number }> = []
   for (const r of rs) {
-    if (r.dia === null) continue
-    const proxima = proximaOcurrencia(r.dia, hoyStr)
+    const proxima = proximaDeRecordatorio(r, hoyStr)
+    if (proxima === null) continue
     const dias = diasHasta(proxima, hoyStr)
     if (dias > r.avisarDiasAntes) continue
-    if (r.resueltoAnio === Number(proxima.slice(0, 4))) continue
+    const rep = r.repeticion ?? 'anual'
+    if ((rep === 'anual' || rep === 'nunca') && r.resueltoAnio === Number(proxima.slice(0, 4))) continue
     if (r.pospuestoHasta && r.pospuestoHasta > hoyStr) continue
     activos.push({ ...r, proxima, dias })
   }
   return activos
 }
 
+/** Posponer 15 días (el de siempre); ver posponerPor para elegir cuánto. */
 export function posponer(r: Recordatorio, hoyStr: string): Recordatorio {
-  return { ...r, pospuestoHasta: sumarDias(hoyStr, 15) }
+  return posponerPor(r, hoyStr, r.posponerDias ?? 15)
 }
 
 export function resolver(r: Recordatorio, hoyStr: string): Recordatorio {
-  const { pospuestoHasta: _omitido, ...resto } = r
-  const ocurrencia = r.dia === null ? hoyStr : proximaOcurrencia(r.dia, hoyStr)
-  return { ...resto, resueltoAnio: Number(ocurrencia.slice(0, 4)) }
+  return resolverRecordatorio(r, hoyStr)
 }
 
 export function vencimientosProximos(vs: Vencimiento[], hoyStr: string) {

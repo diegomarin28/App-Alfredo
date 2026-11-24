@@ -33,6 +33,19 @@ export function Field({ label, children, hint }: { label: string; children: Reac
   )
 }
 
+/**
+ * Como Field, pero el título nombra al control con aria-labelledby: para selects, así el texto de sus opciones
+ * ("Todos los meses", "1 mes") no se mezcla con el nombre.
+ */
+export function CampoSelect({ id, label, children }: { id: string; label: string; children: (props: { 'aria-labelledby': string; id: string }) => ReactNode }) {
+  return (
+    <div>
+      <span id={`${id}-titulo`} className="mb-1.5 block text-base font-semibold text-texto">{label}</span>
+      {children({ 'aria-labelledby': `${id}-titulo`, id })}
+    </div>
+  )
+}
+
 export const clasesInput = 'min-h-12 w-full rounded-xl border border-borde bg-white px-4 text-base text-texto placeholder:text-texto-2 focus:border-azul focus:outline-none focus:ring-2 focus:ring-tinte'
 
 /** Select con la flechita del mockup v2. */

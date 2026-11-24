@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { getRepo } from '@/data/getRepo'
-import { hoy, proximosCumples, recordatoriosActivos } from '@/domain/fechas'
+import { edadQueCumple, hoy, proximosCumples, recordatoriosActivos } from '@/domain/fechas'
+import { proximaDeFecha, rotuloRepeticion } from '@/domain/repeticion'
 import { MESES } from '@/domain/validarFecha'
 import { EmptyState, IconoTile, Seccion, Titulo } from '@/components/ui'
 import BotonBorrar from '@/components/Borrar'
@@ -11,7 +12,7 @@ import NuevaFecha from './NuevaFecha'
 
 export const dynamic = 'force-dynamic'
 
-const TIPO = { cumple: 'Cumpleaños', aniversario: 'Aniversario', otra: 'Otra fecha' } as const
+const TIPO = { cumple: 'Cumpleaños', otra: 'Otra fecha' } as const
 
 /** "Mañana, miércoles 25" / "En 3 días, viernes 27" / "Hoy, miércoles 25". */
 function cuando(dias: number, proxima: string): string {
@@ -23,23 +24,31 @@ function cuando(dias: number, proxima: string): string {
 
 const abreviar = (m: number) => MESES[m - 1].slice(0, 3).toLowerCase()
 
+/** "Enero"; con el año solo si falta más de un año (una fecha de una sola vez, lejana). */
+function tituloMes(clave: string, hoyStr: string): string {
+  const [a, m] = clave.split('-').map(Number)
+  const [ha, hm] = hoyStr.split('-').map(Number)
+  const lejos = a > ha + 1 || (a === ha + 1 && m >= hm)
+  return lejos ? `${MESES[m - 1]} ${a}` : MESES[m - 1]
+}
+
 export default async function Calendario() {
   const hoyStr = hoy()
   const repo = getRepo()
   const [fechas, recordatorios, config] = await Promise.all([repo.fechas.list(), repo.recordatorios.list(), repo.getConfig()])
   const proximo = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr)[0]
   const activos = recordatoriosActivos(recordatorios, hoyStr).length
-  const todas = proximosCumples(fechas, hoyStr)
-  const mesActual = Number(hoyStr.slice(5, 7))
-
-  const grupos = new Map<number, typeof todas>()
+  // Cada fecha en su próxima vez (las que se repiten muestran la próxima; las de una vez que ya pasaron, no).
+  const todas = fechas
+    .map((f) => ({ ...f, proxima: proximaDeFecha(f, hoyStr), edad: f.tipo === 'cumple' ? edadQueCumple(f, hoyStr) : null }))
+    .filter((f): f is typeof f & { proxima: string } => f.proxima !== null)
+    .sort((a, b) => a.proxima.localeCompare(b.proxima) || (a.hora ?? '').localeCompare(b.hora ?? '') || a.nombre.localeCompare(b.nombre))
+  const grupos = new Map<string, typeof todas>()
   for (const f of todas) {
-    const m = Number(f.dia.slice(0, 2))
-    grupos.set(m, [...(grupos.get(m) ?? []), f])
+    const clave = f.proxima.slice(0, 7)
+    grupos.set(clave, [...(grupos.get(clave) ?? []), f])
   }
-  const ordenados = [...grupos.entries()]
-    .sort(([a], [b]) => ((a - mesActual + 12) % 12) - ((b - mesActual + 12) % 12))
-    .map(([m, items]) => [m, items.sort((a, b) => a.dia.localeCompare(b.dia) || a.nombre.localeCompare(b.nombre))] as const)
+  const ordenados = [...grupos.entries()].map(([clave, items]) => [Number(clave.slice(5, 7)), items, clave] as const)
 
   return (
     <main className="space-y-4">
@@ -79,20 +88,25 @@ export default async function Calendario() {
       </Link>
 
       {ordenados.length === 0 && <EmptyState>Todavía no hay fechas cargadas. Tocá el + para sumar la primera.</EmptyState>}
-      {ordenados.map(([m, items]) => (
-        <Seccion key={m} id={`mes-${m}`} titulo={MESES[m - 1]}>
+      {ordenados.map(([m, items, clave]) => (
+        <Seccion key={clave} id={`mes-${clave}`} titulo={tituloMes(clave, hoyStr)}>
           <ul className="space-y-2.5">
             {items.map((f) => (
               <li key={f.id} data-fila className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-borde bg-white py-2 pr-1.5 pl-3">
                 <span className="flex w-12 shrink-0 flex-col items-center leading-none">
-                  <span className="text-[26px] font-bold text-azul">{Number(f.dia.slice(3))}</span>
+                  <span className="text-[26px] font-bold text-azul">{Number(f.proxima.slice(8))}</span>
                   <span className="mt-0.5 text-base font-semibold text-texto-2">{abreviar(m)}</span>
                 </span>
                 <span aria-hidden="true" className="h-9 w-px shrink-0 bg-borde" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-base font-semibold text-texto">{f.nombre}</span>
                   <span className="block text-base text-texto-2">
-                    {TIPO[f.tipo]}{f.edad != null ? ` · ${f.edad} años` : ''}
+                    {[
+                      TIPO[f.tipo],
+                      f.edad != null ? `${f.edad} años` : '',
+                      f.tipo === 'otra' && (f.repeticion ?? 'anual') !== 'anual' ? rotuloRepeticion(f.repeticion ?? 'anual') : '',
+                      f.hora ? `${f.hora.slice(0, 5)} h` : '',
+                    ].filter(Boolean).join(' · ')}
                   </span>
                 </span>
                 <BotonBorrar nombre={f.nombre} accion={borrarFecha.bind(null, f.id)} />

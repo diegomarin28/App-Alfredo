@@ -87,6 +87,7 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   // Mensajes: sugerir respuesta
   await guion(page, [{ texto: 'Dale Martín, el viernes cerramos.' }])
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mensajes' }).click()
+  await hidratado(page.getByRole('button', { name: 'Sugerir respuesta' }))
   await page.getByRole('radio', { name: 'Me escribieron' }).click()
   await page.getByLabel('Pegá el mensaje que te mandaron').fill('Hola Alfredo, ¿cerramos el viernes?')
   await page.getByRole('button', { name: 'Sugerir respuesta' }).click()

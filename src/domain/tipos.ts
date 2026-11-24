@@ -4,11 +4,20 @@ export interface Fecha {
   loteId?: string
   creadoEn?: string
   nombre: string
-  tipo: 'cumple' | 'aniversario' | 'otra'
+  /** los aniversarios viejos pasaron a "otra" (todos los años) en la migración 0005 */
+  tipo: 'cumple' | 'otra'
   /** MM-DD */
   dia: string
   anioNacimiento?: number
+  /** solo "otra": cómo se repite (falta = todos los años). El cumpleaños es siempre todos los años. */
+  repeticion?: Repeticion
+  /** solo "otra": año de la fecha (desde cuándo, o el único si no se repite) */
+  anioEvento?: number
+  /** HH:MM, opcional */
+  hora?: string
 }
+
+export type Repeticion = 'nunca' | 'diaria' | 'semanal' | 'mensual' | 'anual'
 
 export interface Recordatorio {
   id: string
@@ -22,6 +31,12 @@ export interface Recordatorio {
   /** YYYY-MM-DD */
   pospuestoHasta?: string
   resueltoAnio?: number
+  /** cómo se repite (falta = todos los años) */
+  repeticion?: Repeticion
+  /** año de la fecha (desde cuándo, o el único si no se repite) */
+  anio?: number
+  /** "Posponer" por defecto, en días (falta = 15) */
+  posponerDias?: number
 }
 
 export interface Vencimiento {
@@ -129,6 +144,9 @@ export interface FotoFamiliar {
   creadoEn?: string
   /** ruta en el bucket, empieza con fotos/ */
   path: string
+  /** encuadre en el marco 16:9 de Inicio (object-position), 0..1 desde la izquierda y desde arriba; falta = 0.5 */
+  focoX?: number
+  focoY?: number
 }
 
 export interface ClaveCifrada {

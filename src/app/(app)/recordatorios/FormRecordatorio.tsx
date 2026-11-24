@@ -1,42 +1,59 @@
 'use client'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonIcono, BotonMas, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
-import AvisoChips, { claveAviso, diasAviso } from '@/components/AvisoChips'
+import { Boton, BotonIcono, BotonMas, CampoSelect, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
+import AvisoChips, { claveAviso, diasAviso, otroDesdeDias } from '@/components/AvisoChips'
+import type { UnidadAviso } from '@/domain/avisoDias'
 import { MESES } from '@/domain/validarFecha'
+import { REPETICIONES } from '@/domain/repeticion'
+import { OPCIONES_POSPONER } from '@/domain/posponer'
+import type { Repeticion } from '@/domain/tipos'
 import { guardarRecordatorio } from './actions'
 
 function numeroONulo(v: FormDataEntryValue | null): number | null {
   return v === null || v === '' ? null : Number(v)
 }
 
-export interface Inicial { id: string; titulo: string; dia: string | null; avisarDiasAntes: number }
+/** "Elegí" en gris hasta elegir. */
+const clasesElegir = `${clasesSelect} invalid:text-texto-2`
+
+export interface Inicial {
+  id: string; titulo: string; dia: string | null; avisarDiasAntes: number
+  repeticion?: Repeticion; anio?: number; posponerDias?: number
+}
 
 export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { inicial?: Inicial; etiqueta: string; soloIcono?: boolean }) {
   const router = useRouter()
+  const idForm = useId()
   const [abierto, setAbierto] = useState(false)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
   const claveInicial = inicial ? claveAviso(inicial.avisarDiasAntes) : 'mes'
+  const otroInicial = inicial && claveInicial === 'otro' ? otroDesdeDias(inicial.avisarDiasAntes) : { otro: '', unidad: 'dias' as UnidadAviso }
   const [aviso, setAviso] = useState<string>(claveInicial)
-  const [otro, setOtro] = useState(inicial ? String(inicial.avisarDiasAntes) : '')
+  const [otro, setOtro] = useState(otroInicial.otro)
+  const [unidad, setUnidad] = useState<UnidadAviso>(otroInicial.unidad)
+  const [repeticion, setRepeticion] = useState<Repeticion>(inicial?.repeticion ?? 'anual')
 
   function abrir() {
     setError('')
     setAviso(claveInicial)
-    setOtro(inicial ? String(inicial.avisarDiasAntes) : '')
+    setOtro(otroInicial.otro)
+    setUnidad(otroInicial.unidad)
+    setRepeticion(inicial?.repeticion ?? 'anual')
     setAbierto(true)
   }
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
-    const dias = diasAviso(aviso, otro)
     setEnviando(true)
     setError('')
     try {
       const r = await guardarRecordatorio(inicial?.id ?? null, {
-        titulo: String(f.get('titulo') ?? ''), dia: numeroONulo(f.get('dia')), mes: numeroONulo(f.get('mes')), avisarDiasAntes: dias,
+        titulo: String(f.get('titulo') ?? ''), dia: numeroONulo(f.get('dia')), mes: numeroONulo(f.get('mes')),
+        avisarDiasAntes: diasAviso(aviso, otro, unidad), repeticion, anio: numeroONulo(f.get('anio')),
+        posponerDias: Number(f.get('posponer') ?? 15),
       })
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
@@ -58,21 +75,38 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={inicial ? 'Editar recordatorio' : 'Agregar recordatorio'}>
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" defaultValue={inicial?.titulo ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-          <div className="grid grid-cols-2 gap-3">
+          <CampoSelect id={`${idForm}-repite`} label="Se repite">
+            {(p) => (
+              <select {...p} value={repeticion} onChange={(e) => setRepeticion(e.target.value as Repeticion)} className={clasesSelect}>
+                {REPETICIONES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}
+              </select>
+            )}
+          </CampoSelect>
+          <div className="grid grid-cols-3 gap-3">
             <Field label="Día">
-              <select name="dia" aria-label="Día" defaultValue={diaIni} className={clasesSelect}>
+              <select name="dia" aria-label="Día" defaultValue={diaIni} required className={clasesElegir}>
                 <option value="">Elegí</option>
                 {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
               </select>
             </Field>
             <Field label="Mes">
-              <select name="mes" aria-label="Mes" defaultValue={mesIni} className={clasesSelect}>
+              <select name="mes" aria-label="Mes" defaultValue={mesIni} required className={clasesElegir}>
                 <option value="">Elegí</option>
                 {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
             </Field>
+            <Field label={repeticion === 'nunca' ? 'Año' : 'Año (opc.)'}>
+              <input name="anio" aria-label="Año" defaultValue={inicial?.anio ?? ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
+            </Field>
           </div>
-          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} />
+          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} unidad={unidad} setUnidad={setUnidad} />
+          <CampoSelect id={`${idForm}-posponer`} label="Posponer, por defecto">
+            {(p) => (
+              <select {...p} name="posponer" defaultValue={inicial?.posponerDias ?? 15} className={clasesSelect}>
+                {OPCIONES_POSPONER.map(([d, t]) => <option key={d} value={d}>{t}</option>)}
+              </select>
+            )}
+          </CampoSelect>
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
           <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>
         </form>

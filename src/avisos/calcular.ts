@@ -1,5 +1,6 @@
 import { proximosCumples, recordatoriosActivos, vencimientosProximos } from '@/domain/fechas'
 import type { Fecha, Recordatorio, Vencimiento } from '@/domain/tipos'
+import { proximaDeFecha } from '@/domain/repeticion'
 
 export interface Aviso {
   titulo: string
@@ -26,6 +27,11 @@ export function avisosDelDia(datos: DatosAvisos, hoy: string): Aviso[] {
   for (const c of proximosCumples(datos.fechas.filter((f) => f.tipo === 'cumple'), hoy)) {
     if (c.dias === 0) avisos.push({ titulo: `Hoy cumple ${c.nombre}`, cuerpo: '', url: '/calendario' })
     else if (c.dias === 1) avisos.push({ titulo: `Mañana cumple ${c.nombre}`, cuerpo: '', url: '/calendario' })
+  }
+  // Las fechas "Otra" (aniversarios, reuniones…) avisan el día que caen.
+  for (const f of datos.fechas) {
+    if (f.tipo !== 'otra' || proximaDeFecha(f, hoy) !== hoy) continue
+    avisos.push({ titulo: `Hoy: ${f.nombre}`, cuerpo: f.hora ? `A las ${f.hora.slice(0, 5)}` : '', url: '/calendario' })
   }
   for (const r of recordatoriosActivos(datos.recordatorios, hoy)) {
     const cuerpo = r.dias === 0 ? 'Es hoy' : r.dias === 1 ? 'Falta 1 día' : `Faltan ${r.dias} días`
