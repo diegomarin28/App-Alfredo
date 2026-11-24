@@ -1,10 +1,55 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton } from '@/components/ui'
+import { Boton, Sheet, clasesInput } from '@/components/ui'
 import { Icono } from '@/components/iconos'
+import { opcionesPosponer } from '@/domain/posponer'
 
-export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number }
+export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number; posponerDias: number }
+
+type Posponer = { dias: number } | { hasta: string }
+
+/** "2026-12-20" -> "20 de diciembre" */
+function diaLargo(iso: string): string {
+  const [, m, d] = iso.split('-').map(Number)
+  return `${d} de ${['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][m - 1]}`
+}
+
+/**
+ * "Posponer" (ronda 4b): hoja chica para elegir cuánto: 1 día · 3 días · 1 semana · 15 días · 1 mes · Elegir fecha.
+ * La opción por defecto del recordatorio va primera y marcada.
+ */
+function HojaPosponer({ item, onCerrar, onElegir }: { item: ItemActivo | null; onCerrar: () => void; onElegir: (p: Posponer) => void }) {
+  const [eleccion, setEleccion] = useState<string>('')
+  const [fecha, setFecha] = useState('')
+  const opciones = item ? opcionesPosponer(item.posponerDias) : []
+  const actual = eleccion || String(item?.posponerDias ?? 15)
+  return (
+    <Sheet abierto={item !== null} onCerrar={() => { setEleccion(''); onCerrar() }} titulo={`Posponer ${item?.titulo ?? ''}`}>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault()
+          onElegir(actual === 'fecha' ? { hasta: fecha } : { dias: Number(actual) })
+          setEleccion('')
+        }}
+      >
+        <div role="radiogroup" aria-label="¿Cuánto?" className="overflow-hidden rounded-2xl border border-borde">
+          {[...opciones.map(([d, t]) => [String(d), t] as const), ['fecha', 'Elegir fecha'] as const].map(([v, t]) => (
+            <label key={v} className="flex min-h-12 cursor-pointer items-center gap-3 px-4 text-base [&:not(:first-child)]:border-t [&:not(:first-child)]:border-borde">
+              <input type="radio" name="cuanto" value={v} checked={actual === v} onChange={() => setEleccion(v)} className="size-5 accent-azul" />
+              {t}
+            </label>
+          ))}
+        </div>
+        {actual === 'fecha' && (
+          <input type="date" aria-label="Hasta" value={fecha} onChange={(e) => setFecha(e.target.value)} className={clasesInput} />
+        )}
+        <Boton type="submit" className="w-full" disabled={actual === 'fecha' && !fecha}>Posponer</Boton>
+      </form>
+    </Sheet>
+  )
+}
 
 /** Tarjetas activas. El aviso de confirmación vive acá (no en la tarjeta) para sobrevivir al refresh del servidor. */
 export default function ListaActivos({ items }: { items: ItemActivo[] }) {
@@ -12,16 +57,26 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
   const [avisos, setAvisos] = useState<Array<{ id: string; msg: string }>>([])
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [posponiendo, setPosponiendo] = useState<ItemActivo | null>(null)
 
-  async function accion(id: string, a: 'posponer' | 'resolver') {
+  async function accion(id: string, a: 'posponer' | 'resolver', cuanto?: Posponer) {
     setEnviando(true)
     setError('')
     try {
       const res = await fetch(`/api/recordatorios/${encodeURIComponent(id)}`, {
-        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ accion: a }),
+        method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ accion: a, ...cuanto }),
       })
-      if (!res.ok) { setError('No se pudo guardar. Probá de nuevo.'); return }
-      setAvisos((v) => [...v, { id, msg: a === 'posponer' ? 'Te lo recuerdo de nuevo en 15 días.' : '¡Listo!' }])
+      if (!res.ok) {
+        const j = (await res.json().catch(() => null)) as { error?: string } | null
+        setError(j?.error ?? 'No se pudo guardar. Probá de nuevo.')
+        return
+      }
+      const msg = a === 'resolver'
+        ? '¡Listo!'
+        : cuanto && 'hasta' in cuanto
+          ? `Te lo recuerdo de nuevo el ${diaLargo(cuanto.hasta)}.`
+          : `Te lo recuerdo de nuevo en ${cuanto?.dias === 1 ? '1 día' : `${cuanto?.dias} días`}.`
+      setAvisos((v) => [...v, { id, msg }])
       router.refresh()
     } catch {
       setError('No se pudo guardar. Probá de nuevo.')
@@ -49,11 +104,16 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
-            <Boton variante="blanco" className="whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'posponer')}>Posponer 15 días</Boton>
+            <Boton variante="blanco" className="whitespace-nowrap" disabled={enviando} onClick={() => setPosponiendo(r)}>Posponer</Boton>
             <Boton className="whitespace-nowrap" disabled={enviando} onClick={() => accion(r.id, 'resolver')}><Icono nombre="tilde" tamano={18} trazo={2.2} />Resuelto</Boton>
           </div>
         </div>
       ))}
+      <HojaPosponer
+        item={posponiendo}
+        onCerrar={() => setPosponiendo(null)}
+        onElegir={(p) => { const id = posponiendo!.id; setPosponiendo(null); void accion(id, 'posponer', p) }}
+      />
     </div>
   )
 }

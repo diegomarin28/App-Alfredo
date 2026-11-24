@@ -40,8 +40,8 @@ export function NuevoPendiente() {
 
   return (
     <>
-      <BotonMas nombre="Agregar pendiente" onClick={() => { setError(''); setAbierto(true) }} />
-      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nuevo pendiente">
+      <BotonMas nombre="Agregar tarea" onClick={() => { setError(''); setAbierto(true) }} />
+      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nueva tarea">
         <form onSubmit={agregar} className="space-y-4">
           <input
             value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Qué hay que hacer" placeholder="Por ejemplo: llamar al contador"
@@ -82,7 +82,8 @@ export default function Pendientes({ items, nombre, hoy }: { items: ItemPendient
   const abiertos = lista.filter((i) => !i.hecho)
   const hechos = lista.filter((i) => i.hecho)
   const [flor, setFlor] = useState(false)
-  // el golf se anima solo cuando el último se tilda acá (si no, el hoyo quieto); después de la Flor si coinciden
+  // el golf se anima solo cuando el último se tilda acá (si no, el hoyo quieto). Si coincide con la Flor, el golf
+  // ("Todo al día") no se muestra detrás de ella: aparece cuando la Flor se va.
   const [golf, setGolf] = useState<{ esperaMs: number } | null>(null)
 
   async function tildar(id: string, hecho: boolean) {
@@ -96,7 +97,7 @@ export default function Pendientes({ items, nombre, hoy }: { items: ItemPendient
         setTimeout(() => setFlor(false), FLOR_MS)
       }
       const quedan = abiertos.filter((i) => i.id !== id && !tocados[i.id]).length
-      if (quedan === 0) setGolf({ esperaMs: conFlor ? 1600 : 0 })
+      if (quedan === 0) setGolf({ esperaMs: 0 })
     } else {
       setGolf(null)
     }
@@ -129,7 +130,9 @@ export default function Pendientes({ items, nombre, hoy }: { items: ItemPendient
       {flor && <Flotante><Flor /></Flotante>}
       <section aria-label="Por hacer">
         {abiertos.length === 0
-          ? <Golf nombre={nombre} animar={golf !== null} esperaMs={golf?.esperaMs ?? 0} />
+          ? flor
+            ? <div data-esperando-flor className="min-h-[230px]" />
+            : <Golf nombre={nombre} animar={golf !== null} esperaMs={golf?.esperaMs ?? 0} />
           : <Lista>{abiertos.map(fila)}</Lista>}
       </section>
       {hechos.length > 0 && (

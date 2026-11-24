@@ -56,7 +56,7 @@ for (const rol of ['owner', 'familia'] as const) {
   test(`${rol}: borrar una fecha del calendario`, async ({ page }) => {
     await page.clock.install()
     await resetear(page, { hoy: HOY, datos: { fechas: [
-      { nombre: 'Ana', tipo: 'cumple', dia: '11-25' }, { nombre: 'Luis', tipo: 'aniversario', dia: '12-03' },
+      { nombre: 'Ana', tipo: 'cumple', dia: '11-25' }, { nombre: 'Luis', tipo: 'otra', dia: '12-03' },
     ] } })
     await entrarComo(page, rol)
     await page.goto('/calendario')

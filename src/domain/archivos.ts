@@ -64,3 +64,10 @@ export function validarCarpeta(nombre: unknown, existentes: string[]): { ok: tru
   if (existentes.some((e) => e.trim().toLocaleLowerCase('es') === k)) return { ok: false, error: 'Ya existe una carpeta con ese nombre' }
   return { ok: true, valor: n }
 }
+
+/** Encuadre de una foto (0..1); lo que no es un número válido queda centrado (0.5). */
+export function leerFoco(v: unknown): number {
+  const n = typeof v === 'string' && v.trim() !== '' ? Number(v) : typeof v === 'number' ? v : NaN
+  if (!Number.isFinite(n)) return 0.5
+  return Math.min(1, Math.max(0, Math.round(n * 1000) / 1000))
+}

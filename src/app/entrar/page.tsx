@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getSesion } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 import { BotonEntrar } from './BotonEntrar'
+import { NombreApp } from '@/components/Marca'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,8 +13,11 @@ export default async function Entrar() {
   const primeraVez = (await getRepo().passkeys.list()).length === 0
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 px-5 py-10">
-      {/* inicial provisoria: el logo de la app queda para más adelante */}
-      <span aria-hidden="true" className="flex size-[72px] items-center justify-center rounded-[20px] bg-azul text-[34px] font-bold text-white">A</span>
+      <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element -- ícono fijo de public/ */}
+        <img src="/apple-touch-icon.png" alt="" width={72} height={72} className="size-[72px] rounded-[20px]" />
+        <NombreApp className="text-[28px] text-texto" />
+      </div>
       <div className="flex flex-col gap-1.5">
         <h1 className="text-[32px] leading-[1.1] font-bold tracking-[-0.6px] text-texto">Hola, Alfredo</h1>
         <p className="text-base text-texto-2">Para entrar, usá Face ID.</p>

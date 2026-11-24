@@ -215,3 +215,42 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [class*='dt-'] { animation: none !important; }
 }
+
+/* ── Intro de AlfredIA (ronda 4b): el cabezón ~2,5 s al abrir en frío. Ver src/components/Intro.tsx. ── */
+#intro { display: none; }
+html[data-intro='golf'] #intro, html[data-intro='padel'] #intro {
+  position: fixed; inset: 0; z-index: 100; display: block; overflow: hidden; color: #FFFFFF;
+  background: radial-gradient(120% 70% at 50% 35%, #1D3F72 0%, #112A50 60%, #0B1D3A 100%);
+  animation: in-fuera 0.3s ease-in 2.5s forwards;
+}
+/* el cuadro de 390×480 del mockup, centrado (en el mockup de 390×844 queda a 176 px de arriba) */
+#intro .in-escenario { position: absolute; left: calc(50% - 195px); top: calc(50% - 246px); width: 390px; height: 480px; }
+#intro .in-escena { position: absolute; inset: 0; display: none; }
+html[data-intro='golf'] #intro [data-escena='golf'], html[data-intro='padel'] #intro [data-escena='padel'] { display: block; }
+#intro .in-cuadro { position: absolute; inset: 0; }
+#intro .in-cuerpo { position: absolute; left: 0; top: 0; width: 390px; height: 480px; }
+#intro .in-caja { position: absolute; }
+#intro .in-cabeza { width: 100%; height: 100%; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25)); animation: in-bambolea 0.7s ease-in-out infinite; }
+#intro .in-sombra { position: absolute; left: 95px; right: 95px; top: 472px; height: 10px; border-radius: 50%; background: rgba(0, 0, 0, 0.22); }
+#intro .in-marca {
+  position: absolute; left: 0; right: 0; bottom: calc(96px + env(safe-area-inset-bottom)); display: flex; flex-direction: column;
+  align-items: center; gap: 10px; animation: in-marca 0.9s ease-out 0.2s both;
+}
+#intro .in-nombre { font-size: 40px; font-weight: 800; letter-spacing: -1px; }
+#intro .in-nombre span { color: #8FB8EC; }
+#intro .in-de { font-size: 14px; color: #9FB3D1; letter-spacing: 0.2px; }
+@keyframes in-fuera { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+@keyframes in-ver { from { opacity: 0; } to { opacity: 1; } }
+@keyframes in-ocultar { from { opacity: 1; } to { opacity: 0; } }
+@keyframes in-bambolea {
+  0%, 100% { transform: rotate(-7deg) scale(1); } 25% { transform: rotate(5deg) scale(1.04); }
+  50% { transform: rotate(8deg) scale(1); } 75% { transform: rotate(-4deg) scale(1.03); }
+}
+@keyframes in-marca { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  /* el último cuadro, quieto, medio segundo */
+  #intro *, #intro .in-cuadro { animation: none !important; }
+  #intro .in-cuadro { opacity: 0; }
+  #intro .in-cuadro[data-ultimo] { opacity: 1; }
+  html[data-intro='golf'] #intro, html[data-intro='padel'] #intro { animation: in-fuera 0.01s linear 0.5s forwards !important; }
+}

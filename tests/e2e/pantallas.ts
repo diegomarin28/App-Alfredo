@@ -12,7 +12,7 @@ const FOTO = readFileSync(path.join(__dirname, 'fixtures', 'foto.jpg'))
 const DATOS = {
   fechas: [
     { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
-    { nombre: 'Luis y Marta', tipo: 'aniversario', dia: '12-03' },
+    { nombre: 'Luis y Marta', tipo: 'otra', dia: '12-03' },
     { nombre: 'Marta', tipo: 'cumple', dia: '01-10' },
     { nombre: 'Sofía Rodríguez', tipo: 'cumple', dia: '12-08', anioNacimiento: 1985 },
     { nombre: 'Día del abuelo', tipo: 'otra', dia: '11-30' },

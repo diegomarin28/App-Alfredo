@@ -33,7 +33,11 @@ function bajo(path: string, base: string): boolean {
 }
 
 const PUBLICAS = ['/entrar', '/configurar', '/familia', '/api/auth', '/api/cron', '/api/test', '/_next']
-const ESTATICOS = [/^\/manifest\.webmanifest$/, /^\/icon-[^/]*\.png$/, /^\/apple-touch-icon[^/]*$/, /^\/sw\.js$/, /^\/favicon\.ico$/]
+const ESTATICOS = [
+  /^\/manifest\.webmanifest$/, /^\/icon-[^/]*\.png$/, /^\/apple-touch-icon[^/]*$/, /^\/sw\.js$/, /^\/favicon[^/]*\.(ico|png)$/,
+  // marca: la intro y las pantallas de carga de iOS se ven antes de entrar
+  /^\/marca\/[^/]+\.png$/, /^\/carga\/[^/]+\.jpg$/,
+]
 
 /** Rutas que no piden sesión (las de cron y test tienen su propio control). */
 export function esPublica(path: string): boolean {

@@ -101,10 +101,10 @@ describe('contame (Review Focus 4)', () => {
       opciones: [
         { etiqueta: 'Portofino', respuesta: 'Es en Portofino' },
         { etiqueta: 'Malibú', respuesta: 'Malibú' },
-        { etiqueta: 'Otra cosa · guardar en Pendientes', respuesta: 'otra cosa' },
+        { etiqueta: 'Otra cosa · guardar en Tareas pendientes', respuesta: 'otra cosa' },
       ],
     })
-    expect(OPCION_OTRA_COSA).toEqual({ etiqueta: 'Otra cosa · guardar en Pendientes', respuesta: 'otra cosa' })
+    expect(OPCION_OTRA_COSA).toEqual({ etiqueta: 'Otra cosa · guardar en Tareas pendientes', respuesta: 'otra cosa' })
     expect(await repo.eventosCasa.list()).toHaveLength(0)
     expect(await repo.pendientes.list()).toHaveLength(0)
   })
@@ -141,7 +141,7 @@ describe('contame (Review Focus 4)', () => {
     const r = await contame(repo, ai, email, { texto: 'Ayer Simón cortó el pasto. Tengo que llamar al escribano.' })
     if (!('guardado' in r)) throw new Error('esperaba guardado')
     expect(r.guardado.map((g) => g.accion.tipo)).toEqual(['eventoCasa', 'pendiente'])
-    expect(r.guardado[1].descripcion).toBe('Pendientes: Llamar al escribano')
+    expect(r.guardado[1].descripcion).toBe('Tareas pendientes: Llamar al escribano')
     const pend = await repo.pendientes.list({ loteId: r.loteId })
     expect(pend).toHaveLength(1)
     expect(pend[0].hecho).toBe(false)
@@ -156,7 +156,7 @@ describe('contame (Review Focus 4)', () => {
     const ai = new FakeAiClient([{ texto: 'No entendí bien.' }])
     const r = await contame(repo, ai, email, { texto: 'Comprar pilas' })
     if (!('guardado' in r)) throw new Error('esperaba guardado')
-    expect(r.guardado).toEqual([{ accion: { tipo: 'pendiente', texto: 'Comprar pilas' }, id: expect.any(String), descripcion: 'Pendientes: Comprar pilas' }])
+    expect(r.guardado).toEqual([{ accion: { tipo: 'pendiente', texto: 'Comprar pilas' }, id: expect.any(String), descripcion: 'Tareas pendientes: Comprar pilas' }])
   })
 
   it('texto largo sin clasificar → nota de voz (no se pierde nada)', async () => {

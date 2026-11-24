@@ -418,7 +418,7 @@ export default function Claves() {
             <Card>
               <form onSubmit={agregar} className="space-y-4" autoComplete="off">
                 <h2 id="agregar" className="text-xl font-semibold">Agregar contraseña</h2>
-                <Field label="Sitio" hint="Por ejemplo Banco">
+                <Field label="Sitio" hint="Por ejemplo Gmail">
                   <input name="sitio" maxLength={80} required className={clasesInput} autoComplete="off" />
                 </Field>
                 <Field label="Usuario" hint="Opcional">

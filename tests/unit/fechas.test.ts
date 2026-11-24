@@ -100,7 +100,7 @@ describe('proximosCumples', () => {
     expect(x).toMatchObject({ proxima: '2027-02-28', dias: 8, edad: 63 })
   })
   it('incluye todas las fechas dadas, no solo cumples', () => {
-    expect(proximosCumples([f({ tipo: 'aniversario' })], '2026-11-22')).toHaveLength(1)
+    expect(proximosCumples([f({ tipo: 'otra' })], '2026-11-22')).toHaveLength(1)
   })
 })
 

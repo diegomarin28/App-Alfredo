@@ -10,7 +10,7 @@ const HOY = '2026-11-22'
 const DATOS = {
   fechas: [
     { nombre: 'Ana Pérez', tipo: 'cumple', dia: '11-25', anioNacimiento: 1990 },
-    { nombre: 'Luis', tipo: 'aniversario', dia: '12-03' },
+    { nombre: 'Luis', tipo: 'otra', dia: '12-03' },
     { nombre: 'Marta', tipo: 'cumple', dia: '01-10' },
     { nombre: 'Pedro', tipo: 'otra', dia: '11-30' },
   ],
@@ -95,11 +95,67 @@ test('familia puede ver y agregar', async ({ page }) => {
   await page.getByRole('button', { name: 'Agregar fecha' }).click()
   const hoja = page.getByRole('dialog')
   await hoja.getByLabel('Nombre').fill('Tía Rosa')
-  await hoja.getByRole('radio', { name: 'Aniversario' }).click()
+  await hoja.getByRole('radio', { name: 'Otra' }).click()
   await expect(hoja.getByLabel('Año de nacimiento (opcional)')).toHaveCount(0)
+  await expect(hoja.getByLabel('Se repite')).toHaveValue('anual')
   await hoja.getByLabel('Día', { exact: true }).selectOption('5')
   await hoja.getByLabel('Mes').selectOption('12')
   await hoja.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByRole('region', { name: 'Diciembre' })).toContainText('Tía Rosa')
-  await expect(page.getByRole('region', { name: 'Diciembre' }).getByRole('listitem').filter({ hasText: 'Tía Rosa' })).toContainText('Aniversario')
+  await expect(page.getByRole('region', { name: 'Diciembre' }).getByRole('listitem').filter({ hasText: 'Tía Rosa' })).toContainText('Otra fecha')
+})
+
+test('ronda 4b: solo Cumpleaños u Otra; el cumple dice "Se repite todos los años"; Día y Mes en "Elegí"', async ({ page }) => {
+  await resetear(page, { datos: DATOS, hoy: HOY })
+  await entrarComo(page, 'owner')
+  await page.goto('/calendario')
+  await page.getByRole('button', { name: 'Agregar fecha' }).click()
+  const hoja = page.getByRole('dialog')
+  expect(await hoja.getByRole('radio').allTextContents()).toEqual(['Cumpleaños', 'Otra'])
+  await expect(hoja.getByText('Se repite todos los años.')).toBeVisible()
+  await expect(hoja.getByLabel('Se repite')).toHaveCount(0)
+  await expect(hoja.getByLabel('Día', { exact: true })).toHaveValue('')
+  await expect(hoja.getByLabel('Mes')).toHaveValue('')
+  await expect(hoja.getByLabel('Día', { exact: true }).locator('option:checked')).toHaveText('Elegí')
+})
+
+test('ronda 4b: "Otra" que se repite cada semana, con hora: la lista muestra la próxima vez y "cada semana"', async ({ page }) => {
+  await resetear(page, { datos: DATOS, hoy: HOY })
+  await entrarComo(page, 'owner')
+  await page.goto('/calendario')
+  await page.getByRole('button', { name: 'Agregar fecha' }).click()
+  const hoja = page.getByRole('dialog')
+  await hoja.getByLabel('Nombre').fill('Truco en el club')
+  await hoja.getByRole('radio', { name: 'Otra' }).click()
+  await hoja.getByLabel('Se repite').selectOption('semanal')
+  // jueves 5 de noviembre de 2026 → el próximo jueves desde el domingo 22 es el 26
+  await hoja.getByLabel('Día', { exact: true }).selectOption('5')
+  await hoja.getByLabel('Mes').selectOption('11')
+  await hoja.getByLabel('Año (desde)').fill('2026')
+  await hoja.getByLabel('Hora (opcional)').fill('18:30')
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const fila = page.getByRole('region', { name: 'Noviembre' }).getByRole('listitem').filter({ hasText: 'Truco en el club' })
+  await expect(fila).toContainText('26')
+  await expect(fila).toContainText('Otra fecha · cada semana · 18:30 h')
+})
+
+test('ronda 4b: "No se repite" pide el año; una vez que pasó, ya no aparece', async ({ page }) => {
+  await resetear(page, { datos: { fechas: [...DATOS.fechas, { nombre: 'Viaje que ya fue', tipo: 'otra', dia: '10-01', anioEvento: 2026, repeticion: 'nunca' }] }, hoy: HOY })
+  await entrarComo(page, 'owner')
+  await page.goto('/calendario')
+  await expect(page.getByText('Viaje que ya fue')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Agregar fecha' }).click()
+  const hoja = page.getByRole('dialog')
+  await hoja.getByLabel('Nombre').fill('Escribano')
+  await hoja.getByRole('radio', { name: 'Otra' }).click()
+  await hoja.getByLabel('Se repite').selectOption('nunca')
+  await hoja.getByLabel('Día', { exact: true }).selectOption('3')
+  await hoja.getByLabel('Mes').selectOption('12')
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(hoja.getByText('Elegí el año.')).toBeVisible()
+  await hoja.getByLabel('Año', { exact: true }).fill('2026')
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Diciembre' }).getByRole('listitem').filter({ hasText: 'Escribano' })).toContainText('Otra fecha')
 })

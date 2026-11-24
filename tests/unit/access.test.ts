@@ -70,11 +70,11 @@ describe('esPublica / esApi', () => {
       '/entrar', '/configurar', '/familia', '/api/auth/entrar/opciones', '/api/auth/salir',
       '/api/cron/avisos', '/api/test/reset', '/_next/static/chunks/a.js', '/manifest.webmanifest',
       '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/apple-touch-icon-precomposed.png',
-      '/sw.js', '/favicon.ico',
+      '/sw.js', '/favicon.ico', '/favicon-32.png', '/marca/cabeza.png', '/marca/cuerpo_golf1.png', '/carga/1179x2556.jpg',
     ]) {
       expect(esPublica(p), p).toBe(true)
     }
-    for (const p of ['/', '/entrarx', '/claves', '/api/authx', '/api/fechas', '/icon-192.png/x', '/configurar-otra', '/api/testing']) {
+    for (const p of ['/', '/entrarx', '/claves', '/api/authx', '/api/fechas', '/icon-192.png/x', '/configurar-otra', '/api/testing', '/marca/x/y.png', '/carga/a.png']) {
       expect(esPublica(p), p).toBe(false)
     }
   })

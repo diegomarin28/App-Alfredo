@@ -13,7 +13,7 @@ describe('ultimosGuardados (Contame: "Lo último que guardé")', () => {
     await repo.notas.create({ texto: 'Vieja', origen: 'voz', loteId: 'l0', creadoEn: '2026-11-01T11:00:00Z' })
     const u = await ultimosGuardados(repo)
     expect(u.map(({ titulo, detalle, clase }) => [titulo, detalle, clase])).toEqual([
-      ['Llamar a DirecTV', 'Pendientes', 'pendiente'],
+      ['Llamar a DirecTV', 'Tareas pendientes', 'pendiente'],
       ['Vence el seguro del auto', 'Vencimientos · 29 nov', 'vencimiento'],
       ['Simón vino a cortar el pasto', 'Portofino · historial', 'casa'],
     ])

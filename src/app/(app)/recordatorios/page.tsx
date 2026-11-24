@@ -2,6 +2,7 @@ import { getRepo } from '@/data/getRepo'
 import { hoy, recordatoriosActivos } from '@/domain/fechas'
 import { chipAviso, ordenarAnuales } from '@/domain/recordatorios'
 import { MESES } from '@/domain/validarFecha'
+import { rotuloRepeticion } from '@/domain/repeticion'
 import { EmptyState, Lista, Seccion, Titulo, clasesFila } from '@/components/ui'
 import ListaActivos from './Activo'
 import FormRecordatorio from './FormRecordatorio'
@@ -33,18 +34,27 @@ export default async function Recordatorios() {
 
       <Seccion id="ahora" titulo="Para gestionar ahora">
         {activos.length === 0 && <EmptyState>Nada para gestionar por ahora. Quedate tranquilo.</EmptyState>}
-        <ListaActivos items={activos.map((r) => ({ id: r.id, titulo: r.titulo, fecha: diaLargo(r.dia), dias: r.dias }))} />
+        <ListaActivos items={activos.map((r) => ({ id: r.id, titulo: r.titulo, fecha: diaLargo(r.proxima.slice(5)), dias: r.dias, posponerDias: r.posponerDias ?? 15 }))} />
       </Seccion>
 
-      <Seccion id="anual" titulo="Todos los años">
+      <Seccion id="anual" titulo="Todos los recordatorios">
         <Lista>
           {todos.map((r) => (
             <li key={r.id} data-fila className={clasesFila}>
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-semibold text-texto">{r.titulo}</span>
-                <span className="block text-base text-texto-2">{diaCorto(r.dia)} · aviso {chipAviso(r.avisarDiasAntes)}</span>
+                <span className="block text-base text-texto-2">
+                  {[
+                    (r.repeticion ?? 'anual') === 'nunca' && r.dia && r.anio ? `${diaCorto(r.dia)} ${r.anio}` : diaCorto(r.dia),
+                    (r.repeticion ?? 'anual') !== 'anual' ? rotuloRepeticion(r.repeticion ?? 'anual') : '',
+                    `aviso ${chipAviso(r.avisarDiasAntes)}`,
+                  ].filter(Boolean).join(' · ')}
+                </span>
               </span>
-              <FormRecordatorio inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes }} etiqueta={`Editar ${r.titulo}`} soloIcono />
+              <FormRecordatorio
+                inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes, repeticion: r.repeticion, anio: r.anio, posponerDias: r.posponerDias }}
+                etiqueta={`Editar ${r.titulo}`} soloIcono
+              />
             </li>
           ))}
         </Lista>

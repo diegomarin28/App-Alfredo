@@ -20,7 +20,7 @@ test('owner: saludo, foto, lo próximo y accesos', async ({ page }) => {
   await expect(prox).toContainText('Cumple de Ana')
   await expect(prox).toContainText('En 3 días')
   await expect(prox).toContainText('Vence en 5 días')
-  await expect(prox).toContainText('3 pendientes')
+  await expect(prox).toContainText('3 tareas pendientes')
   const nav = page.getByRole('navigation', { name: 'Principal' })
   await expect(nav).toBeVisible()
   // Etiquetas a 14 px en la barra de abajo (menú compacto) y 16 px en la barra lateral, sin desbordar su lugar
@@ -36,8 +36,8 @@ test('owner: saludo, foto, lo próximo y accesos', async ({ page }) => {
 })
 
 for (const [nombre, ruta] of [
-  ['Vencimientos', '/vencimientos'], ['Pendientes', '/pendientes'], ['Recordatorios', '/recordatorios'],
-  ['Contactos', '/contactos'], ['Documentos', '/documentos'], ['Contraseñas', '/claves'],
+  ['Vencimientos', '/vencimientos'], ['Tareas pendientes', '/pendientes'], ['Recordatorios', '/recordatorios'],
+  ['Contactos', '/contactos'], ['Documentos', '/documentos'], ['Contraseñas', '/claves'], ['Fotos', '/fotos'],
 ]) {
   test(`acceso ${nombre} navega`, async ({ page }) => {
     await resetear(page, { datos: DATOS, hoy: HOY })
@@ -58,7 +58,7 @@ test('repo vacío: Inicio muestra textos vacíos', async ({ page }) => {
   await expect(page.getByRole('link', { name: /Agregar fotos/ })).toHaveAttribute('href', '/fotos')
   await expect(page.getByText('No hay cumpleaños cargados')).toBeVisible()
   await expect(page.getByText('No hay vencimientos pendientes')).toBeVisible()
-  await expect(page.getByText('No hay pendientes')).toBeVisible()
+  await expect(page.getByText('No hay tareas pendientes')).toBeVisible()
 })
 
 test('familia: "Cargando datos para Alfredo" con lo cargado de cada cosa; sin accesos ni Contame/Mensajes', async ({ page }) => {
@@ -72,7 +72,7 @@ test('familia: "Cargando datos para Alfredo" con lo cargado de cada cosa; sin ac
   await expect(cargar.getByRole('link', { name: /Fotos de la familia/ })).toContainText('2 fotos')
   await expect(cargar.getByRole('link', { name: /Portofino y Malibú/ })).toHaveAttribute('href', '/casas')
   await expect(cargar.getByRole('link', { name: /Recordatorios/ })).toContainText('6 cargados')
-  for (const n of ['Vencimientos', 'Pendientes', 'Documentos', 'Contraseñas', 'Contactos']) {
+  for (const n of ['Vencimientos', 'Tareas pendientes', 'Documentos', 'Contraseñas', 'Contactos']) {
     await expect(page.getByRole('link', { name: n, exact: true })).toHaveCount(0)
   }
   const menu = page.getByRole('navigation', { name: 'Principal' })
@@ -95,4 +95,32 @@ test('owner: con una foto, Inicio lleva a /fotos (la foto y el botón de agregar
   await foto.click()
   await expect(page).toHaveURL(/\/fotos$/)
   await expect(page.getByRole('heading', { name: 'Fotos' })).toBeVisible()
+})
+
+test('accesos: 7 con Fotos al final a todo el ancho; "Tareas pendientes" entra entera, sin "…"', async ({ page }) => {
+  await resetear(page, { datos: DATOS, hoy: HOY })
+  await entrarComo(page, 'owner')
+  await page.goto('/')
+  const accesos = page.getByRole('navigation', { name: 'Accesos directos' }).getByRole('link')
+  await expect(accesos).toHaveText(['Vencimientos', 'Tareas pendientes', 'Recordatorios', 'Contactos', 'Documentos', 'Contraseñas', 'Fotos'])
+  const fotos = (await accesos.last().boundingBox())!, primero = (await accesos.first().boundingBox())!, segundo = (await accesos.nth(1).boundingBox())!
+  expect(fotos.width).toBeGreaterThan(segundo.x + segundo.width - primero.x - 2)
+  // ninguna palabra se corta a la mitad ni queda con "…": cada palabra entera en un renglón, dentro del botón
+  for (const a of await accesos.all()) {
+    const nombre = (await a.textContent())!
+    const ok = await a.locator('span').last().evaluate((el) => {
+      const r = document.createRange()
+      const palabras: { texto: string; renglones: number }[] = []
+      const nodo = el.firstChild as Text
+      let i = 0
+      for (const p of nodo.data.split(' ')) {
+        r.setStart(nodo, i); r.setEnd(nodo, i + p.length); i += p.length + 1
+        const tops = new Set([...r.getClientRects()].map((x) => Math.round(x.top)))
+        palabras.push({ texto: p, renglones: tops.size })
+      }
+      const caja = el.parentElement!.getBoundingClientRect(), texto = el.getBoundingClientRect()
+      return palabras.every((p) => p.renglones === 1) && texto.right <= caja.right + 1 && getComputedStyle(el).textOverflow !== 'ellipsis'
+    })
+    expect(ok, nombre).toBe(true)
+  }
 })

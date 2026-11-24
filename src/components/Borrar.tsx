@@ -115,16 +115,17 @@ function plegar(fila: HTMLElement | null): () => void {
  * Borrar con "Deshacer" desde cualquier lado (p. ej. la foto grande): pliega `fila` y deja 5 s para deshacer.
  * Fuera del proveedor borra directo.
  */
-export function useBorrar(): (o: { nombre: string; accion: () => Promise<Res>; fila: HTMLElement | null }) => Promise<void> {
+export function useBorrar(): (o: { nombre: string; accion: () => Promise<Res>; fila: HTMLElement | null; alDeshacer?: () => void }) => Promise<void> {
   const programar = useContext(Contexto)
   const router = useRouter()
-  return async ({ nombre, accion, fila }) => {
+  return async ({ nombre, accion, fila, alDeshacer }) => {
     if (!programar) {
       const r = await accion()
       if (r.ok) router.refresh()
       return
     }
-    programar({ texto: `Se borró ${nombre}`, ejecutar: accion, deshacer: plegar(fila) })
+    const mostrar = plegar(fila)
+    programar({ texto: `Se borró ${nombre}`, ejecutar: accion, deshacer: () => { mostrar(); alDeshacer?.() } })
   }
 }
 

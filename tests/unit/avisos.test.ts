@@ -18,9 +18,19 @@ describe('avisosDelDia', () => {
     const a = avisosDelDia({ ...vacio, fechas: [cumple('Ana', '11-25')] }, '2026-11-25')
     expect(a.map((x) => x.titulo)).toEqual(['Hoy cumple Ana'])
   })
-  it('cumple lejano no avisa; aniversario tampoco', () => {
-    const f: Fecha[] = [cumple('Ana', '12-25'), { id: 'x', nombre: 'Bodas', tipo: 'aniversario', dia: '11-25' }]
-    expect(avisosDelDia({ ...vacio, fechas: f }, '2026-11-25')).toEqual([])
+  it('cumple lejano no avisa', () => {
+    expect(avisosDelDia({ ...vacio, fechas: [cumple('Ana', '12-25')] }, '2026-11-25')).toEqual([])
+  })
+  it('las fechas "Otra" que caen hoy avisan (con la hora, si tiene); las de otro día no', () => {
+    const f: Fecha[] = [
+      { id: 'b', nombre: 'Aniversario de bodas', tipo: 'otra', dia: '11-25' },
+      { id: 'r', nombre: 'Reunión del club', tipo: 'otra', dia: '11-04', anioEvento: 2026, repeticion: 'semanal', hora: '18:30:00' },
+      { id: 'x', nombre: 'Otra cosa', tipo: 'otra', dia: '11-26' },
+    ]
+    expect(avisosDelDia({ ...vacio, fechas: f }, '2026-11-25')).toEqual([
+      { titulo: 'Hoy: Aniversario de bodas', cuerpo: '', url: '/calendario' },
+      { titulo: 'Hoy: Reunión del club', cuerpo: 'A las 18:30', url: '/calendario' },
+    ])
   })
   const nav: Recordatorio = { id: 'n', titulo: 'Gestionar Navidad', dia: '12-25', avisarDiasAntes: 60 }
   it('recordatorio en ventana', () => {

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Boton, BotonMas, Field, Sheet, clasesInput } from '@/components/ui'
 import { Segmentado } from '@/components/controles'
 import AvisoChips, { diasAviso } from '@/components/AvisoChips'
+import type { UnidadAviso } from '@/domain/avisoDias'
 import { agregarVencimiento } from './actions'
 
 export default function FormVencimiento() {
@@ -14,6 +15,7 @@ export default function FormVencimiento() {
   const [ambito, setAmbito] = useState<'empresa' | 'personal'>('empresa')
   const [aviso, setAviso] = useState('mes')
   const [otro, setOtro] = useState('')
+  const [unidad, setUnidad] = useState<UnidadAviso>('dias')
 
   function abrir() {
     setError(''); setAmbito('empresa'); setAviso('mes'); setOtro('')
@@ -27,7 +29,7 @@ export default function FormVencimiento() {
     setError('')
     try {
       const r = await agregarVencimiento({
-        titulo: String(f.get('titulo') ?? ''), ambito, fecha: String(f.get('fecha') ?? ''), avisarDiasAntes: diasAviso(aviso, otro),
+        titulo: String(f.get('titulo') ?? ''), ambito, fecha: String(f.get('fecha') ?? ''), avisarDiasAntes: diasAviso(aviso, otro, unidad),
       })
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
@@ -50,7 +52,7 @@ export default function FormVencimiento() {
             <Segmentado etiqueta="Ámbito" opciones={[['empresa', 'Empresa'], ['personal', 'Personal']] as const} valor={ambito} onCambio={setAmbito} />
           </div>
           <Field label="Fecha"><input name="fecha" type="date" className={clasesInput} /></Field>
-          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} />
+          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} unidad={unidad} setUnidad={setUnidad} />
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
           <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>
         </form>

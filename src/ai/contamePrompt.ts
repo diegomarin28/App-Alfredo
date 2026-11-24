@@ -53,9 +53,9 @@ const VARIANTES = [
   variante('servicioCasa', 'Dato de un servicio de una casa (DirecTV, wifi, UTE, OSE, alarma, riego…).', {
     casa: CASA,
     clave: str('Nombre del servicio (ej. UTE).'),
-    valor: str('El dato (ej. número de cuenta, contraseña del wifi, teléfono de la empresa).'),
+    valor: str('El dato (ej. número de cliente, contraseña del wifi, teléfono de la empresa).'),
   }, ['casa', 'clave', 'valor']),
-  variante('pendiente', 'Algo que tiene que hacer, o lo que no sabés dónde va.', {
+  variante('pendiente', 'Una tarea pendiente: algo que tiene que hacer, o lo que no sabés dónde va.', {
     texto: str('La tarea, corta (hasta 200 letras).'),
   }, ['texto']),
   variante('nota', 'Algo para acordarse que no es una tarea: una idea, un dato suelto.', {
@@ -67,9 +67,9 @@ const VARIANTES = [
     telefono: str('Opcional: teléfono tal como lo dijo.'),
     nota: str('Opcional: algo para recordar de esta persona.'),
   }, ['nombre']),
-  variante('fecha', 'Cumpleaños, aniversario u otra fecha que se repite todos los años.', {
+  variante('fecha', 'Cumpleaños u otra fecha que se repite todos los años (un aniversario es "otra").', {
     nombre: str('De quién o de qué es la fecha.'),
-    tipoFecha: { type: 'string', enum: ['cumple', 'aniversario', 'otra'], description: 'cumple, aniversario u otra' },
+    tipoFecha: { type: 'string', enum: ['cumple', 'otra'], description: 'cumple u otra (aniversarios y demás)' },
     dia: str('Día del año, MM-DD.'),
     anioNacimiento: { type: 'integer', description: 'Opcional: año de nacimiento, solo si lo dice.' },
   }, ['nombre', 'tipoFecha', 'dia']),
@@ -131,7 +131,7 @@ export const HERRAMIENTAS: Herramienta[] = [
 
 export function construirSistema(nombre = 'Alfredo'): string {
   return [
-    `Archivás lo que ${nombre} te cuenta (dictado por voz o pegado) en su app, que tiene dos casas, Portofino y Malibú, y secciones de pendientes, notas, contactos, fechas, recordatorios y vencimientos.`,
+    `Archivás lo que ${nombre} te cuenta (dictado por voz o pegado) en su app, que tiene dos casas, Portofino y Malibú, y secciones de tareas pendientes, notas, contactos, fechas, recordatorios y vencimientos.`,
     'Respondé SIEMPRE llamando a exactamente una herramienta: `guardar` cuando sabés dónde va cada cosa, o `preguntar` cuando dudás. Nunca respondas solo con texto.',
     [
       'Reglas:',
