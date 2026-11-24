@@ -3,14 +3,12 @@ import { useState } from 'react'
 import { Boton, Field, clasesInput } from '@/components/ui'
 import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { MAX_ESTILO, MAX_NOMBRE } from '@/domain/validarAjustes'
-import { guardarEstilo, guardarNombre } from './actions'
+import { guardarPerfil } from './actions'
 
-type Respuesta = { ok: true } | { ok: false; error: string }
-
-function Formulario({ etiqueta, boton, guardar, inicial, largo, ayuda }: {
-  etiqueta: string; boton: string; guardar: (t: string) => Promise<Respuesta>; inicial: string; largo?: boolean; ayuda?: string
-}) {
-  const [texto, setTexto, campo] = useTextoEscrito(inicial)
+/** Cómo te saludan y cómo escribís, con un solo "Guardar" (mockup v2). */
+export default function Perfil({ nombre, estilo }: { nombre: string; estilo: string }) {
+  const [texto, setTexto, campoNombre] = useTextoEscrito(nombre)
+  const [ejemplos, setEjemplos, campoEstilo] = useTextoEscrito(estilo)
   const [estado, setEstado] = useState<'quieto' | 'guardando' | 'guardado' | 'error'>('quieto')
   const [error, setError] = useState('')
 
@@ -18,7 +16,7 @@ function Formulario({ etiqueta, boton, guardar, inicial, largo, ayuda }: {
     e.preventDefault()
     setEstado('guardando')
     try {
-      const r = await guardar(texto)
+      const r = await guardarPerfil(texto, ejemplos)
       if (r.ok) setEstado('guardado')
       else { setError(r.error); setEstado('error') }
     } catch {
@@ -28,27 +26,22 @@ function Formulario({ etiqueta, boton, guardar, inicial, largo, ayuda }: {
   }
 
   return (
-    <form onSubmit={enviar} className="space-y-3">
-      <Field label={etiqueta} hint={ayuda}>
-        {largo
-          ? <textarea {...campo} value={texto} rows={8} onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={`${clasesInput} py-2`} />
-          : <input {...campo} value={texto} maxLength={MAX_NOMBRE + 20} autoComplete="off" onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={clasesInput} />}
+    <form onSubmit={enviar} className="space-y-4">
+      <Field label="Cómo te saludan">
+        <input
+          {...campoNombre} value={texto} maxLength={MAX_NOMBRE + 20} autoComplete="off"
+          onChange={(e) => { setTexto(e.target.value); setEstado('quieto') }} className={clasesInput}
+        />
       </Field>
-      <Boton type="submit" disabled={estado === 'guardando'}>{boton}</Boton>
-      {estado === 'guardado' && <p role="status" className="text-base font-medium text-azul">Guardado</p>}
-      {estado === 'error' && <p role="alert" className="text-base font-medium text-urg-tx">{error}</p>}
+      <Field label="Cómo escribís" hint={`Pegá 3 o 4 mensajes tuyos y las respuestas van a sonar a vos. Hasta ${MAX_ESTILO} letras.`}>
+        <textarea
+          {...campoEstilo} value={ejemplos} rows={4} placeholder='Ej.: "Hola Martín, el viernes lo cerramos. Saludos, Alfredo."'
+          onChange={(e) => { setEjemplos(e.target.value); setEstado('quieto') }} className={`${clasesInput} py-3`}
+        />
+      </Field>
+      <Boton type="submit" className="w-full" disabled={estado === 'guardando'}>{estado === 'guardando' ? 'Guardando…' : 'Guardar'}</Boton>
+      {estado === 'guardado' && <p role="status" className="text-base font-semibold text-azul">Guardado</p>}
+      {estado === 'error' && <p role="alert" className="text-base font-semibold text-urg-tx">{error}</p>}
     </form>
-  )
-}
-
-export default function Perfil({ nombre, estilo }: { nombre: string; estilo: string }) {
-  return (
-    <div className="space-y-6">
-      <Formulario etiqueta="Cómo te saludan" boton="Guardar nombre" guardar={guardarNombre} inicial={nombre} />
-      <Formulario
-        etiqueta="Cómo escribís" boton="Guardar cómo escribís" guardar={guardarEstilo} inicial={estilo} largo
-        ayuda={`Pegá 3 o 4 mensajes reales que mandaste, así los borradores suenan a vos. Hasta ${MAX_ESTILO} letras.`}
-      />
-    </div>
   )
 }

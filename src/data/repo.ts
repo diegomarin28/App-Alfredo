@@ -1,6 +1,6 @@
 import type {
   Carpeta, ClaveCifrada, Config, Contacto, Documento, EventoCasa, Fecha,
-  FotoFamiliar, Nota, Passkey, Pendiente, PersonaCasa, Recordatorio, ServicioCasa,
+  FotoFamiliar, GrupoContacto, Nota, Passkey, Pendiente, PersonaCasa, Recordatorio, ServicioCasa,
   Suscripcion, UsoIa, Vencimiento,
 } from '@/domain/tipos'
 
@@ -31,6 +31,7 @@ export interface Repo {
   eventosCasa: Tabla<EventoCasa>
   serviciosCasa: Tabla<ServicioCasa>
   contactos: Tabla<Contacto>
+  gruposContacto: Tabla<GrupoContacto>
   pendientes: Tabla<Pendiente>
   notas: Tabla<Nota>
   carpetas: Tabla<Carpeta>
@@ -53,7 +54,7 @@ export type Entidad = Exclude<keyof Repo, 'getConfig' | 'setConfig' | 'uploadArc
 
 export const ENTIDADES: Entidad[] = [
   'fechas', 'recordatorios', 'vencimientos', 'personasCasa', 'eventosCasa',
-  'serviciosCasa', 'contactos', 'pendientes', 'notas', 'carpetas',
+  'serviciosCasa', 'contactos', 'gruposContacto', 'pendientes', 'notas', 'carpetas',
   'documentos', 'fotos', 'claves', 'usoIa', 'passkeys',
   'suscripciones',
 ]
@@ -62,7 +63,7 @@ export const ENTIDADES: Entidad[] = [
 export const TABLAS: Record<Entidad, string> = {
   fechas: 'fechas', recordatorios: 'recordatorios', vencimientos: 'vencimientos',
   personasCasa: 'personas_casa', eventosCasa: 'eventos_casa', serviciosCasa: 'servicios_casa',
-  contactos: 'contactos', pendientes: 'pendientes', notas: 'notas', carpetas: 'carpetas',
+  contactos: 'contactos', gruposContacto: 'grupos_contacto', pendientes: 'pendientes', notas: 'notas', carpetas: 'carpetas',
   documentos: 'documentos', fotos: 'fotos', claves: 'claves', usoIa: 'uso_ia',
   passkeys: 'passkeys', suscripciones: 'suscripciones',
 }
@@ -71,6 +72,7 @@ export const CONFIG_POR_DEFECTO: Config = {
   nombre: 'Alfredo',
   estiloEscritura: '',
   alertaIaEnviada: false,
+  bienvenidaVista: false,
 }
 
 export function validarPathArchivo(path: string): void {
@@ -88,4 +90,12 @@ export const RECORDATORIOS_INICIALES = [
   { titulo: 'Sacar pasajes de los chicos', dia: null, avisarDiasAntes: 60 },
 ]
 
-export const CARPETAS_INICIALES = ['Seguros', 'Escrituras', 'Autos', 'Personales']
+/** Las 6 carpetas sugeridas de arranque (igual que la migración 0004). */
+export const CARPETAS_INICIALES: { nombre: string; descripcion: string; orden: number }[] = [
+  { nombre: 'Personales', descripcion: 'Cédula, pasaporte, carné', orden: 1 },
+  { nombre: 'Seguros', descripcion: 'Auto, casas, vida', orden: 2 },
+  { nombre: 'Escrituras', descripcion: 'Portofino, Malibú', orden: 3 },
+  { nombre: 'Autos', descripcion: 'Libretas, patentes', orden: 4 },
+  { nombre: 'Empresa', descripcion: 'SIE: contratos, BPS', orden: 5 },
+  { nombre: 'Salud', descripcion: 'Carné, estudios', orden: 6 },
+]

@@ -1,8 +1,8 @@
-import { Card, EmptyState, Field, clasesInput } from '@/components/ui'
+import { EmptyState, Field, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
 import { fechaCompleta } from '@/domain/vencimientos'
 import { hoy } from '@/domain/fechas'
 import type { Casa, EventoCasa } from '@/domain/tipos'
-import Borrar from '@/components/Borrar'
+import BotonBorrar from '@/components/Borrar'
 import Agregar from './Agregar'
 import { agregarEvento, borrarEvento } from './actions'
 
@@ -15,29 +15,25 @@ export default function SeccionHistorial({ casa, eventos }: { casa: Casa; evento
     return agregarEvento({ casa, que: s(f, 'que'), cuando: s(f, 'cuando') })
   }
   return (
-    <section aria-label="Historial" className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-texto-2">Historial</h2>
-        <Agregar variante="suave" boton="Agregar al historial" titulo="Agregar al historial" guardar={guardar}>
-          <Field label="¿Qué pasó?"><textarea name="que" maxLength={2000} rows={4} className={`${clasesInput} py-2`} /></Field>
-          <Field label="Fecha"><input name="cuando" type="date" defaultValue={hoy()} className={clasesInput} /></Field>
-        </Agregar>
-      </div>
+    <Seccion id="historial" titulo="Historial" accion={
+      <Agregar boton="Agregar al historial" titulo="Agregar al historial" guardar={guardar}>
+        <Field label="¿Qué pasó?"><textarea name="que" maxLength={2000} rows={4} className={`${clasesInput} py-3`} /></Field>
+        <Field label="Fecha"><input name="cuando" type="date" defaultValue={hoy()} className={clasesInput} /></Field>
+      </Agregar>
+    }>
       {eventos.length === 0 ? <EmptyState>Todavía no hay nada en el historial.</EmptyState> : (
-        <ul className="space-y-2">
+        <Lista>
           {eventos.map((e) => (
-            <li key={e.id}>
-              <Card className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-base font-semibold break-words text-texto">{e.que}</p>
-                  <p className="text-base text-texto-2">{fechaCompleta(e.cuando)}</p>
-                </div>
-                <Borrar pregunta={`¿Borrar «${corto(e.que)}» del historial?`} accion={borrarEvento.bind(null, e.id)} className="shrink-0" />
-              </Card>
+            <li key={e.id} data-fila className={clasesFila}>
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold break-words text-texto">{e.que}</p>
+                <p className="text-base text-texto-2">{fechaCompleta(e.cuando)}</p>
+              </div>
+              <BotonBorrar nombre={corto(e.que)} accion={borrarEvento.bind(null, e.id)} />
             </li>
           ))}
-        </ul>
+        </Lista>
       )}
-    </section>
+    </Seccion>
   )
 }

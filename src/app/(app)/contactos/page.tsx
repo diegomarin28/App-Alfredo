@@ -1,18 +1,19 @@
 import { getRepo } from '@/data/getRepo'
+import { Titulo } from '@/components/ui'
 import NuevoContacto from './NuevoContacto'
 import Contactos from './Contactos'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Page() {
-  const todos = (await (await getRepo()).contactos.list()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  const repo = getRepo()
+  const [contactos, grupos] = await Promise.all([repo.contactos.list(), repo.gruposContacto.list()])
+  const todos = contactos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+  const ordenados = grupos.sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es')).map((g) => ({ id: g.id, nombre: g.nombre }))
   return (
     <main className="space-y-4">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Contactos</h1>
-        <NuevoContacto />
-      </header>
-      <Contactos contactos={todos} />
+      <Titulo accion={<NuevoContacto grupos={ordenados} />}>Contactos</Titulo>
+      <Contactos contactos={todos} grupos={ordenados} />
     </main>
   )
 }

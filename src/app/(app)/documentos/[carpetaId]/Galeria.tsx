@@ -8,15 +8,15 @@ export default function Galeria({ items }: { items: ItemDoc[] }) {
   const [abierto, setAbierto] = useState<ItemDoc | null>(null)
   return (
     <>
-      <ul className="grid grid-cols-2 gap-3">
+      <ul className="grid grid-cols-2 gap-2.5">
         {items.map((d) => (
           <li key={d.id}>
             <button type="button" aria-label={`Abrir ${d.titulo}`} onClick={() => setAbierto(d)}
               className="block min-h-11 w-full overflow-hidden rounded-2xl border border-borde bg-white text-left">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={d.url} alt={d.titulo} className="aspect-[4/3] w-full object-cover" />
-              <span className="block p-3">
-                <span className="block text-base font-semibold text-texto">{d.titulo}</span>
+              <span className="block px-3 py-2.5">
+                <span className="block truncate text-base font-semibold text-texto">{d.titulo}</span>
                 <span className="block text-base text-texto-2">{d.fecha}</span>
               </span>
             </button>

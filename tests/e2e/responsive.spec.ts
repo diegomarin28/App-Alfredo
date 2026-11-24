@@ -50,9 +50,33 @@ test('navegación: barra de abajo en el teléfono, barra lateral en computadora'
     expect(Math.abs(n.y + n.height - vh)).toBeLessThanOrEqual(1)
   }
   // los mismos enlaces en los dos diseños
-  for (const nombre of ['Inicio', 'Calendario', 'Hablar con el asistente', 'Mensajes', 'Portofino']) {
+  for (const nombre of ['Inicio', 'Calendario', 'Hablar con el asistente', 'Mensajes', 'Casas']) {
     await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: nombre })).toBeVisible()
   }
+})
+
+test('menú de abajo (mockup v2): bajo, Contame de 56 px apenas elevado, toques de 44×44 o más', async ({ page }) => {
+  test.skip(page.viewportSize()!.width >= LG, 'solo en el teléfono')
+  await page.goto('/')
+  const nav = page.getByRole('navigation', { name: 'Principal' })
+  const n = (await nav.boundingBox())!
+  expect(n.height).toBeLessThanOrEqual(56)
+  for (const nombre of ['Inicio', 'Calendario', 'Mensajes', 'Casas']) {
+    const link = nav.getByRole('link', { name: nombre })
+    const c = (await link.boundingBox())!
+    expect(c.height, nombre).toBeGreaterThanOrEqual(44)
+    expect(c.width, nombre).toBeGreaterThanOrEqual(44)
+    // íconos de 24 px y texto de 14 px (mockup v2)
+    expect((await link.locator('svg').boundingBox())!.height, nombre).toBeLessThanOrEqual(24)
+    expect(await link.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)), nombre).toBe(14)
+  }
+  const contame = nav.getByRole('link', { name: 'Hablar con el asistente' })
+  const c = (await contame.boundingBox())!
+  expect(c.height).toBeGreaterThanOrEqual(44)
+  expect(c.width).toBeGreaterThanOrEqual(44)
+  expect(c.height).toBe(56)
+  // apenas elevado: sobresale del menú como mucho 12 px
+  expect(n.y - c.y).toBeLessThanOrEqual(12)
 })
 
 test('computadora: a 1024 px el contenido tampoco queda debajo de la barra lateral', async ({ page }) => {
@@ -65,6 +89,8 @@ test('computadora: a 1024 px el contenido tampoco queda debajo de la barra later
 /** Hoja de abajo en el teléfono; en computadora, centrada sobre la columna del contenido (no tapa la barra lateral). */
 async function esperarHoja(page: Page, dialogo: ReturnType<Page['getByRole']>) {
   await expect(dialogo).toBeVisible()
+  // dónde queda: después de que termina de subir (animación al abrir)
+  await dialogo.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
   const d = (await dialogo.boundingBox())!
   const { n, m, vw, vh } = await cajas(page)
   if (vw >= LG) {
@@ -79,17 +105,17 @@ async function esperarHoja(page: Page, dialogo: ReturnType<Page['getByRole']>) {
   }
 }
 
-test('hojas y confirmaciones: abajo en el teléfono, centradas en la columna en computadora', async ({ page }) => {
-  await resetear(page, { datos: { contactos: [{ nombre: 'Martín Pérez', tipo: 'cliente' }], fechas: [{ nombre: 'Ana', tipo: 'cumple', dia: '11-25' }] } })
+test('hojas: abajo en el teléfono, centradas en la columna en computadora', async ({ page }) => {
+  await resetear(page, { datos: { contactos: [{ nombre: 'Martín Pérez' }], fechas: [{ nombre: 'Ana', tipo: 'cumple', dia: '11-25' }] } })
   await page.goto('/contactos')
   const agregar = page.getByRole('button', { name: 'Agregar contacto' })
   await hidratado(agregar)
   await agregar.click()
-  await esperarHoja(page, page.getByRole('dialog', { name: 'Agregar contacto' }))
+  await esperarHoja(page, page.getByRole('dialog', { name: 'Nuevo contacto' }))
 
   await page.goto('/calendario')
-  const borrar = page.getByRole('button', { name: 'Borrar' })
-  await hidratado(borrar)
-  await borrar.click()
-  await esperarHoja(page, page.getByRole('alertdialog'))
+  const nueva = page.getByRole('button', { name: 'Agregar fecha' })
+  await hidratado(nueva)
+  await nueva.click()
+  await esperarHoja(page, page.getByRole('dialog', { name: 'Nueva fecha' }))
 })

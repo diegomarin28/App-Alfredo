@@ -1,4 +1,4 @@
-import type { Casa, Contacto, Fecha, Vencimiento } from '@/domain/tipos'
+import type { Casa, Fecha, Vencimiento } from '@/domain/tipos'
 
 /** Lo que Contame puede guardar. Cada variante lleva los campos de la entidad sin id/loteId/creadoEn (R14). */
 export type Accion =
@@ -7,8 +7,7 @@ export type Accion =
   | { tipo: 'servicioCasa'; casa: Casa; clave: string; valor: string }
   | { tipo: 'pendiente'; texto: string }
   | { tipo: 'nota'; texto: string }
-  /** `tipo` del contacto va como `tipoContacto` (el campo `tipo` distingue la acción). */
-  | { tipo: 'contacto'; nombre: string; tipoContacto: Contacto['tipo']; empresa?: string; telefono?: string; nota?: string }
+  | { tipo: 'contacto'; nombre: string; empresa?: string; telefono?: string; nota?: string }
   /** `tipo` de la fecha va como `tipoFecha`; dia MM-DD. */
   | { tipo: 'fecha'; nombre: string; tipoFecha: Fecha['tipo']; dia: string; anioNacimiento?: number }
   /** dia MM-DD */
@@ -64,11 +63,10 @@ const VARIANTES = [
   }, ['texto']),
   variante('contacto', 'Una persona o empresa para su agenda (no de las casas).', {
     nombre: str('Nombre.'),
-    tipoContacto: { type: 'string', enum: ['cliente', 'proveedor', 'otro'], description: 'cliente, proveedor u otro' },
     empresa: str('Opcional: empresa.'),
     telefono: str('Opcional: teléfono tal como lo dijo.'),
     nota: str('Opcional: algo para recordar de esta persona.'),
-  }, ['nombre', 'tipoContacto']),
+  }, ['nombre']),
   variante('fecha', 'Cumpleaños, aniversario u otra fecha que se repite todos los años.', {
     nombre: str('De quién o de qué es la fecha.'),
     tipoFecha: { type: 'string', enum: ['cumple', 'aniversario', 'otra'], description: 'cumple, aniversario u otra' },

@@ -10,13 +10,16 @@ describe('MemoryRepo', () => {
   it('sin seed arranca vacío y con config por defecto', async () => {
     const repo = new MemoryRepo()
     expect(await repo.recordatorios.list()).toEqual([])
-    expect(await repo.getConfig()).toEqual({ nombre: 'Alfredo', estiloEscritura: '', alertaIaEnviada: false })
+    expect(await repo.getConfig()).toEqual({ nombre: 'Alfredo', estiloEscritura: '', alertaIaEnviada: false, bienvenidaVista: false })
   })
 
-  it('seed carga exactamente 6 recordatorios y 4 carpetas', async () => {
+  it('seed carga 6 recordatorios y las 6 carpetas sugeridas con su descripción', async () => {
     const repo = new MemoryRepo().seed()
     expect(await repo.recordatorios.list()).toHaveLength(6)
-    expect((await repo.carpetas.list()).map((c) => c.nombre)).toEqual(['Seguros', 'Escrituras', 'Autos', 'Personales'])
+    expect((await repo.carpetas.list()).map((c) => [c.nombre, c.descripcion, c.orden])).toEqual([
+      ['Personales', 'Cédula, pasaporte, carné', 1], ['Seguros', 'Auto, casas, vida', 2], ['Escrituras', 'Portofino, Malibú', 3],
+      ['Autos', 'Libretas, patentes', 4], ['Empresa', 'SIE: contratos, BPS', 5], ['Salud', 'Carné, estudios', 6],
+    ])
   })
 
   it('vaciar borra todo y deja la config por defecto', async () => {

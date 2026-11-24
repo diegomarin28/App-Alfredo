@@ -6,6 +6,15 @@ import type { Config } from '@/domain/tipos'
 
 type Fila = { id: string; creadoEn?: string } & Record<string, unknown>
 
+/**
+ * Solo para medir (`pnpm medir`): DATA_LATENCIA_MS simula la demora de cada lectura a Supabase.
+ * Sin la variable (tests, dev) no espera nada.
+ */
+function demora(): Promise<void> | undefined {
+  const ms = Number(process.env.DATA_LATENCIA_MS) || 0
+  return ms > 0 ? new Promise((r) => setTimeout(r, ms)) : undefined
+}
+
 class TablaMemoria<E extends { id: string }> implements Tabla<E> {
   private filas = new Map<string, Fila>()
   private orden = 0
@@ -19,6 +28,7 @@ class TablaMemoria<E extends { id: string }> implements Tabla<E> {
   }
 
   async list(filtro?: Partial<E>): Promise<E[]> {
+    await demora()
     const pares = Object.entries(filtro ?? {}).filter(([, v]) => v !== undefined)
     const filas = [...this.filas.values()].filter((f) => pares.every(([k, v]) => f[k] === v))
     const pos = (f: Fila) => this.posicion.get(f.id)!
@@ -27,12 +37,15 @@ class TablaMemoria<E extends { id: string }> implements Tabla<E> {
   }
 
   async get(id: string): Promise<E | null> {
+    await demora()
     const f = this.filas.get(id)
     return f ? ({ ...f } as unknown as E) : null
   }
 
   async create(data: Nuevo<E>): Promise<E> {
-    const fila = { ...limpiar(data), id: crypto.randomUUID() } as Fila
+    // Un id dado se respeta (solo lo usan las pruebas, para enlazar filas: p. ej. contacto → grupo).
+    const dado = (data as { id?: unknown }).id
+    const fila = { ...limpiar(data), id: typeof dado === 'string' ? dado : crypto.randomUUID() } as Fila
     fila.creadoEn ??= new Date().toISOString()
     this.filas.set(fila.id, fila)
     this.posicion.set(fila.id, this.orden++)
@@ -70,6 +83,7 @@ export class MemoryRepo implements Repo {
   eventosCasa = new TablaMemoria<never>(masNuevoPrimero) as unknown as Repo['eventosCasa']
   serviciosCasa = new TablaMemoria<never>() as unknown as Repo['serviciosCasa']
   contactos = new TablaMemoria<never>() as unknown as Repo['contactos']
+  gruposContacto = new TablaMemoria<never>() as unknown as Repo['gruposContacto']
   pendientes = new TablaMemoria<never>() as unknown as Repo['pendientes']
   notas = new TablaMemoria<never>() as unknown as Repo['notas']
   carpetas = new TablaMemoria<never>() as unknown as Repo['carpetas']
@@ -87,7 +101,7 @@ export class MemoryRepo implements Repo {
   seed(): this {
     // Las tablas en memoria se llenan sincrónicamente: create() no espera nada real.
     for (const r of RECORDATORIOS_INICIALES) void this.recordatorios.create(r)
-    for (const nombre of CARPETAS_INICIALES) void this.carpetas.create({ nombre })
+    for (const c of CARPETAS_INICIALES) void this.carpetas.create({ ...c })
     return this
   }
 
@@ -99,6 +113,7 @@ export class MemoryRepo implements Repo {
   }
 
   async getConfig(): Promise<Config> {
+    await demora()
     return { ...this.config }
   }
 
@@ -114,6 +129,7 @@ export class MemoryRepo implements Repo {
   }
 
   async urlArchivo(path: string): Promise<string> {
+    await demora()
     return `/api/archivos/${path}`
   }
 

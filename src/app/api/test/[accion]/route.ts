@@ -1,7 +1,7 @@
 /**
  * SOLO PARA PRUEBAS. 404 salvo ENABLE_TEST_ROUTES=1 + NODE_ENV≠production + datos en memoria.
  *   POST /api/test/login  { rol: 'owner' | 'familia' }
- *   POST /api/test/reset  { datos?, config?, sinSeed?, hoy? }
+ *   POST /api/test/reset  { datos?, config?, sinSeed?, hoy? }  (config.bienvenidaVista es true salvo que se pida)
  *   POST /api/test/ai     { respuestas: Partial<AiResultado>[] }  reemplaza la cola de la IA falsa (y borra sus llamadas)
  *   GET|POST /api/test/ai-llamadas  llamadas recibidas por la IA falsa y mails enviados
  */
@@ -60,7 +60,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       const tabla = repo[entidad as Entidad] as unknown as { create(d: object): Promise<unknown> }
       for (const fila of filas) await tabla.create(fila as object)
     }
-    if (b.config) await repo.setConfig(b.config as Partial<Config>)
+    // Las pruebas arrancan con la Bienvenida ya vista (salvo que pidan verla con config.bienvenidaVista: false).
+    await repo.setConfig({ bienvenidaVista: true, ...((b.config ?? {}) as Partial<Config>) })
     setHoyDePrueba((b.hoy as string | undefined) ?? null)
     return NextResponse.json({ ok: true })
   }

@@ -1,10 +1,23 @@
-import { Card, EmptyState, Field, clasesInput } from '@/components/ui'
+import { EmptyState, Field, IconoTile, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
+import type { NombreIcono } from '@/components/iconos'
+import { normalizarBusqueda } from '@/domain/contactos'
 import type { Casa, ServicioCasa } from '@/domain/tipos'
-import Borrar from '@/components/Borrar'
+import BotonBorrar from '@/components/Borrar'
 import Agregar from './Agregar'
+import Copiar from './Copiar'
 import { agregarServicio, borrarServicio } from './actions'
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? '')
+
+/** Ícono del servicio según su nombre (luz, agua, tele); si no, una carpeta. */
+function iconoDe(clave: string): NombreIcono {
+  const n = normalizarBusqueda(clave)
+  if (/ute|luz|electric/.test(n)) return 'rayo'
+  if (/ose|agua/.test(n)) return 'gota'
+  if (/directv|cable|tv|tele|antel|internet|wifi/.test(n)) return 'tele'
+  if (/tel|celular|movil/.test(n)) return 'telefono'
+  return 'carpeta'
+}
 
 export default function SeccionServicios({ casa, servicios }: { casa: Casa; servicios: ServicioCasa[] }) {
   async function guardar(f: FormData) {
@@ -12,29 +25,27 @@ export default function SeccionServicios({ casa, servicios }: { casa: Casa; serv
     return agregarServicio({ casa, clave: s(f, 'clave'), valor: s(f, 'valor') })
   }
   return (
-    <section aria-label="Servicios" className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-texto-2">Servicios</h2>
-        <Agregar variante="suave" boton="Agregar servicio" titulo="Agregar servicio" guardar={guardar}>
-          <Field label="Servicio" hint="Por ejemplo DirecTV"><input name="clave" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-          <Field label="Dato" hint="Por ejemplo Cliente 123456"><input name="valor" maxLength={500} className={clasesInput} autoComplete="off" /></Field>
-        </Agregar>
-      </div>
+    <Seccion id="servicios" titulo="Servicios" accion={
+      <Agregar boton="Agregar servicio" titulo="Nuevo servicio" guardar={guardar}>
+        <Field label="Servicio" hint="Por ejemplo DirecTV"><input name="clave" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
+        <Field label="Dato" hint="Por ejemplo Cliente 123456"><input name="valor" maxLength={500} className={clasesInput} autoComplete="off" /></Field>
+      </Agregar>
+    }>
       {servicios.length === 0 ? <EmptyState>Todavía no hay servicios cargados.</EmptyState> : (
-        <ul className="space-y-2">
+        <Lista>
           {servicios.map((v) => (
-            <li key={v.id}>
-              <Card className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-base font-semibold break-words text-texto">{v.clave}</p>
-                  <p className="text-base break-words text-texto-2">{v.valor}</p>
-                </div>
-                <Borrar pregunta={`¿Borrar ${v.clave}?`} accion={borrarServicio.bind(null, v.id)} className="shrink-0" />
-              </Card>
+            <li key={v.id} data-fila className={clasesFila}>
+              <IconoTile nombre={iconoDe(v.clave)} tono="gris" />
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold break-words text-texto">{v.clave}</p>
+                <p className="text-base break-words text-texto-2">{v.valor}</p>
+              </div>
+              <Copiar nombre={v.clave} texto={v.valor} />
+              <BotonBorrar nombre={v.clave} accion={borrarServicio.bind(null, v.id)} />
             </li>
           ))}
-        </ul>
+        </Lista>
       )}
-    </section>
+    </Seccion>
   )
 }

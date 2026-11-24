@@ -9,6 +9,7 @@
     "test": "vitest run",
     "e2e": "node scripts/e2e.mjs",
     "capturas": "CAPTURAS=1 playwright test capturas.spec.ts --reporter=line",
+    "medir": "MEDIR=${MEDIR:-ahora} playwright test medir.spec.ts --project=chromium-390x844 --project=webkit-390x844 --reporter=line",
     "probar-haiku": "tsx --conditions=react-server scripts/probar-haiku.ts"
   },
   "dependencies": {

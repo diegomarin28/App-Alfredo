@@ -102,13 +102,10 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
       return r.ok ? { tipo: 'nota', texto: r.valor } : null
     }
     case 'contacto': {
-      const r = validarContacto({
-        nombre: s('nombre'), tipo: o.tipoContacto === undefined ? 'otro' : s('tipoContacto'),
-        empresa: opc('empresa'), telefono: opc('telefono'), nota: opc('nota'),
-      })
+      // Sin grupo: los grupos los arma Alfredo en Contactos.
+      const r = validarContacto({ nombre: s('nombre'), empresa: opc('empresa'), telefono: opc('telefono'), nota: opc('nota') })
       if (!r.ok) return null
-      const { tipo, ...resto } = r.valor
-      return { tipo: 'contacto', tipoContacto: tipo, ...resto }
+      return { tipo: 'contacto', ...r.valor }
     }
     case 'fecha': {
       const m = MMDD.exec(s('dia'))
@@ -193,8 +190,8 @@ async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
     case 'pendiente': return (await repo.pendientes.create({ texto: a.texto, hecho: false, loteId })).id
     case 'nota': return (await repo.notas.create({ texto: a.texto, origen: 'voz', loteId })).id
     case 'contacto': {
-      const { tipo: _t, tipoContacto, ...datos } = a
-      return (await repo.contactos.create({ ...datos, tipo: tipoContacto, loteId })).id
+      const { tipo: _t, ...datos } = a
+      return (await repo.contactos.create({ ...datos, loteId })).id
     }
     case 'fecha': {
       const { tipo: _t, tipoFecha, ...datos } = a

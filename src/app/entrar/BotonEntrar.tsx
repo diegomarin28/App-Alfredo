@@ -1,6 +1,7 @@
 'use client'
 import { startAuthentication } from '@simplewebauthn/browser'
 import { useState } from 'react'
+import { Icono } from '@/components/iconos'
 
 export function BotonEntrar() {
   const [ocupado, setOcupado] = useState(false)
@@ -32,8 +33,9 @@ export function BotonEntrar() {
         type="button"
         onClick={entrar}
         disabled={ocupado}
-        className="min-h-14 w-full rounded-2xl bg-azul px-6 text-lg font-semibold text-white hover:bg-azul-osc disabled:opacity-60"
+        className="inline-flex min-h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-azul px-6 text-lg font-semibold text-white hover:bg-azul-osc disabled:opacity-60"
       >
+        <Icono nombre="faceid" tamano={22} />
         Entrar con Face ID
       </button>
       {error && (

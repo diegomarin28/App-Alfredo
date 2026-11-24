@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { entrarComo, hidratado, resetear, retenerJavaScript } from './helpers'
 
+// Grupos que armó Alfredo (mockup v2: sin categorías fijas).
 const datos = {
+  gruposContacto: [{ id: 'g-obra', nombre: 'Obra', orden: 1 }, { id: 'g-familia', nombre: 'Familia', orden: 2 }],
   contactos: [
-    { nombre: 'Martín Pérez', tipo: 'cliente', empresa: 'Ferretería Sur', telefono: '59899123456', nota: 'Paga a 30 días' },
-    { nombre: 'Lucía Gómez', tipo: 'proveedor', empresa: 'Aberturas Gómez' },
-    { nombre: 'Dr. Silva', tipo: 'otro', telefono: '59829001234' },
+    { nombre: 'Martín Pérez', grupoId: 'g-obra', empresa: 'Ferretería Sur', telefono: '59899123456', nota: 'Paga a 30 días' },
+    { nombre: 'Lucía Gómez', grupoId: 'g-obra', empresa: 'Aberturas Gómez' },
+    { nombre: 'Dr. Silva', telefono: '59829001234' },
   ],
 }
 
@@ -27,23 +29,49 @@ test('buscador sin mayúsculas ni tildes, por nombre o empresa', async ({ page }
   await expect(page.getByRole('listitem')).toHaveCount(0)
 })
 
-test('filtros por tipo', async ({ page }) => {
+test('filtros por grupo, y el grupo junto a la empresa', async ({ page }) => {
+  const filtros = page.getByRole('group', { name: 'Filtrar por grupo' })
+  await expect(filtros.getByRole('button')).toHaveText(['Todos', 'Obra', 'Familia', 'Grupo'])
   await expect(page.getByRole('listitem')).toHaveCount(3)
-  await page.getByRole('button', { name: 'Proveedores' }).click()
+  await expect(page.getByRole('listitem').filter({ hasText: 'Martín Pérez' })).toContainText('Ferretería Sur · Obra')
+  await filtros.getByRole('button', { name: 'Obra' }).click()
+  await expect(page.getByRole('listitem')).toHaveCount(2)
+  await filtros.getByRole('button', { name: 'Familia' }).click()
+  await expect(page.getByRole('listitem')).toHaveCount(0)
+  await expect(page.getByText('No hay contactos que coincidan.')).toBeVisible()
+  await filtros.getByRole('button', { name: 'Todos' }).click()
+  await expect(page.getByRole('listitem')).toHaveCount(3)
+})
+
+test('"+ Grupo" crea un grupo nuevo (sin repetir) y se puede elegir al agregar un contacto', async ({ page }) => {
+  const filtros = page.getByRole('group', { name: 'Filtrar por grupo' })
+  await hidratado(filtros.getByRole('button', { name: 'Grupo' }))
+  await filtros.getByRole('button', { name: 'Grupo' }).click()
+  const hoja = page.getByRole('dialog', { name: 'Nuevo grupo' })
+  await hoja.getByLabel('Nombre del grupo').fill('obra')
+  await hoja.getByRole('button', { name: 'Crear grupo' }).click()
+  await expect(hoja.getByRole('alert')).toHaveText('Ya hay un grupo con ese nombre.')
+  await hoja.getByLabel('Nombre del grupo').fill('Casas')
+  await hoja.getByRole('button', { name: 'Crear grupo' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(filtros.getByRole('button')).toHaveText(['Todos', 'Obra', 'Familia', 'Casas', 'Grupo'])
+
+  await page.getByRole('button', { name: 'Agregar contacto' }).click()
+  const nuevo = page.getByRole('dialog', { name: 'Nuevo contacto' })
+  await nuevo.getByLabel('Nombre').fill('Simón')
+  await nuevo.getByLabel('Grupo (opcional)').selectOption({ label: 'Casas' })
+  await nuevo.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await filtros.getByRole('button', { name: 'Casas' }).click()
   await expect(page.getByRole('listitem')).toHaveCount(1)
-  await expect(page.getByText('Lucía Gómez')).toBeVisible()
-  await page.getByRole('button', { name: 'Clientes' }).click()
-  await expect(page.getByText('Martín Pérez')).toBeVisible()
-  await page.getByRole('button', { name: 'Otros' }).click()
-  await expect(page.getByText('Dr. Silva')).toBeVisible()
-  await page.getByRole('button', { name: 'Todos' }).click()
-  await expect(page.getByRole('listitem')).toHaveCount(3)
+  await expect(page.getByRole('listitem')).toContainText('Simón')
+  await page.reload()
+  await expect(page.getByRole('group', { name: 'Filtrar por grupo' }).getByRole('button', { name: 'Casas' })).toBeVisible()
 })
 
 test('Llamar y WhatsApp solo con teléfono', async ({ page }) => {
   const con = page.getByRole('listitem').filter({ hasText: 'Martín Pérez' })
   await expect(con).toContainText('Paga a 30 días')
-  await expect(con).toContainText('099 123 456')
   await expect(con.getByRole('link', { name: 'Llamar' })).toHaveAttribute('href', 'tel:+59899123456')
   await expect(con.getByRole('link', { name: 'WhatsApp' })).toHaveAttribute('href', /^https:\/\/wa\.me\/59899123456/)
   const sin = page.getByRole('listitem').filter({ hasText: 'Lucía Gómez' })

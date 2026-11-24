@@ -1,47 +1,54 @@
 import { getRepo } from '@/data/getRepo'
 import { hoy, recordatoriosActivos } from '@/domain/fechas'
-import { chipAviso, fechaLarga, ordenarAnuales } from '@/domain/recordatorios'
-import { Card, EmptyState } from '@/components/ui'
+import { chipAviso, ordenarAnuales } from '@/domain/recordatorios'
+import { MESES } from '@/domain/validarFecha'
+import { EmptyState, Lista, Seccion, Titulo, clasesFila } from '@/components/ui'
 import ListaActivos from './Activo'
 import FormRecordatorio from './FormRecordatorio'
 
 export const dynamic = 'force-dynamic'
 
+/** "12-24" -> "24 dic"; sin fecha -> "fecha a cargar". */
+function diaCorto(dia: string | null): string {
+  if (dia === null) return 'fecha a cargar'
+  const [m, d] = dia.split('-').map(Number)
+  return `${d} ${MESES[m - 1].slice(0, 3).toLowerCase()}`
+}
+
+/** "12-25" -> "25 de diciembre". */
+function diaLargo(dia: string | null): string {
+  if (dia === null) return 'Fecha a cargar'
+  const [m, d] = dia.split('-').map(Number)
+  return `${d} de ${MESES[m - 1].toLowerCase()}`
+}
+
 export default async function Recordatorios() {
   const hoyStr = hoy()
-  const todos = ordenarAnuales(await (await getRepo()).recordatorios.list(), hoyStr)
+  const todos = ordenarAnuales(await getRepo().recordatorios.list(), hoyStr)
   const activos = recordatoriosActivos(todos, hoyStr).sort((a, b) => a.dias - b.dias)
 
   return (
     <main className="space-y-5">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Recordatorios</h1>
-        <FormRecordatorio etiqueta="Agregar recordatorio" />
-      </header>
+      <Titulo accion={<FormRecordatorio etiqueta="Agregar recordatorio" />}>Recordatorios</Titulo>
 
-      <section aria-labelledby="ahora" className="space-y-3">
-        <h2 id="ahora" className="text-base font-semibold text-texto-2">Para gestionar ahora</h2>
+      <Seccion id="ahora" titulo="Para gestionar ahora">
         {activos.length === 0 && <EmptyState>Nada para gestionar por ahora. Quedate tranquilo.</EmptyState>}
-        <ListaActivos items={activos.map((r) => ({ id: r.id, titulo: r.titulo, fecha: fechaLarga(r.dia), dias: r.dias }))} />
-      </section>
+        <ListaActivos items={activos.map((r) => ({ id: r.id, titulo: r.titulo, fecha: diaLargo(r.dia), dias: r.dias }))} />
+      </Seccion>
 
-      <section aria-labelledby="anual" className="space-y-3">
-        <h2 id="anual" className="text-base font-semibold text-texto-2">Se repiten todos los años</h2>
-        <ul className="space-y-2">
+      <Seccion id="anual" titulo="Todos los años">
+        <Lista>
           {todos.map((r) => (
-            <li key={r.id}>
-              <Card className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-base font-medium">{r.titulo}</p>
-                  <p className="text-base text-texto-2">{fechaLarga(r.dia)}</p>
-                  <span className="mt-1 inline-block rounded-full bg-gris px-3 py-1 text-base">{chipAviso(r.avisarDiasAntes)}</span>
-                </div>
-                <FormRecordatorio inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes }} etiqueta="Editar" soloIcono />
-              </Card>
+            <li key={r.id} data-fila className={clasesFila}>
+              <span className="min-w-0 flex-1">
+                <span className="block text-base font-semibold text-texto">{r.titulo}</span>
+                <span className="block text-base text-texto-2">{diaCorto(r.dia)} · aviso {chipAviso(r.avisarDiasAntes)}</span>
+              </span>
+              <FormRecordatorio inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes }} etiqueta={`Editar ${r.titulo}`} soloIcono />
             </li>
           ))}
-        </ul>
-      </section>
+        </Lista>
+      </Seccion>
     </main>
   )
 }

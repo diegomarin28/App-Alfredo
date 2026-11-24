@@ -48,7 +48,7 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   const caja = page.getByLabel('Lo que entendí · podés corregirlo')
   await expect(caja).toHaveValue('Ayer le pagué al jardinero dos mil pesos')
   await caja.fill('Ayer le pagué al jardinero 2000 pesos')
-  await expect(page.getByRole('button', { name: 'Grabar de nuevo' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Repetir' })).toBeVisible()
   await page.getByRole('button', { name: 'Enviar' }).click()
 
   await expect(page.getByText('¿Es en Portofino, en Malibú, o es otra cosa?')).toBeVisible()
@@ -86,14 +86,16 @@ test('"Otra cosa" guarda en Pendientes sin otra llamada a la IA', async ({ page 
     toolInput: { pregunta: '¿Es en Portofino, en Malibú, o es otra cosa?', opciones: [{ etiqueta: 'Portofino', respuesta: 'Es en Portofino' }] },
   }])
   await page.goto('/contame')
-  await page.getByRole('button', { name: 'Escribir o pegar texto' }).click()
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await page.getByLabel('Escribí o dictá con el teclado').fill('Arreglar la canilla')
   await page.getByRole('button', { name: 'Enviar' }).click()
   await page.getByRole('button', { name: 'Otra cosa · guardar en Pendientes' }).click()
   await expect(page.getByText('Pendientes: Arreglar la canilla')).toBeVisible()
   const llamadas = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
   expect(llamadas).toHaveLength(1)
-  await page.goto('/pendientes')
+  // como Alfredo, por el menú: lo guardado tiene que estar (no lo de antes de guardar)
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' }).click()
+  await page.getByRole('navigation', { name: 'Accesos directos' }).getByRole('link', { name: 'Pendientes' }).click()
   await expect(page.getByText('Arreglar la canilla')).toBeVisible()
 })
 
@@ -142,13 +144,14 @@ test('respuesta de la IA cortada: guarda todo como nota y lo avisa', async ({ pa
     stopReason: 'max_tokens',
   }])
   await page.goto('/contame')
-  await page.getByRole('button', { name: 'Escribir o pegar texto' }).click()
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await page.getByLabel('Escribí o dictá con el teclado').fill('Primera cosa en Portofino. Segunda cosa en Malibú.')
   await page.getByRole('button', { name: 'Enviar' }).click()
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
   await expect(page.getByText('Notas: Primera cosa en Portofino. Segunda cosa en Malibú.')).toBeVisible()
   await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
-  await page.goto('/casas?casa=portofino')
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Casas' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Casas' })).toBeVisible()
   await expect(page.getByText('Primera cosa', { exact: true })).toHaveCount(0)
 })
 
@@ -156,7 +159,7 @@ test('sin saldo: mensaje amable', async ({ page }) => {
   await resetear(page, { datos: { usoIa: [{ tokensIn: 0, tokensOut: 0, costoUsd: 25 }] } })
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
-  await page.getByRole('button', { name: 'Escribir o pegar texto' }).click()
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await page.getByLabel('Escribí o dictá con el teclado').fill('Hola')
   await page.getByRole('button', { name: 'Enviar' }).click()
   await expect(page.getByRole('alert').filter({ hasText: 'Se terminó el saldo de la IA, avisale a Diego.' })).toBeVisible()

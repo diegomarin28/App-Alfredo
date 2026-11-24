@@ -14,9 +14,12 @@ export async function nuevaCarpeta(f: FormData): Promise<Res> {
     throw e
   }
   const repo = getRepo()
-  const r = validarCarpeta(f.get('nombre'), (await repo.carpetas.list()).map((c) => c.nombre))
+  const carpetas = await repo.carpetas.list()
+  const r = validarCarpeta(f.get('nombre'), carpetas.map((c) => c.nombre))
   if (!r.ok) return r
-  await repo.carpetas.create({ nombre: r.valor })
+  const descripcion = String(f.get('descripcion') ?? '').trim().slice(0, 60)
+  const orden = Math.max(0, ...carpetas.map((c) => c.orden ?? 0)) + 1
+  await repo.carpetas.create({ nombre: r.valor, orden, ...(descripcion ? { descripcion } : {}) })
   revalidatePath('/documentos')
   return { ok: true }
 }

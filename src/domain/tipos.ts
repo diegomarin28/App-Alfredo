@@ -74,7 +74,8 @@ export interface Contacto {
   loteId?: string
   creadoEn?: string
   nombre: string
-  tipo: 'cliente' | 'proveedor' | 'otro'
+  /** grupo que creó Alfredo (Obra, Familia…); sin grupo si falta */
+  grupoId?: string
   empresa?: string
   telefono?: string
   nota?: string
@@ -96,10 +97,22 @@ export interface Nota {
   creadoEn: string
 }
 
+export interface GrupoContacto {
+  id: string
+  creadoEn?: string
+  nombre: string
+  /** orden de los botones de filtro (menor primero) */
+  orden: number
+}
+
 export interface Carpeta {
   id: string
   creadoEn?: string
   nombre: string
+  /** qué va adentro, p. ej. "Cédula, pasaporte, carné" */
+  descripcion?: string
+  /** orden en la grilla (menor primero; las nuevas van al final) */
+  orden?: number
 }
 
 export interface Documento {
@@ -162,6 +175,8 @@ export interface Config {
   estiloEscritura: string
   nombre: string
   alertaIaEnviada: boolean
+  /** ya vio la Bienvenida y la Guía de la primera vez */
+  bienvenidaVista: boolean
   claveSalt?: string
   claveModo?: 'prf' | 'pin'
   claveCheck?: string

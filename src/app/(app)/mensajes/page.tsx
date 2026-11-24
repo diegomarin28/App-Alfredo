@@ -1,12 +1,16 @@
 'use client'
 import { useState } from 'react'
 import { Boton, Card, Field, clasesInput } from '@/components/ui'
+import { Segmentado } from '@/components/controles'
+import { Icono } from '@/components/iconos'
+import IconoWhatsApp from '@/components/IconoWhatsApp'
 import { waLink } from '@/domain/telefono'
 
 type Modo = 'responder' | 'escribir'
+const MODOS = [['responder', 'Me escribieron'], ['escribir', 'Quiero escribir']] as const
 
 export default function Page() {
-  const [modo, setModo] = useState<Modo | null>(null)
+  const [modo, setModo] = useState<Modo>('responder')
   const [mensaje, setMensaje] = useState('')
   const [destinatario, setDestinatario] = useState('')
   const [idea, setIdea] = useState('')
@@ -48,47 +52,63 @@ export default function Page() {
   const elegir = (m: Modo) => { setModo(m); setTexto(null); setError(null) }
   const listo = modo === 'responder' ? mensaje.trim() : destinatario.trim() && idea.trim()
 
+  async function pegar() {
+    try {
+      const t = await navigator.clipboard.readText()
+      if (t) setMensaje(t)
+    } catch {
+      setError('No pude pegar. Mantené apretado el cuadro y elegí Pegar.')
+    }
+  }
+
   return (
     <main className="space-y-4">
-      <h1 className="text-[28px] leading-tight font-bold tracking-[-0.5px] text-texto">Mensajes</h1>
-      <div className="grid grid-cols-2 gap-3">
-        <Boton variante={modo === 'responder' ? 'primario' : 'suave'} className="min-h-16" aria-pressed={modo === 'responder'} onClick={() => elegir('responder')}>Me escribieron</Boton>
-        <Boton variante={modo === 'escribir' ? 'primario' : 'suave'} className="min-h-16" aria-pressed={modo === 'escribir'} onClick={() => elegir('escribir')}>Quiero escribir</Boton>
-      </div>
+      <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto">Mensajes</h1>
+      <Segmentado etiqueta="Qué querés hacer" opciones={MODOS} valor={modo} onCambio={elegir} />
 
       {modo === 'responder' && (
-        <Card className="space-y-3">
-          <Field label="Pegá el mensaje que te mandaron">
-            <textarea className={`${clasesInput} min-h-32 py-2`} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
-          </Field>
-          <Boton disabled={cargando || !listo} onClick={() => pedir()}>{cargando && !texto ? 'Escribiendo…' : 'Sugerir respuesta'}</Boton>
-        </Card>
+        <div className="space-y-3">
+          <div className="flex min-h-11 items-center justify-between gap-3">
+            <label htmlFor="recibido" className="text-base font-semibold text-texto">El mensaje que te mandaron</label>
+            <button type="button" onClick={pegar} className="-mr-2 inline-flex min-h-11 items-center gap-1.5 rounded-xl px-2 text-base font-semibold text-azul">
+              <Icono nombre="portapapeles" tamano={18} />Pegar
+            </button>
+          </div>
+          <textarea id="recibido" aria-label="Pegá el mensaje que te mandaron" className={`${clasesInput} min-h-28 py-3`} value={mensaje} onChange={(e) => setMensaje(e.target.value)} />
+          <Boton className="w-full" disabled={cargando || !listo} onClick={() => pedir()}>{cargando && !texto ? 'Escribiendo…' : 'Sugerir respuesta'}</Boton>
+        </div>
       )}
       {modo === 'escribir' && (
-        <Card className="space-y-3">
+        <div className="space-y-3">
           <Field label="¿A quién?">
             <input className={clasesInput} value={destinatario} onChange={(e) => setDestinatario(e.target.value)} />
           </Field>
           <Field label="¿Qué le querés decir?">
-            <textarea className={`${clasesInput} min-h-28 py-2`} value={idea} onChange={(e) => setIdea(e.target.value)} />
+            <textarea className={`${clasesInput} min-h-28 py-3`} value={idea} onChange={(e) => setIdea(e.target.value)} />
           </Field>
-          <Boton disabled={cargando || !listo} onClick={() => pedir()}>{cargando && !texto ? 'Escribiendo…' : 'Escribir mensaje'}</Boton>
-        </Card>
+          <Boton className="w-full" disabled={cargando || !listo} onClick={() => pedir()}>{cargando && !texto ? 'Escribiendo…' : 'Escribir mensaje'}</Boton>
+        </div>
       )}
 
       {cargando && <p role="status" className="text-base text-texto-2">Escribiendo…</p>}
       {error && <div role="alert" className="rounded-2xl bg-urg-bg p-4 text-base text-urg-tx">{error}</div>}
 
       {texto !== null && (
-        <Card className="space-y-3">
-          <Field label="Mensaje sugerido">
-            <textarea className={`${clasesInput} min-h-36 py-2`} value={texto} onChange={(e) => { setTexto(e.target.value); setCopiado(false) }} />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Boton onClick={copiar}>{copiado ? 'Copiado' : 'Copiar'}</Boton>
-            <a href={waLink(texto)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-azul px-5 text-base font-semibold text-white hover:bg-azul-osc">Enviar por WhatsApp</a>
-            <Boton variante="suave" disabled={cargando} onClick={() => pedir('formal')}>Más formal</Boton>
-            <Boton variante="suave" disabled={cargando} onClick={() => pedir('otra')}>Otra</Boton>
+        <Card className="space-y-3 motion-safe:animate-entrar">
+          <label htmlFor="sugerido" className="block text-base font-semibold text-texto">Respuesta sugerida</label>
+          <textarea id="sugerido" aria-label="Mensaje sugerido" className={`${clasesInput} min-h-32 bg-fondo py-3 leading-snug`} value={texto} onChange={(e) => { setTexto(e.target.value); setCopiado(false) }} />
+          <div className="grid grid-cols-2 gap-2.5">
+            <a
+              href={waLink(texto)} target="_blank" rel="noopener noreferrer" aria-label="Enviar por WhatsApp"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-azul px-4 text-base font-semibold whitespace-nowrap text-white hover:bg-azul-osc"
+            >
+              <IconoWhatsApp />WhatsApp
+            </a>
+            <Boton variante="suave" onClick={copiar}><Icono nombre="copiar" tamano={20} />{copiado ? 'Copiado' : 'Copiar'}</Boton>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <button type="button" disabled={cargando} onClick={() => pedir('formal')} className="min-h-11 rounded-xl text-base font-semibold text-azul disabled:opacity-60">Más formal</button>
+            <button type="button" disabled={cargando} onClick={() => pedir('otra')} className="min-h-11 rounded-xl text-base font-semibold text-azul disabled:opacity-60">Otra versión</button>
           </div>
         </Card>
       )}

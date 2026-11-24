@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Card } from '@/components/ui'
+import { Boton, Pill } from '@/components/ui'
+import { Circulo } from '@/components/controles'
 import { deshacerHecho, marcarHecho } from './actions'
 
-export interface Item { id: string; titulo: string; fecha: string; chip: string; urgente: boolean }
+export interface Item { id: string; titulo: string; fecha: string; chip: string; tono: 'rojo' | 'naranja' | 'gris' }
 
 /** Cuánto queda a la vista el "Deshacer" después de tocar Hecho. */
 export const DESHACER_MS = 10_000
@@ -15,6 +16,8 @@ export default function Lista({ items }: { items: Item[] }) {
   const [hechos, setHechos] = useState<Item[]>([])
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+  // el círculo se llena (con su rebote) apenas se toca, mientras se guarda
+  const [marcando, setMarcando] = useState<string | null>(null)
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export default function Lista({ items }: { items: Item[] }) {
   }
 
   async function hecho(item: Item) {
+    setMarcando(item.id)
     setEnviando(true)
     setError('')
     try {
@@ -41,6 +45,7 @@ export default function Lista({ items }: { items: Item[] }) {
       setError('No se pudo guardar. Probá de nuevo.')
     } finally {
       setEnviando(false)
+      setMarcando(null)
     }
   }
 
@@ -63,31 +68,24 @@ export default function Lista({ items }: { items: Item[] }) {
   return (
     <>
       {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
-      <ul className="space-y-2">
+      <ul className="space-y-2.5">
         {hechos.map((i) => (
-          <li key={`hecho-${i.id}`}>
-            <Card role="status" className="flex items-center justify-between gap-3 bg-tinte">
-              <div className="min-w-0">
-                <p className="text-base font-medium">Marcado como hecho</p>
-                <p className="text-base text-texto-2">{i.titulo}</p>
-              </div>
-              <Boton disabled={enviando} onClick={() => deshacer(i)} className="shrink-0">Deshacer</Boton>
-            </Card>
+          <li key={`hecho-${i.id}`} role="status" className="flex min-h-[72px] items-center gap-3 rounded-2xl bg-tinte px-4 py-2.5 motion-safe:animate-entrar">
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-semibold text-azul">Marcado como hecho</p>
+              <p className="text-base text-texto-2">{i.titulo}</p>
+            </div>
+            <Boton variante="blanco" disabled={enviando} onClick={() => deshacer(i)} className="shrink-0">Deshacer</Boton>
           </li>
         ))}
         {items.filter((i) => !marcados.has(i.id)).map((i) => (
-          <li key={i.id}>
-            <Card className="flex items-center justify-between gap-3">
-              <div className="min-w-0 space-y-1">
-                <p className="text-base font-medium">{i.titulo}</p>
-                <p className="text-base text-texto-2">{i.fecha}</p>
-                <p className="flex flex-wrap items-center gap-2">
-                  <span className={`inline-block rounded-full px-3 py-1 text-base ${i.urgente ? 'bg-urg-bg text-urg-tx' : 'bg-gris'}`}>{i.chip}</span>
-                  {i.urgente && <span className="text-base font-semibold text-urg-tx">Urgente</span>}
-                </p>
-              </div>
-              <Boton variante="suave" disabled={enviando} onClick={() => hecho(i)}>Hecho</Boton>
-            </Card>
+          <li key={i.id} data-fila className="flex items-center gap-2 rounded-2xl border border-borde bg-white py-3 pr-4 pl-2">
+            <Circulo marcado={marcando === i.id} nombre={`Marcar ${i.titulo} como hecho`} disabled={enviando} onCambio={() => hecho(i)} />
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="text-base font-semibold text-texto">{i.titulo}</p>
+              <p className="text-base text-texto-2">{i.fecha}</p>
+              <Pill tono={i.tono}>{i.chip}</Pill>
+            </div>
           </li>
         ))}
       </ul>

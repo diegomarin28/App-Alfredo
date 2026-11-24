@@ -28,7 +28,7 @@ async function conJardineros() {
   await repo.personasCasa.create({ casa: 'portofino', nombre: 'Simón', rol: 'Jardinero' })
   await repo.personasCasa.create({ casa: 'malibu', nombre: 'Raúl', rol: 'Jardinero' })
   await repo.personasCasa.create({ casa: 'malibu', nombre: 'Marta', rol: 'Limpieza' })
-  await repo.contactos.create({ nombre: 'Lucía Gómez', tipo: 'cliente' })
+  await repo.contactos.create({ nombre: 'Lucía Gómez' })
 }
 
 describe('prompt y herramientas', () => {
@@ -203,7 +203,7 @@ describe('contame (Review Focus 4)', () => {
     const ai = new FakeAiClient([guardar([
       { tipo: 'personaCasa', casa: 'malibu', nombre: 'Raúl', rol: 'Jardinero', telefono: '099 123 456' },
       { tipo: 'servicioCasa', casa: 'portofino', clave: 'UTE', valor: 'Cuenta 1234' },
-      { tipo: 'contacto', nombre: 'Pedro', tipoContacto: 'proveedor', empresa: 'Vidrios SA', telefono: '094 555 666' },
+      { tipo: 'contacto', nombre: 'Pedro', empresa: 'Vidrios SA', telefono: '094 555 666' },
       { tipo: 'fecha', nombre: 'Ana', tipoFecha: 'cumple', dia: '03-05', anioNacimiento: 1990 },
       { tipo: 'recordatorio', titulo: 'Renovar seguro', dia: '12-01', avisarDiasAntes: 30 },
       { tipo: 'vencimiento', titulo: 'Patente', ambito: 'personal', fecha: '2026-12-10', avisarDiasAntes: 7 },
@@ -213,7 +213,7 @@ describe('contame (Review Focus 4)', () => {
     if (!('guardado' in r)) throw new Error('esperaba guardado')
     expect(r.guardado.map((g) => g.accion.tipo)).toEqual(['personaCasa', 'servicioCasa', 'contacto', 'fecha', 'recordatorio', 'vencimiento', 'nota'])
     expect((await repo.personasCasa.list())[0]).toMatchObject({ telefono: '59899123456', loteId: r.loteId })
-    expect((await repo.contactos.list())[0]).toMatchObject({ nombre: 'Pedro', tipo: 'proveedor', telefono: '59894555666' })
+    expect((await repo.contactos.list())[0]).toMatchObject({ nombre: 'Pedro', telefono: '59894555666' })
     expect((await repo.fechas.list())[0]).toMatchObject({ nombre: 'Ana', tipo: 'cumple', dia: '03-05', anioNacimiento: 1990 })
     expect((await repo.recordatorios.list())[0]).toMatchObject({ titulo: 'Renovar seguro', dia: '12-01', avisarDiasAntes: 30 })
     expect((await repo.vencimientos.list())[0]).toMatchObject({ titulo: 'Patente', fecha: '2026-12-10', hecho: false })

@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest'
 import BottomNav from '@/components/BottomNav'
 
 describe('BottomNav', () => {
-  it('owner: 4 enlaces con nombre + botón central a /contame', () => {
+  it('owner: Inicio, Calendario, Contame (al medio), Mensajes y Casas', () => {
     render(<BottomNav activo="inicio" rol="owner" />)
-    for (const [n, href] of [['Inicio', '/'], ['Calendario', '/calendario'], ['Mensajes', '/mensajes'], ['Portofino', '/casas']]) {
+    for (const [n, href] of [['Inicio', '/'], ['Calendario', '/calendario'], ['Mensajes', '/mensajes'], ['Casas', '/casas']]) {
       expect(screen.getByRole('link', { name: n })).toHaveAttribute('href', href)
     }
     expect(screen.getByRole('link', { name: 'Hablar con el asistente' })).toHaveAttribute('href', '/contame')
@@ -19,19 +19,22 @@ describe('BottomNav', () => {
     expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
   })
 
-  it('familia: sin Contame ni Mensajes', () => {
+  it('familia: Inicio, Fechas, Fotos y Casas (sin Contame ni Mensajes)', () => {
     render(<BottomNav activo="inicio" rol="familia" />)
     expect(screen.queryByRole('link', { name: 'Hablar con el asistente' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Mensajes' })).toBeNull()
-    expect(screen.getAllByRole('link').map((l) => l.textContent)).toEqual(['Inicio', 'Calendario', 'Portofino'])
+    expect(screen.getAllByRole('link').map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
+      ['Inicio', '/'], ['Fechas', '/calendario'], ['Fotos', '/fotos'], ['Casas', '/casas'],
+    ])
   })
 
-  it('etiquetas en text-base (16 px) y cada pestaña del ancho de su texto (entra "Calendario" a 375 px)', () => {
+  it('compacto en el teléfono: etiquetas de 14 px (16 px en lg) y cada pestaña del ancho de su texto', () => {
     render(<BottomNav activo="inicio" rol="owner" />)
-    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
+    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Casas']) {
       const link = screen.getByRole('link', { name: n })
-      expect(link).toHaveClass('text-base', 'flex-auto')
-      for (const c of ['text-sm', 'text-xs', 'flex-1']) expect(link).not.toHaveClass(c)
+      expect(link).toHaveClass('text-sm', 'lg:text-base', 'min-h-12', 'flex-auto')
+      expect(link.querySelector('svg')).toHaveAttribute('width', '24')
+      for (const c of ['text-xs', 'flex-1']) expect(link).not.toHaveClass(c)
     }
   })
 })
@@ -52,7 +55,7 @@ describe('BottomNav en computadora (lg: ≥ 1024 px)', () => {
 
   it('en lg las pestañas van en fila (ícono + texto) con texto de 16 px', () => {
     render(<BottomNav activo="inicio" rol="owner" />)
-    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Portofino']) {
+    for (const n of ['Inicio', 'Calendario', 'Mensajes', 'Casas']) {
       const link = screen.getByRole('link', { name: n })
       expect(link).toHaveClass('flex-col', 'lg:flex-row', 'lg:justify-start', 'lg:text-base')
     }

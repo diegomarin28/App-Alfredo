@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import path from 'node:path'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, resetear } from './helpers'
 import { hoyMontevideo } from '../../src/domain/fechas'
-import { fechaCompleta } from '../../src/domain/vencimientos'
+import { MESES } from '../../src/domain/validarFecha'
 
 const FOTO = path.join(__dirname, 'fixtures', 'foto.jpg')
 
@@ -10,33 +10,47 @@ test.beforeEach(async ({ page }) => {
   await resetear(page, { hoy: '2026-11-22' })
 })
 
-test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }) => {
+test('owner: carpetas sugeridas, crea carpeta con descripción, sube documento (foto primero) y lo abre', async ({ page }) => {
   await entrarComo(page, 'owner')
   await page.goto('/documentos')
-  await expect(page.getByRole('link', { name: 'Seguros' })).toBeVisible()
-  await page.getByRole('button', { name: 'Nueva carpeta' }).click()
+  // las 6 sugeridas de arranque, con lo que va adentro
+  await expect(page.getByRole('link', { name: /^Personales/ })).toContainText('Cédula, pasaporte, carné')
+  await expect(page.getByRole('link', { name: /^Salud/ })).toContainText('Carné, estudios')
+  const nueva = page.getByRole('button', { name: 'Nueva carpeta' })
+  await hidratado(nueva)
+  await nueva.click()
   await page.getByLabel('Nombre').fill('Barco')
+  await page.getByLabel('Qué va adentro (opcional)').fill('Papeles del barco')
   await page.getByRole('button', { name: 'Guardar' }).click()
-  await expect(page.getByRole('link', { name: 'Barco' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /^Barco/ })).toContainText('Papeles del barco')
   // duplicado
-  await page.getByRole('button', { name: 'Nueva carpeta' }).click()
+  await nueva.click()
   await page.getByLabel('Nombre').fill('barco')
   await page.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByText('Ya existe una carpeta con ese nombre')).toBeVisible()
   await page.getByRole('button', { name: 'Cerrar' }).click()
 
-  await page.getByRole('link', { name: 'Barco' }).click()
+  await page.getByRole('link', { name: /^Barco/ }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Barco')
-  // sin título: cámara y galería apagadas, con la pista (así no se pierde una foto sacada)
-  await expect(page.getByText('Primero poné un título')).toBeVisible()
-  for (const input of await page.locator('input[type=file]').all()) await expect(input).toBeDisabled()
-  await page.getByLabel('Título').fill('Póliza auto')
-  await expect(page.getByText('Primero poné un título')).toHaveCount(0)
-  await expect(page.locator('input[type=file]').first()).toBeEnabled()
-  await page.locator('input[type=file]').first().setInputFiles(FOTO)
-  await expect(page.getByText('Póliza auto')).toBeVisible()
+  await expect(page.getByText('0 documentos')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Documentos' })).toHaveAttribute('href', '/documentos')
+  const mas = page.getByRole('button', { name: 'Agregar documento' })
+  await hidratado(mas)
+  await mas.click()
+  const hoja = page.getByRole('dialog', { name: 'Nuevo documento' })
+  // primero la foto (cámara o galería); después el título
+  await expect(hoja.getByLabel('Título')).toHaveCount(0)
+  await hoja.locator('input[type=file]:not([capture])').setInputFiles(FOTO)
+  await expect(hoja.getByText('Foto lista')).toBeVisible()
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(hoja.getByRole('alert')).toHaveText('Poné un título.')
+  await hoja.getByLabel('Título').fill('Póliza auto')
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByText('1 documento')).toBeVisible()
   // la fecha de subida es la real (creadoEn), no el "hoy" de prueba
-  await expect(page.getByText(fechaCompleta(hoyMontevideo(new Date())))).toBeVisible()
+  const [, m, d] = hoyMontevideo(new Date()).split('-').map(Number)
+  await expect(page.getByText(`${d} ${MESES[m - 1].slice(0, 3).toLowerCase()}`)).toBeVisible()
   const img = page.getByRole('img', { name: 'Póliza auto' })
   await expect(img).toBeVisible()
   await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0)
@@ -46,11 +60,13 @@ test('owner: crea carpeta, sube documento con título, lo abre', async ({ page }
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
-test('carpeta inexistente: 404 con la página en castellano', async ({ page }) => {
+test('carpeta inexistente: página "no encontrada" en castellano', async ({ page }) => {
   await entrarComo(page, 'owner')
-  const res = await page.goto('/documentos/no-existe')
-  expect(res?.status()).toBe(404)
+  // Con el esqueleto de carga, Next ya empezó a mandar la página cuando ve que la carpeta no existe: responde 200
+  // (no 404) con la página de "no encontrada" y la marca para que no se indexe.
+  await page.goto('/documentos/no-existe')
   await expect(page.getByRole('heading', { name: 'No encontramos esa página' })).toBeVisible()
+  await expect(page.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached()
   const volver = page.getByRole('link', { name: 'Volver al inicio' })
   expect((await volver.boundingBox())!.height).toBeGreaterThanOrEqual(44)
   await volver.click()
@@ -65,15 +81,21 @@ test('ruta que no existe: página en castellano', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/')
 })
 
-test('fotos: familia sube y Inicio la usa; no accede a documentos', async ({ page }) => {
+test('fotos: familia sube varias y Alfredo la ve en Inicio; familia no accede a documentos', async ({ page }) => {
   await entrarComo(page, 'familia')
   await page.goto('/fotos')
   await expect(page.getByText('Sacar foto')).toBeVisible()
-  await expect(page.getByText('Elegir de la galería')).toBeVisible()
-  await page.locator('input[type=file]:not([capture])').setInputFiles(FOTO)
-  await expect(page.getByRole('img', { name: 'Foto familiar' })).toBeVisible()
+  await expect(page.getByText('Elegir varias')).toBeVisible()
+  await page.locator('input[type=file][multiple]').setInputFiles([FOTO, FOTO])
+  await expect(page.getByRole('img', { name: 'Foto familiar' })).toHaveCount(2)
+  await expect(page.getByText('2 fotos')).toBeVisible()
+  await page.goto('/')
+  await expect(page.getByRole('link', { name: /Fotos de la familia/ })).toContainText('2 fotos')
+  // Alfredo la ve como foto del día
+  await entrarComo(page, 'owner')
   await page.goto('/')
   await expect(page.getByRole('img', { name: 'Foto familiar del día' })).toBeVisible()
+  await entrarComo(page, 'familia')
 
   // documentos: ni página, ni subida, ni lectura
   await page.goto('/documentos')

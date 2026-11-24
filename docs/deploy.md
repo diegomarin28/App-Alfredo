@@ -2,7 +2,15 @@
 
 ## 1. Supabase
 
-El proyecto `jtvcfwjixvbyzcbhcwkl` ya tiene el esquema y los datos iniciales aplicados. **No lo vuelvas a crear.** Las migraciones están en `supabase/migrations` (`0001_init.sql`, `0002_revoke_rls_auto_enable_public.sql`); si hay una nueva, se aplica sobre ese mismo proyecto.
+El proyecto `jtvcfwjixvbyzcbhcwkl` ya tiene el esquema y los datos iniciales aplicados. **No lo vuelvas a crear.** Las migraciones están en `supabase/migrations`; si hay una nueva, se aplica sobre ese mismo proyecto, en orden.
+
+**Falta aplicar `0004_grupos_carpetas_bienvenida.sql`** (ronda de pulido, mockup v2) antes de desplegar este código:
+
+- crea `grupos_contacto` y `contactos.grupo_id`, y pasa los tipos viejos (cliente, proveedor, otro) a grupos con ese nombre;
+- agrega `carpetas.descripcion` y `carpetas.orden`, y deja las 6 carpetas sugeridas (Personales, Seguros, Escrituras, Autos, Empresa, Salud) con su descripción;
+- agrega `config.bienvenida_vista` (la Bienvenida y la Guía de la primera vez). Si querés que Alfredo no las vea, después de aplicarla corré `update config set bienvenida_vista = true;`.
+
+Sin esa migración, la app nueva falla al leer contactos, carpetas y la configuración.
 
 Los datos del proyecto (URL y clave `service_role`) se sacan de Supabase > Project Settings > API. La clave `service_role` solo va en el servidor (Vercel), nunca en el navegador ni en el repo.
 

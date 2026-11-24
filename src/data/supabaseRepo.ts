@@ -86,6 +86,7 @@ export class SupabaseRepo implements Repo {
   eventosCasa!: Repo['eventosCasa']
   serviciosCasa!: Repo['serviciosCasa']
   contactos!: Repo['contactos']
+  gruposContacto!: Repo['gruposContacto']
   pendientes!: Repo['pendientes']
   notas!: Repo['notas']
   carpetas!: Repo['carpetas']

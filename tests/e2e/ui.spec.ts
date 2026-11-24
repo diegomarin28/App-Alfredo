@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 import { abrir, PANTALLAS, sembrar } from './pantallas'
 
 /**
- * Revisión de UI en cada tamaño: toques de 44×44 o más, texto de 16 px o más, sin scroll horizontal y
+ * Revisión de UI en cada tamaño: toques de 44×44 o más, texto de 16 px o más (14 px en el menú de abajo), sin scroll horizontal y
  * sin problemas de accesibilidad (axe, contraste incluido). Cada pantalla, en su estado inicial.
  */
 
@@ -63,7 +63,9 @@ function revisar(): Revision {
     if (r.width <= 1 || r.height <= 1 || !seVe(el)) continue
     vistos.add(el)
     const px = parseFloat(getComputedStyle(el).fontSize)
-    if (px < 16) letraChica.push(`${describir(el)} ${px}px`)
+    // Única excepción: las etiquetas del menú de abajo (pedido de Diego: menú compacto), con 14 px como mínimo.
+    const minimo = el.closest('nav[aria-label="Principal"]') ? 14 : 16
+    if (px < minimo) letraChica.push(`${describir(el)} ${px}px`)
   }
   // Lo que se escribe en los campos también (además, iOS agranda la página si es menor a 16 px).
   for (const el of document.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea')) {
