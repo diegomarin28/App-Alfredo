@@ -12,6 +12,16 @@
   --color-urg-bg: #fcebdd;
   --color-urg-tx: #8a4a12;
   --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  /* Paneles (Sheet, confirmación de borrar): el fondo aparece y el panel sube. */
+  --animate-aparecer: aparecer 160ms ease-out;
+  --animate-subir: subir 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  @keyframes aparecer {
+    from { opacity: 0; }
+  }
+  @keyframes subir {
+    from { opacity: 0; transform: translateY(32px); }
+  }
 }
 
 html {
@@ -22,4 +32,37 @@ body {
   background: var(--color-fondo);
   color: var(--color-texto);
   font-family: var(--font-sans);
+}
+
+/* Respuesta al tocar: mientras se aprieta, lo tocado se aclara y (si se puede mover) se achica un poco. */
+:where(a[href], button, [role='button'], summary, label:has(input)) {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+:where(a[href], button, [role='button'], summary, label:has(input)):not(:disabled):active {
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :where(a[href], button, [role='button'], summary, label:has(input)):not(:disabled):active {
+    transform: scale(0.97);
+  }
+
+  /* Entre pantallas (View Transitions, ver TransicionesPantalla): la vieja se va y la nueva entra subiendo apenas. */
+  ::view-transition-old(root) {
+    animation: 140ms ease-out both pantalla-sale;
+  }
+  ::view-transition-new(root) {
+    animation: 200ms ease-out both pantalla-entra;
+  }
+  /* El menú queda quieto. */
+  ::view-transition-group(menu) {
+    animation: none;
+  }
+}
+@keyframes pantalla-sale {
+  to { opacity: 0; }
+}
+@keyframes pantalla-entra {
+  from { opacity: 0; transform: translateY(8px); }
 }

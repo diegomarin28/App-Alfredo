@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getSesion } from '@/auth/session'
 import BottomNav from '@/components/BottomNav'
+import TransicionesPantalla from '@/components/TransicionesPantalla'
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sesion = await getSesion()
@@ -14,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </div>
       <BottomNav rol={sesion.rol} />
+      <TransicionesPantalla />
     </>
   )
 }

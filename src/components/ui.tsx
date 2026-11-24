@@ -63,9 +63,10 @@ export function BotonAgregar({ nombre, ...rest }: { nombre: string } & ButtonHTM
 /**
  * Fondo y panel de las hojas: en el teléfono, hoja pegada abajo de lado a lado; en computadora (lg), una
  * ventana centrada sobre la columna del contenido (a la derecha de la barra lateral de w-60, hasta 720 px).
+ * Al abrir, el fondo aparece y el panel sube (cortito; nada con "reducir movimiento").
  */
-export const clasesFondoHoja = 'fixed inset-0 z-50 flex items-end bg-black/40 lg:items-center lg:justify-center lg:pl-60'
-export const clasesHoja = 'w-full rounded-t-3xl bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:rounded-3xl lg:pb-5'
+export const clasesFondoHoja = 'fixed inset-0 z-50 flex items-end bg-black/40 motion-safe:animate-aparecer lg:items-center lg:justify-center lg:pl-60'
+export const clasesHoja = 'w-full rounded-t-3xl bg-white p-5 motion-safe:animate-subir pb-[calc(1.25rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:rounded-3xl lg:pb-5'
 
 /** Hoja inferior simple. Se cierra con el botón "Cerrar" o tocando afuera. */
 export function Sheet({ abierto, onCerrar, titulo, children }: {

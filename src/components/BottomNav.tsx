@@ -48,7 +48,7 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
   return (
     <nav
       aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-borde bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:left-0 lg:right-auto lg:w-60 lg:border-t-0 lg:border-r lg:pb-0"
+      className="fixed inset-x-0 bottom-0 z-40 [view-transition-name:menu] border-t border-borde bg-white pb-[env(safe-area-inset-bottom)] lg:inset-y-0 lg:left-0 lg:right-auto lg:w-60 lg:border-t-0 lg:border-r lg:pb-0"
     >
       <div className="mx-auto flex max-w-xl items-end px-1 lg:mx-0 lg:max-w-none lg:flex-col lg:items-stretch lg:gap-1 lg:px-3 lg:pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Pestana tab="inicio" texto="Inicio" activo={actual === 'inicio'} />

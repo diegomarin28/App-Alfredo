@@ -88,6 +88,8 @@ test('computadora: a 1024 px el contenido tampoco queda debajo de la barra later
 /** Hoja de abajo en el teléfono; en computadora, centrada sobre la columna del contenido (no tapa la barra lateral). */
 async function esperarHoja(page: Page, dialogo: ReturnType<Page['getByRole']>) {
   await expect(dialogo).toBeVisible()
+  // dónde queda: después de que termina de subir (animación al abrir)
+  await dialogo.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
   const d = (await dialogo.boundingBox())!
   const { n, m, vw, vh } = await cajas(page)
   if (vw >= LG) {
