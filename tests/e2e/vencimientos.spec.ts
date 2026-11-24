@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, resetear } from './helpers'
 
 const HOY = '2026-11-22'
 const datos = {
@@ -21,14 +21,12 @@ test('secciones, orden, fecha, chips y urgencia', async ({ page }) => {
   const filas = empresa.getByRole('listitem')
   await expect(filas).toHaveCount(3)
   await expect(filas.nth(0)).toContainText('Habilitación vieja')
-  await expect(filas.nth(0)).toContainText('Venció hace 2 días')
-  await expect(filas.nth(0)).toContainText('Urgente')
+  // etiqueta roja si venció, naranja si es pronto (7 días o menos), gris si falta
+  await expect(filas.nth(0).getByText('Venció hace 2 días')).toHaveCSS('background-color', 'rgb(253, 236, 236)')
   await expect(filas.nth(1)).toContainText('Balance anual')
-  await expect(filas.nth(1)).toContainText('En 3 días')
-  await expect(filas.nth(1)).toContainText('Urgente')
-  await expect(filas.nth(2)).toContainText('12 de diciembre de 2026')
-  await expect(filas.nth(2)).toContainText('En 20 días')
-  await expect(filas.nth(2)).not.toContainText('Urgente')
+  await expect(filas.nth(1).getByText('En 3 días')).toHaveCSS('background-color', 'rgb(252, 235, 221)')
+  await expect(filas.nth(2)).toContainText('12 dic 2026')
+  await expect(filas.nth(2).getByText('En 20 días')).toHaveCSS('background-color', 'rgb(236, 239, 244)')
   await expect(filas.nth(1).locator('.bg-urg-bg')).toHaveCount(1)
   await expect(filas.nth(2).locator('.bg-urg-bg')).toHaveCount(0)
   await expect(personales.getByRole('listitem')).toHaveCount(1)
@@ -41,8 +39,9 @@ test('Hecho hace desaparecer la fila', async ({ page }) => {
   await entrarComo(page, 'owner')
   await page.goto('/vencimientos')
   const fila = page.getByRole('listitem').filter({ hasText: 'Balance anual' })
-  await fila.getByRole('button', { name: 'Hecho' }).click()
-  await expect(page.getByRole('button', { name: 'Hecho' })).toHaveCount(3)
+  await hidratado(fila.getByRole('checkbox', { name: 'Marcar Balance anual como hecho' }))
+  await fila.getByRole('checkbox', { name: 'Marcar Balance anual como hecho' }).click()
+  await expect(page.getByRole('checkbox', { name: /^Marcar .* como hecho$/ })).toHaveCount(3)
   await expect(page.getByRole('status')).toContainText('Marcado como hecho')
   await page.reload()
   await expect(page.getByText('Balance anual')).toHaveCount(0)
@@ -56,15 +55,14 @@ test('agregar vencimiento con aviso de 1 semana', async ({ page }) => {
   await page.getByRole('button', { name: 'Agregar vencimiento' }).click()
   const hoja = page.getByRole('dialog')
   await hoja.getByLabel('Título').fill('Renovar libreta')
-  await hoja.getByRole('button', { name: 'Personal' }).click()
+  await hoja.getByRole('radio', { name: 'Personal' }).click()
   await hoja.getByLabel('Fecha').fill('2026-11-29')
   await hoja.getByRole('button', { name: '1 semana' }).click()
   await hoja.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   const fila = page.getByRole('region', { name: 'Personales' }).getByRole('listitem').filter({ hasText: 'Renovar libreta' })
-  await expect(fila).toContainText('29 de noviembre de 2026')
-  await expect(fila).toContainText('En 7 días')
-  await expect(fila).toContainText('Urgente')
+  await expect(fila).toContainText('29 nov 2026')
+  await expect(fila.getByText('En 7 días')).toHaveCSS('background-color', 'rgb(252, 235, 221)')
 })
 
 test('agregar con fecha vacía muestra error', async ({ page }) => {

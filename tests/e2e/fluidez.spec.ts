@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { entrarComo, hidratado, resetear } from './helpers'
+import { entrarComo, hidratado, instalarVozFalsa, resetear } from './helpers'
 
 // Más fluida: transición entre pantallas (View Transitions, si el navegador la tiene), paneles que suben al abrir
 // y respuesta al tocar. Con "reducir movimiento", nada se mueve (lo tocado igual se aclara).
@@ -36,7 +36,7 @@ async function abrirPanel(page: Page) {
   const agregar = page.getByRole('button', { name: 'Agregar fecha' })
   await hidratado(agregar)
   await agregar.click()
-  const panel = page.getByRole('dialog', { name: 'Agregar fecha' })
+  const panel = page.getByRole('dialog', { name: 'Nueva fecha' })
   await expect(panel).toBeVisible()
   return {
     panel: await panel.evaluate((el) => getComputedStyle(el).animationName),
@@ -47,7 +47,7 @@ async function abrirPanel(page: Page) {
 /** Aprieta (sin soltar) un botón y devuelve cómo se ve mientras tanto. */
 async function apretado(page: Page) {
   await page.goto('/mensajes')
-  const boton = page.getByRole('button', { name: 'Me escribieron' })
+  const boton = page.getByRole('radio', { name: 'Quiero escribir' })
   await hidratado(boton)
   const c = (await boton.boundingBox())!
   await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2)
@@ -69,8 +69,52 @@ test('al abrir un panel, el fondo aparece y el panel sube', async ({ page }) => 
 
 test('al tocar, el botón se achica y se aclara mientras se aprieta', async ({ page }) => {
   const { opacidad, transform } = await apretado(page)
-  expect(Number(opacidad)).toBeCloseTo(0.8, 2)
+  expect(Number(opacidad)).toBeCloseTo(0.85, 2)
   expect(transform).toMatch(/^matrix\(0\.97, 0, 0, 0\.97,/)
+})
+
+test('la hoja se cierra arrastrándola hacia abajo desde la manija', async ({ page }) => {
+  await abrirPanel(page)
+  const hoja = page.getByRole('dialog', { name: 'Nueva fecha' })
+  await hoja.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)))
+  const titulo = (await hoja.getByRole('heading', { name: 'Nueva fecha' }).boundingBox())!
+  const x = titulo.x + 20
+  const y = titulo.y + titulo.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y + 60, { steps: 4 })
+  await page.mouse.move(x, y + 160, { steps: 4 })
+  await page.mouse.up()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+})
+
+test('sin el retraso del doble toque: todo lo que se toca tiene touch-action: manipulation', async ({ page }) => {
+  await page.goto('/')
+  const menu = page.getByRole('navigation', { name: 'Principal' })
+  await expect(menu.getByRole('link', { name: 'Calendario' })).toHaveCSS('touch-action', 'manipulation')
+  await page.goto('/mensajes')
+  await expect(page.getByRole('radio', { name: 'Quiero escribir' })).toHaveCSS('touch-action', 'manipulation')
+})
+
+test('al tildar, el círculo se llena con un rebote', async ({ page }) => {
+  await resetear(page, { hoy: '2026-11-22', datos: { pendientes: [{ texto: 'Pagar luz', hecho: false, creadoEn: '2026-11-20T12:00:00.000Z' }] } })
+  await page.goto('/pendientes')
+  const tildar = page.getByRole('checkbox', { name: 'Pagar luz' })
+  await hidratado(tildar)
+  await tildar.click()
+  await expect.poll(() => page.locator('label:has(input[aria-label="Pagar luz"]) > span').evaluate((el) => getComputedStyle(el).animationName)).toBe('rebote')
+})
+
+test('Contame escuchando: los anillos respiran', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  const hablar = page.getByRole('button', { name: 'Tocá para hablar' })
+  await hidratado(hablar)
+  await hablar.click()
+  const boton = page.getByRole('button', { name: 'Tocá para terminar' })
+  await expect(boton).toBeVisible()
+  expect(await boton.evaluate((b) => [...b.querySelectorAll('span')].map((s) => getComputedStyle(s).animationName))).toContain('respirar')
+  await expect(page.getByText(/Te escucho · 0:0\d/)).toBeVisible()
 })
 
 test.describe('con "reducir movimiento"', () => {
@@ -79,12 +123,13 @@ test.describe('con "reducir movimiento"', () => {
   test('sin transiciones entre pantallas ni paneles que se muevan', async ({ page }) => {
     await irPorElMenu(page)
     expect(await transiciones(page)).toBe(0)
-    expect(await abrirPanel(page)).toEqual({ panel: 'none', fondo: 'none' })
+    // solo un fundido: nada sube ni se mueve
+    expect(await abrirPanel(page)).toEqual({ panel: 'aparecer', fondo: 'aparecer' })
   })
 
   test('al tocar se aclara pero no se achica', async ({ page }) => {
     const { opacidad, transform } = await apretado(page)
-    expect(Number(opacidad)).toBeCloseTo(0.8, 2)
+    expect(Number(opacidad)).toBeCloseTo(0.85, 2)
     expect(transform).toBe('none')
   })
 })

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { entrarComo, resetear } from './helpers'
+import { entrarComo, hidratado, leerPortapapeles, permitirPortapapeles, resetear } from './helpers'
 
 const datos = {
   personasCasa: [
@@ -25,7 +25,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('por defecto Portofino, con sus datos', async ({ page }) => {
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portofino')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Casas')
   await expect(page.getByRole('navigation', { name: 'Elegir casa' }).getByRole('link', { name: 'Portofino' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByText('Rosa Díaz')).toBeVisible()
   await expect(page.getByText('Pedro Piscinero')).toHaveCount(0)
@@ -34,13 +34,13 @@ test('por defecto Portofino, con sus datos', async ({ page }) => {
 
 test('casa desconocida cae en Portofino', async ({ page }) => {
   await page.goto('/casas?casa=zzz')
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portofino')
+  await expect(page.getByRole('navigation', { name: 'Elegir casa' }).getByRole('link', { name: 'Portofino' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByText('Rosa Díaz')).toBeVisible()
 })
 
 test('cambiar a Malibú muestra solo Malibú', async ({ page }) => {
   await page.getByRole('navigation', { name: 'Elegir casa' }).getByRole('link', { name: 'Malibú' }).click()
   await expect(page).toHaveURL(/casa=malibu/)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Malibú')
   await expect(page.getByRole('navigation', { name: 'Elegir casa' }).getByRole('link', { name: 'Malibú' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByText('Pedro Piscinero')).toBeVisible()
   await expect(page.getByText('Limpiaron la piscina')).toBeVisible()
@@ -51,9 +51,7 @@ test('cambiar a Malibú muestra solo Malibú', async ({ page }) => {
 
 test('Quién se ocupa con botón Llamar', async ({ page }) => {
   const fila = page.getByRole('listitem').filter({ hasText: 'Rosa Díaz' })
-  await expect(fila).toContainText('Limpieza')
-  await expect(fila).toContainText('Martes y viernes')
-  await expect(fila).toContainText('099 123 456')
+  await expect(fila).toContainText('Limpieza · Martes y viernes')
   await expect(fila.getByRole('link', { name: 'Llamar' })).toHaveAttribute('href', 'tel:+59899123456')
   const sin = page.getByRole('listitem').filter({ hasText: 'Juan Jardinero' })
   await expect(sin.getByRole('link', { name: 'Llamar' })).toHaveCount(0)
@@ -67,9 +65,15 @@ test('Historial: más nuevo primero, con fecha en español', async ({ page }) =>
   await expect(items.nth(1)).toContainText('Se cambió el termotanque')
 })
 
-test('Servicios clave y valor', async ({ page }) => {
+test('Servicios clave y valor, con Copiar', async ({ page, context, browserName }) => {
+  await permitirPortapapeles(context, browserName)
+  await page.reload() // el espía del portapapeles (WebKit) se instala al cargar
   const f = page.getByRole('listitem').filter({ hasText: 'DirecTV' })
   await expect(f).toContainText('Cliente 123456')
+  await hidratado(f.getByRole('button', { name: 'Copiar DirecTV' }))
+  await f.getByRole('button', { name: 'Copiar DirecTV' }).click()
+  await expect(f.getByRole('button', { name: 'Copiado DirecTV' })).toBeVisible()
+  expect(await leerPortapapeles(page)).toBe('Cliente 123456')
 })
 
 test('agregar en cada sección persiste', async ({ page }) => {

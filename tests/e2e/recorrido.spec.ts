@@ -20,8 +20,8 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   await resetear(page, {
     hoy: '2026-10-26',
     datos: {
-      fechas: [{ nombre: 'Ana Pérez', tipo: 'cumple', dia: '10-29', anioNacimiento: 1990 }],
-      contactos: [{ nombre: 'Martín Pérez', tipo: 'cliente', empresa: 'Ferretería Sur', telefono: '59899123456' }],
+      fechas: [{ nombre: 'Ana Pérez', tipo: 'cumple', dia: '10-26', anioNacimiento: 1990 }],
+      contactos: [{ nombre: 'Martín Pérez', empresa: 'Ferretería Sur', telefono: '59899123456' }],
     },
     config: { nombre: 'Alfredo' },
   })
@@ -42,16 +42,20 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   await expect(page.getByText('Cumple de Ana Pérez')).toBeVisible()
   await revisar('Inicio')
 
-  // Calendario: saludo por WhatsApp
+  // Calendario: hoy cumple Ana, el saludo por WhatsApp
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Calendario' }).click()
   await expect(page).toHaveURL(/\/calendario$/)
+  await revisar('Calendario')
+  await hidratado(page.getByRole('button', { name: 'Mandar saludo' }))
+  await page.getByRole('button', { name: 'Mandar saludo' }).click()
   const saludo = await page.getByRole('textbox', { name: 'Saludo' }).inputValue()
   expect(saludo).toContain('Ana')
   await expect(page.getByRole('link', { name: 'Enviar por WhatsApp' })).toHaveAttribute('href', waLink(saludo))
-  await revisar('Calendario')
+  await revisar('Saludo')
+  await page.getByRole('button', { name: 'Cerrar' }).click()
 
   // Recordatorios: resolver Navidad
-  await page.getByRole('link', { name: /Recordatorios del año/ }).click()
+  await page.getByRole('main').getByRole('link', { name: /^Recordatorios/ }).click()
   await expect(page).toHaveURL(/\/recordatorios$/)
   const activos = page.getByRole('region', { name: 'Para gestionar ahora' })
   const navidad = activos.getByRole('article', { name: 'Gestionar Navidad' })
@@ -83,7 +87,7 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   // Mensajes: sugerir respuesta
   await guion(page, [{ texto: 'Dale Martín, el viernes cerramos.' }])
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mensajes' }).click()
-  await page.getByRole('button', { name: 'Me escribieron' }).click()
+  await page.getByRole('radio', { name: 'Me escribieron' }).click()
   await page.getByLabel('Pegá el mensaje que te mandaron').fill('Hola Alfredo, ¿cerramos el viernes?')
   await page.getByRole('button', { name: 'Sugerir respuesta' }).click()
   await expect(page.getByLabel('Mensaje sugerido')).toHaveValue('Dale Martín, el viernes cerramos.')
@@ -93,9 +97,13 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   // Documentos: subir una foto a Seguros
   await page.goto('/')
   await page.getByRole('link', { name: 'Documentos' }).click()
-  await page.getByRole('link', { name: 'Seguros' }).click()
-  await page.getByLabel('Título').fill('Póliza auto')
-  await page.locator('input[type=file]').first().setInputFiles(FOTO)
+  await page.getByRole('link', { name: /^Seguros/ }).click()
+  await hidratado(page.getByRole('button', { name: 'Agregar documento' }))
+  await page.getByRole('button', { name: 'Agregar documento' }).click()
+  const hoja = page.getByRole('dialog', { name: 'Nuevo documento' })
+  await hoja.locator('input[type=file]').first().setInputFiles(FOTO)
+  await hoja.getByLabel('Título').fill('Póliza auto')
+  await hoja.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByText('Póliza auto')).toBeVisible()
   await expect(page.getByRole('img', { name: 'Póliza auto' })).toBeVisible()
   await revisar('Documentos')
