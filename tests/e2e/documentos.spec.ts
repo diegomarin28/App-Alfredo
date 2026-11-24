@@ -87,6 +87,7 @@ test('fotos: familia sube varias y Alfredo la ve en Inicio; familia no accede a 
   await expect(page.getByText('Sacar foto')).toBeVisible()
   await expect(page.getByText('Elegir varias')).toBeVisible()
   await page.locator('input[type=file][multiple]').setInputFiles([FOTO, FOTO])
+  await page.getByRole('dialog', { name: 'Subir fotos' }).getByRole('button', { name: 'Subir 2 fotos' }).click()
   await expect(page.getByRole('img', { name: 'Foto familiar' })).toHaveCount(2)
   await expect(page.getByText('2 fotos')).toBeVisible()
   await page.goto('/')

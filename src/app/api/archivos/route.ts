@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
-import { generarPath, validarSubida } from '@/domain/archivos'
+import { generarPath, leerFoco, validarSubida } from '@/domain/archivos'
 
 export async function POST(req: NextRequest) {
   let rol
@@ -28,5 +28,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(await repo.documentos.create({ carpetaId, titulo, path }))
   }
   const path = await repo.uploadArchivo(generarPath('foto', v.valor.ext, undefined, uuid), file)
-  return NextResponse.json(await repo.fotos.create({ path }))
+  // encuadre elegido en la vista previa (marco 16:9 de Inicio)
+  return NextResponse.json(await repo.fotos.create({ path, focoX: leerFoco(form.get('focoX')), focoY: leerFoco(form.get('focoY')) }))
 }

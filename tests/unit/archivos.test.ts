@@ -73,12 +73,24 @@ describe('validarLectura', () => {
   })
 })
 
-import { validarCarpeta } from '@/domain/archivos'
+import { validarCarpeta, leerFoco } from '@/domain/archivos'
 describe('validarCarpeta', () => {
   it('válida, vacía, larga y duplicada', () => {
     expect(validarCarpeta(' Barco ', ['Seguros'])).toEqual({ ok: true, valor: 'Barco' })
     expect(validarCarpeta('', [])).toMatchObject({ ok: false })
     expect(validarCarpeta('a'.repeat(41), [])).toMatchObject({ ok: false })
     expect(validarCarpeta('seguros', ['Seguros'])).toEqual({ ok: false, error: 'Ya existe una carpeta con ese nombre' })
+  })
+})
+
+describe('leerFoco (encuadre de la foto en el marco de Inicio)', () => {
+  it('0..1, redondeado; lo inválido queda centrado', () => {
+    expect(leerFoco('0.25')).toBe(0.25)
+    expect(leerFoco('0.33333')).toBe(0.333)
+    expect(leerFoco('1.7')).toBe(1)
+    expect(leerFoco('-3')).toBe(0)
+    expect(leerFoco('abc')).toBe(0.5)
+    expect(leerFoco(null)).toBe(0.5)
+    expect(leerFoco('')).toBe(0.5)
   })
 })

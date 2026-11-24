@@ -10,9 +10,13 @@ export async function comprimir(archivo: Blob & { name?: string }): Promise<Blob
 }
 
 /** Sube una foto o un documento a POST /api/archivos. Devuelve el error para mostrar, o null si salió bien. */
-export async function subirArchivo(campos: { tipo: 'foto' | 'documento'; carpetaId?: string; titulo?: string }, archivo: Blob): Promise<string | null> {
+export async function subirArchivo(
+  campos: { tipo: 'foto' | 'documento'; carpetaId?: string; titulo?: string; focoX?: number; focoY?: number }, archivo: Blob,
+): Promise<string | null> {
   const f = new FormData()
   f.set('tipo', campos.tipo)
+  if (campos.focoX !== undefined) f.set('focoX', String(campos.focoX))
+  if (campos.focoY !== undefined) f.set('focoY', String(campos.focoY))
   if (campos.carpetaId) f.set('carpetaId', campos.carpetaId)
   if (campos.titulo !== undefined) f.set('titulo', campos.titulo)
   f.set('file', await comprimir(archivo), 'foto.jpg')
