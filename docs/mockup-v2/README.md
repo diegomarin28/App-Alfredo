@@ -68,3 +68,6 @@ Ninguna animación bloquea: se puede seguir tocando mientras corre.
   - "Avisarme con" agrega "1 día" y "3 días" a las opciones; "Otro" deja escribir N días/semanas/meses.
   - "Posponer": en vez de "Posponer 15 días" fijo, el botón "Posponer" abre una hoja chica para elegir cuánto: 1 día · 3 días · 1 semana · 15 días · 1 mes · Elegir fecha. Cada recordatorio guarda su "posponer por defecto" (se elige al crearlo, default 15 días) y esa opción aparece primera y marcada.
   - Migración (archivo, SIN aplicar): recordatorios.repeticion (mismo check que fechas), recordatorios.anio int null, recordatorios.posponer_dias int not null default 15. Los recordatorios existentes quedan 'anual'. Tests de próxima ocurrencia y de posponer para cada repetición.
+
+## Regla de textos (para la próxima ronda)
+- En la app no puede aparecer ninguna mención a números de tarjeta, cuentas bancarias, datos bancarios ni nada parecido: ni en textos de ayuda, ejemplos, placeholders, la Guía, Contraseñas, Ajustes, mensajes de error ni en los prompts de la IA. Buscá y sacá cualquier referencia existente (grep "tarjeta", "banco", "bancari", "cuenta bancaria", "CVV", "IBAN"). La sección Contraseñas se describe solo como "tus claves guardadas con Face ID".
