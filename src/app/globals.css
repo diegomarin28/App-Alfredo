@@ -61,6 +61,9 @@ textarea {
 }
 
 body {
+  /* con viewport-fit: cover, el iPhone acostado no tapa el contenido con la isla */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--color-fondo);
   color: var(--color-texto);
   font-family: var(--font-sans);
