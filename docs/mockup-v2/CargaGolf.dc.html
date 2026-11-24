@@ -14,33 +14,20 @@
 body{margin:0}
 @keyframes marca{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 .mk{animation:marca .9s ease-out .2s both}
-@keyframes brazos{0%,8%{transform:rotate(0deg)}42%{transform:rotate(148deg)}47%{transform:rotate(150deg)}55%{transform:rotate(0deg)}68%{transform:rotate(-150deg)}86%,100%{transform:rotate(-158deg)}}
-@keyframes tronco{0%,8%{transform:skewX(0deg)}42%,47%{transform:skewX(6deg)}55%{transform:skewX(0deg)}68%,100%{transform:skewX(-7deg)}}
-@keyframes cabeza{0%,8%{transform:rotate(-2deg) translateX(0)}42%,47%{transform:rotate(-5deg) translateX(-3px)}55%{transform:rotate(-2deg) translateX(0)}70%{transform:rotate(10deg) translateX(10px)}80%{transform:rotate(6deg) translateX(9px)}100%{transform:rotate(7deg) translateX(9px)}}
-@keyframes bx{0%,54%{transform:translateX(0)}100%{transform:translateX(260px)}}
-@keyframes by{0%,54%{transform:translateY(0) scale(1)}74%{transform:translateY(-300px) scale(.6)}100%{transform:translateY(-250px) scale(.25)}}
-@keyframes fade{0%,54%{opacity:1}92%{opacity:1}100%{opacity:0}}
-.ar{transform-box:view-box;transform-origin:110px 34px;animation:brazos 3.2s cubic-bezier(.45,0,.25,1) infinite}
-.tr{transform-box:view-box;transform-origin:110px 156px;animation:tronco 3.2s cubic-bezier(.45,0,.25,1) infinite}
-.cb{transform-origin:50% 92%;animation:cabeza 3.2s cubic-bezier(.45,0,.25,1) infinite}
-.bx{animation:bx 3.2s linear infinite}.by{animation:by 3.2s cubic-bezier(.15,.6,.4,1) infinite}.bf{animation:fade 3.2s linear infinite}
+@keyframes g0{0%,30.5%{opacity:1}32%,98.5%{opacity:0}100%{opacity:1}}
+.g0{animation:g0 3.0s linear infinite}
+@keyframes g1{0%,30.5%{opacity:0}32%,48.5%{opacity:1}50%,100%{opacity:0}}
+.g1{animation:g1 3.0s linear infinite}
+@keyframes g2{0%,48.5%{opacity:0}50%,54.5%{opacity:1}56%,100%{opacity:0}}
+.g2{animation:g2 3.0s linear infinite}
+@keyframes g3{0%,54.5%{opacity:0}56%,98.5%{opacity:1}100%{opacity:0}}
+.g3{animation:g3 3.0s linear infinite}
+@keyframes resp{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}.rs{animation:resp 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(120% 70% at 50% 35%, #1D3F72 0%, #112A50 60%, #0B1D3A 100%); font-family: Inter, system-ui, sans-serif; color: #FFFFFF">
-<svg width="220" height="270" viewBox="0 0 220 270" style="position: absolute; left: 85px; top: 392px; overflow: visible" aria-hidden="true">
-<ellipse cx="110" cy="254" rx="120" ry="10" fill="rgba(122,180,120,0.35)"/>
-<path d="M88 150 L76 238 L97 240 L108 170 L112 170 L123 240 L144 238 L132 150 Z" fill="#56677F"/><path d="M108 170 L112 170 L111 200 L109 200 Z" fill="#4A5A70"/><path d="M84 196 L86 200 M136 196 L134 200" stroke="#4A5A70" stroke-width="2"/><path d="M70 236 Q66 249 82 250 L101 250 Q104 244 99 236 Z" fill="#5E4434"/><path d="M66 247 L102 247 L102 252 L66 252 Z" fill="#F4F1EA"/><path d="M121 236 Q116 244 119 250 L138 250 Q154 249 150 236 Z" fill="#5E4434"/><path d="M118 247 L154 247 L154 252 L118 252 Z" fill="#F4F1EA"/><path d="M78 240 L92 240 M125 240 L139 240" stroke="#E9DCCB" stroke-width="1.5"/>
-<g class="tr"><path d="M70 40 Q72 18 96 12 L124 12 Q148 18 150 40 L140 154 L80 154 Z" fill="#F7F9FC"/><path d="M80 150 L140 150 L140 158 L80 158 Z" fill="#3D4B5E"/><path d="M96 12 L110 26 L104 34 Z M124 12 L110 26 L116 34 Z" fill="#E4EAF2" stroke="#C9D3E0" stroke-width="1"/><path d="M110 26 L110 150" stroke="#D5DDE8" stroke-width="2"/><circle cx="110" cy="44" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="66" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="88" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="110" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="132" r="1.6" fill="#B8C2CF"/><path d="M122 52 l3 -2 l3 2 l-3 3 z" fill="#1F4E8C"/><path d="M84 100 Q96 108 100 140 M136 100 Q124 108 120 140" stroke="#E6ECF4" stroke-width="2" fill="none"/></g>
-<g class="ar">
-<path d="M92 30 Q96 80 105 112" stroke="#C9D3E0" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M92 30 Q96 80 105 112" stroke="#F7F9FC" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M128 30 Q124 80 115 112" stroke="#C9D3E0" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M128 30 Q124 80 115 112" stroke="#F7F9FC" stroke-width="12" stroke-linecap="round" fill="none"/>
-<circle cx="106" cy="118" r="7" fill="#F1C9A5"/><circle cx="114" cy="122" r="7" fill="#F1C9A5"/>
-<line x1="110" y1="128" x2="113" y2="236" stroke="#B8C2CF" stroke-width="3.5" stroke-linecap="round"/>
-<path d="M108 230 Q122 230 132 236 Q135 245 124 247 L108 246 Q104 238 108 230 Z" fill="#2C333D"/>
-</g>
-<line x1="132" y1="250" x2="132" y2="243" stroke="#E8DCC4" stroke-width="2.5"/>
-<g class="bf"><g class="bx"><g class="by" style="transform-box: fill-box; transform-origin: center"><circle cx="132" cy="239" r="5.5" fill="#FFFFFF" stroke="#AEB6C1" stroke-width="1"/></g></g></g>
-</svg><img class="cb" src="/_blob/383e08e104c3929db5bb1de7d116756a" alt="" style="position: absolute; left: 122px; top: 190px; width: 146px; height: auto">
+<div role="img" aria-label="Alfredo jugando al golf" class="rs" style="position: absolute; left: 0; top: 176px; width: 390px; height: 480px"><img class="g0" src="/_blob/d08ba3c8bea4d542d857949606053bc9" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"><img class="g1" src="/_blob/d421a07e37d5e3c4ff321e1e7a0b8b11" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"><img class="g2" src="/_blob/f69e240e070de76d55791b20a54e39ab" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"><img class="g3" src="/_blob/4721b6551976599f9656b83c993678b2" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"></div><div style="position: absolute; left: 95px; right: 95px; top: 648px; height: 10px; border-radius: 50%; background: rgba(0,0,0,0.22)"></div>
 <div class="mk" style="position: absolute; left: 0; right: 0; bottom: 96px; display: flex; flex-direction: column; align-items: center; gap: 10px">
 <span style="font-size: 40px; font-weight: 800; letter-spacing: -1px">Alfred<span style="color: #8FB8EC">IA</span></span>
 <span style="font-size: 14px; color: #9FB3D1; letter-spacing: 0.2px">De: Pau y Diego</span></div>

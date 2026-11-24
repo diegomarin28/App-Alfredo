@@ -14,40 +14,18 @@
 body{margin:0}
 @keyframes marca{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
 .mk{animation:marca .9s ease-out .2s both}
-@keyframes golpe{0%,10%{transform:rotate(-20deg)}40%{transform:rotate(-112deg)}48%{transform:rotate(-118deg)}56%{transform:rotate(-55deg)}68%{transform:rotate(28deg)}82%{transform:rotate(18deg)}100%{transform:rotate(-20deg)}}
-@keyframes guia{0%,10%{transform:rotate(0deg)}40%,48%{transform:rotate(-55deg)}60%{transform:rotate(-20deg)}100%{transform:rotate(0deg)}}
-@keyframes tronco{0%,10%{transform:skewX(0)}40%,48%{transform:skewX(5deg)}60%{transform:skewX(-6deg)}100%{transform:skewX(-2deg)}}
-@keyframes cabeza{0%,10%{transform:rotate(0)}40%,48%{transform:rotate(-8deg) translateY(-3px)}60%{transform:rotate(6deg)}100%{transform:rotate(2deg)}}
-@keyframes llega{0%{transform:translate(120px,-160px);opacity:0}8%{opacity:1}56%{transform:translate(0,0)}100%{transform:translate(0,0)}}
-@keyframes sale{0%,56%{transform:translate(0,0) rotate(0);opacity:0}57%{opacity:1}90%{transform:translate(-260px,330px) rotate(-540deg);opacity:1}100%{transform:translate(-280px,350px) rotate(-600deg);opacity:0}}
-@keyframes antes{0%,56%{opacity:1}57%,100%{opacity:0}}
-.rq{transform-box:view-box;transform-origin:146px 34px;animation:golpe 2.6s cubic-bezier(.5,0,.2,1) infinite}
-.gu{transform-box:view-box;transform-origin:74px 34px;animation:guia 2.6s cubic-bezier(.5,0,.2,1) infinite}
-.tr{transform-box:view-box;transform-origin:110px 156px;animation:tronco 2.6s cubic-bezier(.5,0,.2,1) infinite}
-.cb{transform-origin:50% 92%;animation:cabeza 2.6s cubic-bezier(.5,0,.2,1) infinite}
-.ll{animation:llega 2.6s cubic-bezier(.3,.2,.6,1) infinite}.an{animation:antes 2.6s linear infinite}.sa{transform-box:fill-box;transform-origin:center;animation:sale 2.6s cubic-bezier(.2,.7,.4,1) infinite}
+@keyframes p0{0%,40.5%{opacity:1}42%,98.5%{opacity:0}100%{opacity:1}}
+.p0{animation:p0 2.4s linear infinite}
+@keyframes p1{0%,40.5%{opacity:0}42%,52.5%{opacity:1}54%,100%{opacity:0}}
+.p1{animation:p1 2.4s linear infinite}
+@keyframes p2{0%,52.5%{opacity:0}54%,98.5%{opacity:1}100%{opacity:0}}
+.p2{animation:p2 2.4s linear infinite}
+@keyframes resp{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}.rs{animation:resp 1.6s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(120% 70% at 50% 35%, #1D3F72 0%, #112A50 60%, #0B1D3A 100%); font-family: Inter, system-ui, sans-serif; color: #FFFFFF">
-<svg width="220" height="270" viewBox="0 0 220 270" style="position: absolute; left: 85px; top: 392px; overflow: visible" aria-hidden="true">
-<ellipse cx="110" cy="254" rx="110" ry="9" fill="rgba(100,150,220,0.25)"/>
-<path d="M88 150 L76 238 L97 240 L108 170 L112 170 L123 240 L144 238 L132 150 Z" fill="#56677F"/><path d="M108 170 L112 170 L111 200 L109 200 Z" fill="#4A5A70"/><path d="M84 196 L86 200 M136 196 L134 200" stroke="#4A5A70" stroke-width="2"/><path d="M70 236 Q66 249 82 250 L101 250 Q104 244 99 236 Z" fill="#5E4434"/><path d="M66 247 L102 247 L102 252 L66 252 Z" fill="#F4F1EA"/><path d="M121 236 Q116 244 119 250 L138 250 Q154 249 150 236 Z" fill="#5E4434"/><path d="M118 247 L154 247 L154 252 L118 252 Z" fill="#F4F1EA"/><path d="M78 240 L92 240 M125 240 L139 240" stroke="#E9DCCB" stroke-width="1.5"/>
-<g class="tr"><path d="M70 40 Q72 18 96 12 L124 12 Q148 18 150 40 L140 154 L80 154 Z" fill="#F7F9FC"/><path d="M80 150 L140 150 L140 158 L80 158 Z" fill="#3D4B5E"/><path d="M96 12 L110 26 L104 34 Z M124 12 L110 26 L116 34 Z" fill="#E4EAF2" stroke="#C9D3E0" stroke-width="1"/><path d="M110 26 L110 150" stroke="#D5DDE8" stroke-width="2"/><circle cx="110" cy="44" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="66" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="88" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="110" r="1.6" fill="#B8C2CF"/><circle cx="110" cy="132" r="1.6" fill="#B8C2CF"/><path d="M122 52 l3 -2 l3 2 l-3 3 z" fill="#1F4E8C"/><path d="M84 100 Q96 108 100 140 M136 100 Q124 108 120 140" stroke="#E6ECF4" stroke-width="2" fill="none"/></g>
-<g class="gu"><path d="M76 34 Q52 60 44 92" stroke="#C9D3E0" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M76 34 Q52 60 44 92" stroke="#F7F9FC" stroke-width="12" stroke-linecap="round" fill="none"/><circle cx="42" cy="98" r="7" fill="#F1C9A5"/></g>
-<g class="rq"><path d="M146 34 L190 34" stroke="#C9D3E0" stroke-width="15" stroke-linecap="round" fill="none"/><path d="M146 34 L190 34" stroke="#F7F9FC" stroke-width="12" stroke-linecap="round" fill="none"/><circle cx="196" cy="34" r="7.5" fill="#F1C9A5"/><g transform="translate(146,34) rotate(90) translate(0,-50)">
-<path d="M-5 -2 L5 -2 L5 -40 L-5 -40 Z" fill="#1C1F24"/>
-<path d="M-5 -6 L5 -10 M-5 -14 L5 -18 M-5 -22 L5 -26 M-5 -30 L5 -34" stroke="#3A4250" stroke-width="1.5"/>
-<path d="M-6 -40 L6 -40 L10 -58 L-10 -58 Z" fill="#1F4E8C"/>
-<path d="M0 -60 C-30 -60 -34 -80 -34 -94 C-34 -116 -18 -128 0 -128 C18 -128 34 -116 34 -94 C34 -80 30 -60 0 -60 Z" fill="#E9EEF5" stroke="#1F4E8C" stroke-width="5"/>
-<path d="M0 -64 C-24 -64 -28 -80 -28 -94 C-28 -112 -15 -122 0 -122 C15 -122 28 -112 28 -94 C28 -80 24 -64 0 -64 Z" fill="none" stroke="#8FB8EC" stroke-width="2"/>
-<path d="M-14 -66 L0 -58 L14 -66" fill="none" stroke="#1F4E8C" stroke-width="3"/>
-<circle cx="-9" cy="-118" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-118" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-118" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-18" cy="-109" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-9" cy="-109" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-109" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-109" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="18" cy="-109" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-18" cy="-100" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-9" cy="-100" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-100" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-100" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="18" cy="-100" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-18" cy="-91" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-9" cy="-91" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-91" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-91" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="18" cy="-91" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-18" cy="-82" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-9" cy="-82" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-82" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-82" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="18" cy="-82" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="-9" cy="-73" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="0" cy="-73" r="1.9" fill="rgba(10,25,50,0.55)"/><circle cx="9" cy="-73" r="1.9" fill="rgba(10,25,50,0.55)"/>
-<path d="M-3 2 Q-14 14 -4 18 Q6 20 3 2" fill="none" stroke="#3A4250" stroke-width="1.6"/>
-</g></g>
-<g class="an"><g class="ll"><g transform="translate(228,-84)"><circle r="9" fill="#D8E64C" stroke="#B5C23A"/><path d="M-5 -6 Q1 0 -5 6 M5 -6 Q-1 0 5 6" stroke="#FFFFFF" stroke-width="1.4" fill="none"/></g></g></g>
-<g transform="translate(228,-84)"><g class="sa"><circle r="9" fill="#D8E64C" stroke="#B5C23A"/><path d="M-5 -6 Q1 0 -5 6 M5 -6 Q-1 0 5 6" stroke="#FFFFFF" stroke-width="1.4" fill="none"/></g></g>
-</svg><img class="cb" src="/_blob/383e08e104c3929db5bb1de7d116756a" alt="" style="position: absolute; left: 122px; top: 190px; width: 146px; height: auto">
+<div role="img" aria-label="Alfredo haciendo una víbora en pádel" class="rs" style="position: absolute; left: 0; top: 176px; width: 390px; height: 480px"><img class="p0" src="/_blob/274909875356438ead606bd2ead37a57" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"><img class="p1" src="/_blob/b8652a9fe42a78bcbc6f02b57f2c93de" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"><img class="p2" src="/_blob/191cb3e7d70acd6199049789b2359984" alt="" style="position: absolute; left: 0; top: 0; width: 390px; height: 480px"></div><div style="position: absolute; left: 95px; right: 95px; top: 648px; height: 10px; border-radius: 50%; background: rgba(0,0,0,0.22)"></div>
 <div class="mk" style="position: absolute; left: 0; right: 0; bottom: 96px; display: flex; flex-direction: column; align-items: center; gap: 10px">
 <span style="font-size: 40px; font-weight: 800; letter-spacing: -1px">Alfred<span style="color: #8FB8EC">IA</span></span>
 <span style="font-size: 14px; color: #9FB3D1; letter-spacing: 0.2px">De: Pau y Diego</span></div>
