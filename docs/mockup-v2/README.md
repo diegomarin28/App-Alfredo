@@ -52,3 +52,13 @@ Cada uno es una animación corta, en los colores de la app, en SVG/CSS (sin imá
 - TrucoFlor (truco): cuando tilda el TERCER pendiente del mismo día, tres cartas de oro (7, 12 y 3) se abren en abanico y aparece "¡Flor! Tres resueltos en el día." Siempre igual, sin muestra. Cartas dibujadas simples en SVG como en el archivo. Una vez por día como máximo (~1,6 s). Si ese tercero es también el último pendiente, primero la Flor y después el golf.
 - DetalleDados: "Otra versión" en Mensajes tira dos dados (como en el backgammon) mientras genera la nueva respuesta.
 Ninguna animación bloquea: se puede seguir tocando mientras corre.
+
+## Ronda 4b: nombre, ícono, pantalla de carga y repetición en Calendario
+- Nombre: AlfredIA en manifest (name y short_name), <title>, Entrar y Bienvenida ("Esta app es tu regalo" sigue igual). Íconos de docs/brand/ (copiar a public/ y referenciar en manifest + apple-touch-icon). theme_color y background_color del manifest: #112A50.
+- Pantalla de carga: apple-touch-startup-image estática (fondo #112A50, la cabeza centrada y "AlfredIA" abajo) para iPhone 14 a 17 Pro Max. Al abrir la app, intro animada de ~1,2 s con el "cabezón" (CargaGolf / CargaPadel / CargaWhisky .dc.html): cabeza de docs/brand/head-cut.png que se bambolea sobre cuerpo SVG; se elige una de las 3 al azar cada vez. Se saltea tocando, no se muestra si la app ya estaba abierta (solo arranque en frío) y con reduce-motion se ve quieta medio segundo.
+- Calendario, tipos y repetición:
+  - Tipo: solo "Cumpleaños" u "Otra" (sacar "Aniversario"; los aniversarios existentes pasan a "Otra" con repetición anual, conservando el nombre).
+  - Cumpleaños: se repite todos los años, fijo (mostrar "Se repite todos los años" como texto, sin selector). Año de nacimiento opcional como hoy.
+  - Otra: campo "Se repite" con controles segmentados o lista: No se repite · Todos los días · Todas las semanas · Todos los meses · Todos los años. Fecha completa (día, mes, año) cuando no se repite o para saber desde cuándo; semanal toma el día de la semana de esa fecha; mensual el día del mes (si el mes no tiene ese día, el último día). Hora opcional.
+  - En la lista del calendario mostrar la próxima ocurrencia y un rótulo chico ("cada semana", "cada mes"…). Los avisos del día (push de las 11) incluyen las fechas "Otra" que caen ese día.
+  - Migración en supabase/migrations/ SIN aplicar: fechas.repeticion text check in ('nunca','diaria','semanal','mensual','anual') default 'anual', fechas.anio_evento int null, fechas.hora time null; update tipo 'aniversario' → 'otra'. La función proximaOcurrencia se extiende con tests para cada repetición (incluido 31 en meses cortos y 29/2).
