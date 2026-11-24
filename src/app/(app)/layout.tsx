@@ -6,6 +6,9 @@ import BottomNav from '@/components/BottomNav'
 import { ProveedorDeshacer } from '@/components/Borrar'
 import { Icono } from '@/components/iconos'
 import TransicionesPantalla from '@/components/TransicionesPantalla'
+import Brindis from '@/components/Brindis'
+import { esCumpleDeAlfredo } from '@/domain/detalles'
+import { hoy } from '@/domain/fechas'
 
 /** "miércoles 25" en hora de Montevideo. */
 function diaDeVencimiento(iso: string | undefined): string {
@@ -18,8 +21,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const sesion = await getSesion()
   if (!sesion) redirect('/entrar')
   const familia = sesion.rol === 'familia'
+  const config = familia ? null : await getRepo().getConfig()
   // La primera vez que entra Alfredo: Bienvenida y Guía (una sola vez).
-  if (!familia && !(await getRepo().getConfig()).bienvenidaVista) redirect('/bienvenida')
+  if (config && !config.bienvenidaVista) redirect('/bienvenida')
+  const hoyStr = hoy()
   return (
     <ProveedorDeshacer>
       {familia && (
@@ -34,6 +39,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           {children}
         </div>
       </div>
+      {/* whisky (mockup v2): el día de su cumpleaños, un brindis */}
+      {config && esCumpleDeAlfredo(hoyStr) && <Brindis hoy={hoyStr} nombre={config.nombre || 'Alfredo'} />}
       <BottomNav rol={sesion.rol} />
       <TransicionesPantalla />
     </ProveedorDeshacer>

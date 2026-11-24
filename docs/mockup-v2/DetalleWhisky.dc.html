@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Whisky · brindis de cumple</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#1F4E8C;text-decoration:none}a:hover{color:#183E70}
+@keyframes izq{0%,20%{transform:rotate(0) translateX(0)}45%{transform:rotate(14deg) translateX(30px)}52%{transform:rotate(10deg) translateX(26px)}75%,100%{transform:rotate(0) translateX(0)}}
+@keyframes der{0%,20%{transform:rotate(0) translateX(0)}45%{transform:rotate(-14deg) translateX(-30px)}52%{transform:rotate(-10deg) translateX(-26px)}75%,100%{transform:rotate(0) translateX(0)}}
+@keyframes chis{0%,42%{opacity:0;transform:scale(.6)}50%{opacity:1;transform:scale(1)}66%,100%{opacity:0;transform:scale(1.2)}}
+@keyframes txt{0%,45%{opacity:0;transform:translateY(10px)}60%,100%{opacity:1;transform:translateY(0)}}
+.gi{transform-origin:50% 100%;animation:izq 3.4s ease-in-out infinite}.gd{transform-origin:50% 100%;animation:der 3.4s ease-in-out infinite}.ch{transform-origin:center;animation:chis 3.4s ease-out infinite}.tx{animation:txt 3.4s ease-out infinite}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #1F4E8C; font-family: Inter, system-ui, sans-serif; color: #1C1F24; box-sizing: border-box">
+<div style="position: absolute; inset: 0; background: linear-gradient(170deg, #2A5FA3 0%, #1F4E8C 45%, #163A69 100%)"></div>
+<div style="position: absolute; left: 0; right: 0; top: 170px; display: flex; flex-direction: column; align-items: center; gap: 26px; color: #FFFFFF">
+<svg width="300" height="170" viewBox="0 0 300 170" role="img" aria-label="Dos vasos de whisky brindan">
+<g class="gi" style="transform-box: fill-box"><g transform="translate(50,0)"><path d="M0 40 L6 118 Q7 126 15 126 L61 126 Q69 126 70 118 L76 40 Z" fill="rgba(255,255,255,0.14)" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 78 L72 78 L70 117 Q69 122 62 122 L14 122 Q7 122 6 117 Z" fill="#D9932E"/><path d="M4 78 L72 78 L71.6 84 L4.4 84 Z" fill="#F0B35A"/><rect x="16" y="66" width="20" height="20" rx="4" fill="rgba(255,255,255,0.75)" transform="rotate(-12 26 76)"/><rect x="38" y="70" width="18" height="18" rx="4" fill="rgba(255,255,255,0.6)" transform="rotate(10 47 79)"/><path d="M10 48 L14 112" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/></g></g><g class="gd" style="transform-box: fill-box"><g transform="translate(174,0)"><path d="M0 40 L6 118 Q7 126 15 126 L61 126 Q69 126 70 118 L76 40 Z" fill="rgba(255,255,255,0.14)" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 78 L72 78 L70 117 Q69 122 62 122 L14 122 Q7 122 6 117 Z" fill="#D9932E"/><path d="M4 78 L72 78 L71.6 84 L4.4 84 Z" fill="#F0B35A"/><rect x="16" y="66" width="20" height="20" rx="4" fill="rgba(255,255,255,0.75)" transform="rotate(-12 26 76)"/><rect x="38" y="70" width="18" height="18" rx="4" fill="rgba(255,255,255,0.6)" transform="rotate(10 47 79)"/><path d="M10 48 L14 112" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round"/></g></g>
+<g class="ch"><path d="M150 18 L150 0 M136 24 L126 10 M164 24 L174 10" stroke="#F2C14E" stroke-width="3" stroke-linecap="round"/></g>
+</svg>
+<div class="tx" style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 0 28px">
+<span style="font-size: 38px; font-weight: 700; letter-spacing: -1px">¡Salud, Alfredo!</span>
+<span style="font-size: 18px; color: #DCE6F3; line-height: 1.5">Feliz cumpleaños. Que sea un gran año.</span></div>
+</div>
+<div style="position: absolute; left: 24px; right: 24px; bottom: 44px"><a href="#" style="display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 14px; background: #FFFFFF; color: #1F4E8C; font-size: 18px; font-weight: 700">Gracias</a></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

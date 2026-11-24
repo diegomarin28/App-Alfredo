@@ -7,7 +7,7 @@ test('agregar con el +: en la hoja, con Enter y con Guardar', async ({ page }) =
   await resetear(page, { hoy: HOY })
   await entrarComo(page, 'owner')
   await page.goto('/pendientes')
-  await expect(page.getByText('No hay pendientes')).toBeVisible()
+  await expect(page.getByText('Todo al día')).toBeVisible()
   const mas = page.getByRole('button', { name: 'Agregar pendiente' })
   await hidratado(mas)
   await mas.click()

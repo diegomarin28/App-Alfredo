@@ -141,7 +141,7 @@ export default function BotonBorrar({ nombre, accion }: { nombre: string; accion
       onClick={() => borrar({ nombre, accion, fila: boton.current?.closest<HTMLElement>('[data-fila]') ?? null })}
       className="flex size-11 shrink-0 items-center justify-center rounded-full text-rojo"
     >
-      <Icono nombre="basura" tamano={21} />
+      <Icono nombre="basura" tamano={20} />
     </button>
   )
 }

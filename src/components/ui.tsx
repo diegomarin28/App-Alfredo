@@ -110,12 +110,14 @@ export function Titulo({ children, accion, className = '' }: { children: ReactNo
 }
 
 /** Encabezado de sección (17 px) con acción opcional ("+ Agregar"). */
-export function Seccion({ titulo, id, accion, children, className = '' }: {
+export function Seccion({ titulo, id, accion, children, className = '', sinTitulo = false }: {
   titulo: string; id: string; accion?: ReactNode; children: ReactNode; className?: string
+  /** oculta el encabezado (sigue nombrando la sección para lectores de pantalla) */
+  sinTitulo?: boolean
 }) {
   return (
     <section aria-labelledby={id} className={`space-y-2.5 ${className}`}>
-      <div className="flex min-h-11 items-center justify-between gap-3">
+      <div className={`flex min-h-11 items-center justify-between gap-3 ${sinTitulo ? 'sr-only' : ''}`}>
         <h2 id={id} className="text-[17px] font-bold text-texto">{titulo}</h2>
         {accion}
       </div>
@@ -167,11 +169,11 @@ export function Pill({ children, tono = 'gris' }: { children: ReactNode; tono?: 
   return <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-base font-semibold ${color}`}>{children}</span>
 }
 
-/** Miga de pan arriba del título: "› Documentos". */
+/** Volver, arriba del título: "‹ Documentos" (la flecha apunta a la izquierda). */
 export function Volver({ href, children }: { href: string; children: ReactNode }) {
   return (
     <Link href={href} className="-ml-1 inline-flex min-h-11 items-center gap-1 rounded-xl px-1 text-base font-semibold text-azul">
-      <Icono nombre="flecha" tamano={16} trazo={2} />{children}
+      <Icono nombre="atras" tamano={16} trazo={2} />{children}
     </Link>
   )
 }

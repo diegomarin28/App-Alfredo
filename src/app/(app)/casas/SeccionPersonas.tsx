@@ -27,11 +27,14 @@ export default function SeccionPersonas({ casa, personas }: { casa: Casa; person
             <li key={p.id} data-fila className={clasesFila}>
               <Avatar nombre={p.nombre} tono="verde" />
               <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-texto">{p.nombre}</p>
-                <p className="text-base text-texto-2">{[p.rol, p.detalle].filter(Boolean).join(' · ')}</p>
+                <p className="truncate text-base font-semibold text-texto">{p.nombre}</p>
+                {/* en una sola línea: lo que no entra se corta con "…" */}
+                <p className="truncate text-base text-texto-2">{[p.rol, p.detalle].filter(Boolean).join(' · ')}</p>
               </div>
-              {p.telefono && <BotonIcono nombre="Llamar" icono="telefono" href={telLink(p.telefono)} />}
-              <BotonBorrar nombre={p.nombre} accion={borrarPersona.bind(null, p.id)} />
+              <div className="-mr-2 flex shrink-0 items-center">
+                {p.telefono && <BotonIcono nombre="Llamar" icono="telefono" tono="nada" href={telLink(p.telefono)} />}
+                <BotonBorrar nombre={p.nombre} accion={borrarPersona.bind(null, p.id)} />
+              </div>
             </li>
           ))}
         </Lista>

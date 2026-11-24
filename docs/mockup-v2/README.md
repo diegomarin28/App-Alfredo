@@ -33,3 +33,22 @@ Reglas que salen de este mockup:
 - Nombre, logo, ícono de la app y pantalla de carga.
 - Avisos por WhatsApp (además de las notificaciones push).
 - Video tutorial.
+
+## Ronda 3: arreglos de la revisión de capturas
+- Volver: la flecha de "‹ Inicio" / "‹ Documentos" apunta a la IZQUIERDA (hoy sale "›").
+- Cuadros de texto: sin la esquina para estirar (resize: none); que crezcan solos con el contenido.
+- Casas, personas: el subtítulo en una sola línea (ellipsis) y botones de teléfono/basurita más compactos (44 px de toque, ícono 20, sin fondo en la basurita).
+- Contraseñas bloqueada: candado grande arriba (círculo 96 px #E3EBF6 con candado azul) y texto corto: "Solo se abren con tu Face ID. Se cierran solas a los 2 minutos."
+- Contactos: que "+ Grupo" se vea entero (la fila de grupos se desliza; dejá 20 px de margen al final).
+
+## Detalles personales (Detalle*.dc.html): le gustan el whisky, el golf, el pádel, el truco y el backgammon
+Cada uno es una animación corta, en los colores de la app, en SVG/CSS (sin imágenes ni librerías), y con prefers-reduced-motion se muestra el estado final sin moverse.
+- DetalleGolf: al tildar el ÚLTIMO pendiente, la pelota rueda y entra al hoyo, la bandera flamea y aparece "Todo al día · Hoyo en uno, Alfredo." (una vez, ~2 s; después queda el estado vacío con el hoyo quieto).
+- DetalleSwing: Vencimientos sin nada pendiente: un palo golpea la pelota (una vez al entrar) y "Nada por vencer · Todo en regla. Vas bajo par."
+- DetallePadel: mientras Contame guarda, la pelota de pádel rebota contra la pared + "Guardando…" (en loop mientras espera; reemplaza al spinner). Usarlo también en "Sugerir respuesta" de Mensajes mientras espera.
+- DetalleWhisky: el 25 de noviembre (su cumple), al abrir la app por primera vez ese día: dos vasos con hielo brindan y "¡Salud, Alfredo! Feliz cumpleaños." con botón "Gracias". También va arriba de la Bienvenida de la primera vez.
+- DetalleHielo: el gesto de deslizar hacia abajo para actualizar en Inicio muestra un hielo que cae en el vaso (reemplaza al indicador de carga).
+- Viernes después de las 18 h, el saludo de Inicio dice "Buen viernes, Alfredo".
+- TrucoFlor (truco): cuando tilda el TERCER pendiente del mismo día, tres cartas de oro (7, 12 y 3) se abren en abanico y aparece "¡Flor! Tres resueltos en el día." Siempre igual, sin muestra. Cartas dibujadas simples en SVG como en el archivo. Una vez por día como máximo (~1,6 s). Si ese tercero es también el último pendiente, primero la Flor y después el golf.
+- DetalleDados: "Otra versión" en Mensajes tira dos dados (como en el backgammon) mientras genera la nueva respuesta.
+Ninguna animación bloquea: se puede seguir tocando mientras corre.

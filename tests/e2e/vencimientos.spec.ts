@@ -51,7 +51,7 @@ test('agregar vencimiento con aviso de 1 semana', async ({ page }) => {
   await resetear(page, { hoy: HOY })
   await entrarComo(page, 'owner')
   await page.goto('/vencimientos')
-  await expect(page.getByText('No hay vencimientos')).toBeVisible()
+  await expect(page.getByText('Nada por vencer')).toBeVisible()
   await page.getByRole('button', { name: 'Agregar vencimiento' }).click()
   const hoja = page.getByRole('dialog')
   await hoja.getByLabel('Título').fill('Renovar libreta')
