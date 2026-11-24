@@ -150,7 +150,7 @@ export default async function Inicio() {
             key={href} href={href}
             className={`flex min-h-[52px] items-center gap-2.5 rounded-2xl border border-borde bg-white px-3 py-2 text-base leading-tight font-semibold text-texto hover:bg-tinte-claro ${ACCESOS.length % 2 === 1 && i === ACCESOS.length - 1 ? 'col-span-2' : ''}`}
           >
-            <IconoTile nombre={icono} tamano={32} /><span className="min-w-0 [overflow-wrap:anywhere]">{nombre}</span>
+            <IconoTile nombre={icono} tamano={32} /><span>{nombre}</span>
           </Link>
         ))}
       </nav>

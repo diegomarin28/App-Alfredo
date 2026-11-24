@@ -105,6 +105,22 @@ test('accesos: 7 con Fotos al final a todo el ancho; "Tareas pendientes" entra e
   await expect(accesos).toHaveText(['Vencimientos', 'Tareas pendientes', 'Recordatorios', 'Contactos', 'Documentos', 'Contraseñas', 'Fotos'])
   const fotos = (await accesos.last().boundingBox())!, primero = (await accesos.first().boundingBox())!, segundo = (await accesos.nth(1).boundingBox())!
   expect(fotos.width).toBeGreaterThan(segundo.x + segundo.width - primero.x - 2)
-  const tareas = accesos.nth(1).locator('span').last()
-  expect(await tareas.evaluate((el) => el.scrollWidth <= el.clientWidth + 1 && getComputedStyle(el).textOverflow !== 'ellipsis')).toBe(true)
+  // ninguna palabra se corta a la mitad ni queda con "…": cada palabra entera en un renglón, dentro del botón
+  for (const a of await accesos.all()) {
+    const nombre = (await a.textContent())!
+    const ok = await a.locator('span').last().evaluate((el) => {
+      const r = document.createRange()
+      const palabras: { texto: string; renglones: number }[] = []
+      const nodo = el.firstChild as Text
+      let i = 0
+      for (const p of nodo.data.split(' ')) {
+        r.setStart(nodo, i); r.setEnd(nodo, i + p.length); i += p.length + 1
+        const tops = new Set([...r.getClientRects()].map((x) => Math.round(x.top)))
+        palabras.push({ texto: p, renglones: tops.size })
+      }
+      const caja = el.parentElement!.getBoundingClientRect(), texto = el.getBoundingClientRect()
+      return palabras.every((p) => p.renglones === 1) && texto.right <= caja.right + 1 && getComputedStyle(el).textOverflow !== 'ellipsis'
+    })
+    expect(ok, nombre).toBe(true)
+  }
 })

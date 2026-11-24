@@ -1,7 +1,14 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { entrarComo, resetear } from './helpers'
 
 // Ronda 4b: nombre AlfredIA, íconos, pantallas de carga de iOS e intro del cabezón.
+
+/** Sin sesión (se ven antes de entrar), es una imagen de verdad: no una redirección a /entrar. */
+async function esImagen(page: Page, ruta: string) {
+  const res = await page.context().request.get(ruta, { maxRedirects: 0, headers: { cookie: '' } })
+  expect(res.status(), ruta).toBe(200)
+  expect(res.headers()['content-type'], ruta).toMatch(/^image\//)
+}
 
 test('nombre AlfredIA: título, manifest (#112A50) e íconos', async ({ page }) => {
   await page.goto('/entrar')
@@ -9,12 +16,12 @@ test('nombre AlfredIA: título, manifest (#112A50) e íconos', async ({ page }) 
   await expect(page.getByRole('main').getByText('AlfredIA', { exact: true })).toBeVisible()
   const manifest = await (await page.request.get('/manifest.webmanifest')).json()
   expect(manifest).toMatchObject({ name: 'AlfredIA', short_name: 'AlfredIA', theme_color: '#112A50', background_color: '#112A50' })
-  for (const i of manifest.icons as { src: string }[]) expect((await page.request.get(i.src)).status(), i.src).toBe(200)
+  for (const i of manifest.icons as { src: string }[]) await esImagen(page, i.src)
   expect((manifest.icons as { purpose?: string }[]).some((i) => i.purpose === 'maskable')).toBe(true)
   const apple = page.locator('link[rel="apple-touch-icon"]')
   await expect(apple).toHaveAttribute('href', /apple-touch-icon\.png/)
-  expect((await page.request.get('/apple-touch-icon.png')).status()).toBe(200)
-  expect((await page.request.get('/favicon-32.png')).status()).toBe(200)
+  await esImagen(page, '/apple-touch-icon.png')
+  await esImagen(page, '/favicon-32.png')
 })
 
 test('pantallas de carga de iOS: una por iPhone (14 a 17 Pro Max) y todas existen', async ({ page }) => {
@@ -24,7 +31,7 @@ test('pantallas de carga de iOS: una por iPhone (14 a 17 Pro Max) y todas existe
   const medias = await links.evaluateAll((ls) => ls.map((l) => [l.getAttribute('href'), l.getAttribute('media')]))
   expect(medias).toContainEqual(['/carga/1179x2556.jpg', '(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)'])
   expect(medias).toContainEqual(['/carga/1320x2868.jpg', '(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)'])
-  for (const [href] of medias) expect((await page.request.get(href!)).status(), href!).toBe(200)
+  for (const [href] of medias) await esImagen(page, href!)
 })
 
 test('Bienvenida dice AlfredIA y sigue "Esta app es tu regalo"', async ({ page }) => {
@@ -55,6 +62,10 @@ test.describe('intro del cabezón', () => {
       await expect(capa.locator('.in-escena:visible')).toHaveCount(1)
       await expect(esc.locator('[data-cuadro]')).toHaveCount(cuadros)
       await expect(esc.locator('img.in-cabeza')).toHaveCount(cuadros)
+      // las imágenes cargan (sin sesión)
+      for (const img of await esc.locator('img').all()) {
+        await expect.poll(() => img.evaluate((el) => (el as HTMLImageElement).complete && (el as HTMLImageElement).naturalWidth > 0)).toBe(true)
+      }
       expect(await esc.locator('img.in-cabeza').first().evaluate((el) => getComputedStyle(el).animationName)).toBe('in-bambolea')
       await expect(capa).toContainText('AlfredIA')
       await expect(capa).toContainText('De: Pau y Diego')
