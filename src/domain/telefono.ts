@@ -20,3 +20,12 @@ export function telLink(telefono: string): string {
   const n = normalizarTelUY(telefono)
   return `tel:+${n ?? telefono.replace(/\D/g, '')}`
 }
+
+/** Para la hoja de edición: "59899123456" → "099 123 456", "59829001234" → "2900 1234". */
+export function telParaEditar(telefono: string | null | undefined): string {
+  if (!telefono) return ''
+  const m = /^598(\d{8})$/.exec(telefono)
+  if (!m) return telefono
+  const l = m[1]
+  return l.startsWith('9') ? `0${l.slice(0, 2)} ${l.slice(2, 5)} ${l.slice(5)}` : `${l.slice(0, 4)} ${l.slice(4)}`
+}

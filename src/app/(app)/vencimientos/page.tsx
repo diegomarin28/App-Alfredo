@@ -21,6 +21,7 @@ export default async function Vencimientos() {
     const items = todos.filter((v) => v.ambito === ambito).map((v) => ({
       id: v.id, titulo: v.titulo, fecha: fechaCorta(v.fecha), chip: chipVencimiento(v.dias),
       tono: v.dias < 0 ? 'rojo' as const : v.urgente ? 'naranja' as const : 'gris' as const,
+      editar: { id: v.id, titulo: v.titulo, ambito: v.ambito, fecha: v.fecha, avisarDiasAntes: v.avisarDiasAntes },
     }))
     // Siempre montada (el mismo árbol): así el "Deshacer" sobrevive aunque la sección quede vacía; vacía, sin título.
     return (

@@ -6,7 +6,8 @@ import { Flor, Flotante, Golf } from '@/components/detalles'
 import { contarTildado, tocaFlor, type CuentaDelDia } from '@/domain/detalles'
 import { Circulo } from '@/components/controles'
 import { Icono } from '@/components/iconos'
-import { agregarPendiente, tildarPendiente } from './actions'
+import { TocarParaEditar } from '@/components/Editar'
+import { agregarPendiente, editarPendiente, tildarPendiente } from './actions'
 
 export interface ItemPendiente { id: string; texto: string; hecho: boolean; deVoz: boolean }
 
@@ -119,8 +120,14 @@ export default function Pendientes({ items, nombre, hoy }: { items: ItemPendient
   const fila = (i: ItemPendiente) => (
     <li key={i.id} data-fila className={`flex min-h-14 items-center gap-1.5 py-1 pr-4 pl-2 ${clasesSeparador}`}>
       <Circulo marcado={tocados[i.id] ?? i.hecho} nombre={i.texto} onCambio={(v) => tildar(i.id, v)} />
-      <span className={`flex-1 text-base ${i.hecho ? 'text-texto-2 line-through' : 'text-texto'}`}>{i.texto}</span>
-      {i.deVoz && <span title="Lo dictaste en Contame" className="text-texto-2"><Icono nombre="microfono" tamano={18} /></span>}
+      {/* ronda 6: tocar el texto abre la edición */}
+      <TocarParaEditar
+        etiqueta={`Editar ${i.texto}`} titulo="Editar tarea" guardar={(f) => editarPendiente(i.id, f)} className="flex min-h-12 items-center gap-1.5"
+        campos={<input name="texto" defaultValue={i.texto} aria-label="Qué hay que hacer" maxLength={200} autoComplete="off" enterKeyHint="done" autoFocus className={clasesInput} />}
+      >
+        <span className={`flex-1 text-base ${i.hecho ? 'text-texto-2 line-through' : 'text-texto'}`}>{i.texto}</span>
+        {i.deVoz && <span title="Lo dictaste en Contame" className="text-texto-2"><Icono nombre="microfono" tamano={18} /></span>}
+      </TocarParaEditar>
     </li>
   )
 

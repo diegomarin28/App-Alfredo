@@ -4,8 +4,13 @@ import { useRouter } from 'next/navigation'
 import { Boton, Pill } from '@/components/ui'
 import { Circulo } from '@/components/controles'
 import { deshacerHecho, marcarHecho } from './actions'
+import FormVencimiento, { type InicialVencimiento } from './FormVencimiento'
 
-export interface Item { id: string; titulo: string; fecha: string; chip: string; tono: 'rojo' | 'naranja' | 'gris' }
+export interface Item {
+  id: string; titulo: string; fecha: string; chip: string; tono: 'rojo' | 'naranja' | 'gris'
+  /** para la hoja de editar (ronda 6) */
+  editar: InicialVencimiento
+}
 
 /** Cuánto queda a la vista el "Deshacer" después de tocar Hecho. */
 export const DESHACER_MS = 10_000
@@ -81,11 +86,12 @@ export default function Lista({ items }: { items: Item[] }) {
         {items.filter((i) => !marcados.has(i.id)).map((i) => (
           <li key={i.id} data-fila className="flex items-center gap-2 rounded-2xl border border-borde bg-white py-3 pr-4 pl-2">
             <Circulo marcado={marcando === i.id} nombre={`Marcar ${i.titulo} como hecho`} disabled={enviando} onCambio={() => hecho(i)} />
-            <div className="min-w-0 flex-1 space-y-1">
-              <p className="text-base font-semibold text-texto">{i.titulo}</p>
-              <p className="text-base text-texto-2">{i.fecha}</p>
+            {/* ronda 6: tocar la fila abre la edición */}
+            <FormVencimiento inicial={i.editar} className="space-y-1">
+              <span className="block text-base font-semibold text-texto">{i.titulo}</span>
+              <span className="block text-base text-texto-2">{i.fecha}</span>
               <Pill tono={i.tono}>{i.chip}</Pill>
-            </div>
+            </FormVencimiento>
           </li>
         ))}
       </ul>

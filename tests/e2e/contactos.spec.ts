@@ -12,7 +12,7 @@ const datos = {
 }
 
 test.beforeEach(async ({ page }) => {
-  await resetear(page, { datos })
+  await resetear(page, { datos, hoy: '2026-11-22' }) // fijo: el 25/11 sale el brindis de cumpleaños y tapa los filtros
   await entrarComo(page, 'owner')
   await page.goto('/contactos')
 })

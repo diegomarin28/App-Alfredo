@@ -40,3 +40,32 @@ export async function borrarFecha(id: string): Promise<Res> {
   revalidatePath('/')
   return { ok: true }
 }
+
+/** Ronda 6: editar una fecha (tocando la fila del Calendario). */
+export async function editarFecha(id: string, entrada: EntradaFecha): Promise<Res> {
+  const p = await permitido()
+  if (!p.ok) return p
+  const repo = getRepo()
+  const actual = validarId(id) ? await repo.fechas.get(id) : null
+  if (!actual) return { ok: false, error: 'Esa fecha ya no está.' }
+  const hoyStr = hoy()
+  const r = validarFecha(entrada, Number(hoyStr.slice(0, 4)), hoyStr)
+  if (!r.ok) return r
+  const v = r.valor
+  // semanal con días que ya lo era: conserva desde cuándo
+  const inicio = v.diasSemana && actual.diasSemana?.length && actual.dia ? { dia: actual.dia, anioEvento: actual.anioEvento ?? null } : null
+  await repo.fechas.update(id, {
+    nombre: v.nombre,
+    tipo: v.tipo,
+    dia: inicio?.dia ?? v.dia,
+    anioNacimiento: v.anioNacimiento ?? null,
+    // la columna no acepta null: el cumpleaños es siempre todos los años
+    repeticion: v.repeticion ?? 'anual',
+    anioEvento: inicio ? inicio.anioEvento : v.anioEvento ?? null,
+    hora: v.hora ?? null,
+    diasSemana: v.diasSemana ?? null,
+  })
+  revalidatePath('/calendario')
+  revalidatePath('/')
+  return { ok: true }
+}

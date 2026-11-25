@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
+import { validarId } from '@/domain/ids'
 import { validarNota, validarPendiente } from '@/domain/vencimientos'
 
 type Res = { ok: true } | { ok: false; error: string }
@@ -48,6 +49,32 @@ export async function guardarNota(texto: string): Promise<Res> {
   const v = validarNota(texto)
   if (!v.ok) return v
   await (await getRepo()).notas.create({ texto: v.valor, origen: 'escrita' })
+  refrescar()
+  return { ok: true }
+}
+
+// ---------- editar (ronda 6: tocar la fila abre la hoja con el texto cargado) ----------
+
+export async function editarPendiente(id: string, f: FormData): Promise<Res> {
+  const p = await permitido()
+  if (!p.ok) return p
+  const repo = getRepo()
+  if (!validarId(id) || !(await repo.pendientes.get(id))) return { ok: false, error: 'No existe esa tarea.' }
+  const v = validarPendiente(String(f.get('texto') ?? ''))
+  if (!v.ok) return v
+  await repo.pendientes.update(id, { texto: v.valor })
+  refrescar()
+  return { ok: true }
+}
+
+export async function editarNota(id: string, f: FormData): Promise<Res> {
+  const p = await permitido()
+  if (!p.ok) return p
+  const repo = getRepo()
+  if (!validarId(id) || !(await repo.notas.get(id))) return { ok: false, error: 'Esa nota ya no está.' }
+  const v = validarNota(String(f.get('texto') ?? ''))
+  if (!v.ok) return v
+  await repo.notas.update(id, { texto: v.valor })
   refrescar()
   return { ok: true }
 }

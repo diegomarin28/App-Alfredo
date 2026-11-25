@@ -5,10 +5,11 @@ import { Boton, Card, IconoTile, Lista, Seccion, clasesFila, clasesInput } from 
 import { Icono, type NombreIcono } from '@/components/iconos'
 import type { Guardado } from '@/domain/ultimos'
 import { Padel } from '@/components/detalles'
-import type { Opcion } from '@/ai/contamePrompt'
+import type { Accion, Opcion } from '@/ai/contamePrompt'
+import Revision, { type DudaRevision, type FilaRevision } from './Revision'
 import { useDictado } from '@/voz/useDictado'
 
-type Fase = 'inicio' | 'revisar' | 'pregunta' | 'listo'
+type Fase = 'inicio' | 'revisar' | 'pregunta' | 'propuesta' | 'listo'
 type Origen = 'voz' | 'teclado'
 interface Linea { id: string; descripcion: string }
 
@@ -40,7 +41,7 @@ function useSegundos(activo: boolean): number {
   return s
 }
 
-export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
+export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: string }) {
   const router = useRouter()
   const montado = useSyncExternalStore(nada, () => true, () => false)
   const dictado = useDictado({ lang: 'es-UY' })
@@ -51,6 +52,9 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
   const [enviado, setEnviado] = useState('')
   const [respuestas, setRespuestas] = useState<string[]>([])
   const [pregunta, setPregunta] = useState<{ pregunta: string; opciones: Opcion[] } | null>(null)
+  // ronda 6: lo que propone la IA, para revisar antes de guardar
+  const [filas, setFilas] = useState<FilaRevision[]>([])
+  const [dudas, setDudas] = useState<DudaRevision[]>([])
   const [guardado, setGuardado] = useState<Linea[]>([])
   const [loteId, setLoteId] = useState<string | null>(null)
   const [aviso, setAviso] = useState<string | null>(null)
@@ -95,21 +99,46 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
         body: JSON.stringify(resp.length ? { texto: t, respuestas: resp } : { texto: t }),
       })
       const j = (await res.json().catch(() => ({}))) as {
-        guardado?: Linea[]; loteId?: string; aviso?: string; pregunta?: string; opciones?: Opcion[]; error?: string
+        propuesta?: { acciones?: Accion[]; noEntendi?: string[]; aviso?: string }; pregunta?: string; opciones?: Opcion[]; error?: string
       }
-      if (Array.isArray(j.guardado) && typeof j.loteId === 'string') {
-        setGuardado(j.guardado)
-        setLoteId(j.loteId)
-        setAviso(typeof j.aviso === 'string' ? j.aviso : null)
-        setDeshecho(false)
-        setFase('listo')
-        // lo guardado cambia otras pantallas (Inicio, Pendientes…): que el menú no muestre lo de antes
-        router.refresh()
+      if (j.propuesta && Array.isArray(j.propuesta.acciones)) {
+        const p = j.propuesta
+        setFilas((p.acciones ?? []).map((accion, i) => ({ id: `a${i}-${Date.now()}`, accion })))
+        // lo que no entendió: por defecto se descarta
+        setDudas((Array.isArray(p.noEntendi) ? p.noEntendi : []).map((texto, i) => ({ id: `d${i}-${Date.now()}`, texto, comoNota: false })))
+        setAviso(typeof p.aviso === 'string' ? p.aviso : null)
+        setFase('propuesta')
       } else if (typeof j.pregunta === 'string' && Array.isArray(j.opciones)) {
         setEnviado(t)
         setRespuestas(resp)
         setPregunta({ pregunta: j.pregunta, opciones: j.opciones })
         setFase('pregunta')
+      } else setError(j.error ?? ERROR_GENERICO)
+    } catch {
+      setError(ERROR_GENERICO)
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  /** "Guardar todo": guarda lo revisado; queda "Deshacer" como siempre. */
+  async function guardarTodo(acciones: Accion[]) {
+    setCargando(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/contame/guardar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acciones }),
+      })
+      const j = (await res.json().catch(() => ({}))) as { guardado?: Linea[]; loteId?: string; error?: string }
+      if (res.ok && Array.isArray(j.guardado) && typeof j.loteId === 'string') {
+        setGuardado(j.guardado)
+        setLoteId(j.loteId)
+        setDeshecho(false)
+        setFase('listo')
+        // lo guardado cambia otras pantallas (Inicio, Pendientes…): que el menú no muestre lo de antes
+        router.refresh()
       } else setError(j.error ?? ERROR_GENERICO)
     } catch {
       setError(ERROR_GENERICO)
@@ -145,6 +174,8 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
     setEnviado('')
     setRespuestas([])
     setPregunta(null)
+    setFilas([])
+    setDudas([])
     setGuardado([])
     setLoteId(null)
     setAviso(null)
@@ -230,10 +261,10 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
           {vista === 'revisar' && (
             <div className="space-y-4">
               <p className="text-base text-texto-2">
-                {teclado ? 'Escribí o pegá lo que querés guardar.' : 'Esto entendí. Podés corregirlo antes de mandar.'}
+                {teclado ? 'Escribí o pegá lo que querés guardar.' : 'Esto escuché. Podés corregirlo antes de mandar.'}
               </p>
               <textarea
-                aria-label={teclado ? 'Escribí o dictá con el teclado' : 'Lo que entendí · podés corregirlo'}
+                aria-label={teclado ? 'Escribí o dictá con el teclado' : 'Lo que escuché · podés corregirlo'}
                 className={`${clasesInput} min-h-40 py-3 text-[17px] leading-relaxed`}
                 maxLength={MAX}
                 value={texto}
@@ -269,6 +300,13 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
             </Card>
           )}
 
+          {vista === 'propuesta' && (
+            <Revision
+              filas={filas} setFilas={setFilas} dudas={dudas} setDudas={setDudas} aviso={aviso} hoy={hoy} cargando={cargando}
+              onGuardar={guardarTodo} onCancelar={otraCosa}
+            />
+          )}
+
           {vista === 'listo' && (
             <Card className="space-y-4">
               {deshecho ? (
@@ -284,7 +322,6 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
                       </li>
                     ))}
                   </ul>
-                  {aviso && <p role="status" className="rounded-2xl bg-urg-bg p-4 text-base text-urg-tx">{aviso}</p>}
                 </>
               )}
               <div className="flex flex-col gap-3">
@@ -295,7 +332,10 @@ export default function Contame({ ultimos }: { ultimos: Guardado[] }) {
           )}
 
           {/* pádel (mockup v2): la pelota rebota contra la pared mientras guarda */}
-          {cargando && <Padel texto="Guardando" detalle="Estoy ordenando lo que me contaste." />}
+          {/* ronda 6: primero ordena (la IA) y después, con "Guardar todo", guarda */}
+          {cargando && (vista === 'propuesta'
+            ? <Padel texto="Guardando" detalle="Lo estoy guardando donde va." />
+            : <Padel texto="Ordenando" detalle="Estoy ordenando lo que me contaste." />)}
           {error && <Alerta>{error}</Alerta>}
         </>
       )}

@@ -48,7 +48,7 @@ for (const [nombre, ruta] of [
   })
 }
 
-test('repo vacío: Inicio muestra textos vacíos', async ({ page }) => {
+test('repo vacío: Inicio muestra textos vacíos y sin "Lo próximo" (ronda 6)', async ({ page }) => {
   await resetear(page, { sinSeed: true, hoy: HOY })
   await entrarComo(page, 'owner')
   const res = await page.goto('/')
@@ -56,9 +56,30 @@ test('repo vacío: Inicio muestra textos vacíos', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Alfredo')
   await expect(page.getByText('Todavía no hay fotos')).toBeVisible()
   await expect(page.getByRole('link', { name: /Agregar fotos/ })).toHaveAttribute('href', '/fotos')
-  await expect(page.getByText('No hay cumpleaños cargados')).toBeVisible()
-  await expect(page.getByText('No hay vencimientos pendientes')).toBeVisible()
-  await expect(page.getByText('No hay tareas pendientes')).toBeVisible()
+  // ronda 6: sin nada en ninguna fila, no hay sección
+  await expect(page.getByRole('navigation', { name: 'Accesos directos' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Lo próximo' })).toHaveCount(0)
+  await expect(page.getByText('No hay vencimientos pendientes')).toHaveCount(0)
+})
+
+test('ronda 6: "Lo próximo" muestra solo las filas que tienen algo; 1 tarea, cumple 1 año', async ({ page }) => {
+  await resetear(page, {
+    hoy: HOY,
+    datos: {
+      fechas: [{ nombre: 'Benja', tipo: 'cumple', dia: '11-23', anioNacimiento: 2025 }],
+      pendientes: [{ texto: 'Una sola', hecho: false, creadoEn: '2026-11-20T10:00:00Z' }],
+    },
+  })
+  await entrarComo(page, 'owner')
+  await page.goto('/')
+  const prox = page.getByRole('region', { name: 'Lo próximo' })
+  await expect(prox.getByRole('listitem')).toHaveCount(2)
+  await expect(prox).toContainText('Mañana · cumple 1 año')
+  await expect(prox).toContainText('1 tarea pendiente')
+  await expect(prox).not.toContainText('tareas')
+  await expect(prox).not.toContainText('No hay')
+  await page.goto('/calendario')
+  await expect(page.locator('[data-fila]').filter({ hasText: 'Benja' })).toContainText('Cumpleaños · cumple 1 año')
 })
 
 test('familia: "Cargando datos para Alfredo" con lo cargado de cada cosa; sin accesos ni Contame/Mensajes', async ({ page }) => {

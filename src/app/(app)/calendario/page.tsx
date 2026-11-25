@@ -3,6 +3,7 @@ import { getRepo } from '@/data/getRepo'
 import { edadQueCumple, hoy, proximosCumples, recordatoriosActivos } from '@/domain/fechas'
 import { proximaDeFecha, rotuloDiasSemana, rotuloRepeticion } from '@/domain/repeticion'
 import { MESES } from '@/domain/validarFecha'
+import { textoEdad } from '@/domain/cantidades'
 import { EmptyState, IconoTile, Seccion, Titulo } from '@/components/ui'
 import BotonBorrar from '@/components/Borrar'
 import { Icono } from '@/components/iconos'
@@ -93,23 +94,29 @@ export default async function Calendario() {
         <Seccion key={clave} id={`mes-${clave}`} titulo={tituloMes(clave, hoyStr)}>
           <ul className="space-y-2.5">
             {items.map((f) => (
-              <li key={f.id} data-fila className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-borde bg-white py-2 pr-1.5 pl-3">
-                <span className="flex w-12 shrink-0 flex-col items-center leading-none">
-                  <span className="text-[26px] font-bold text-azul">{Number(f.proxima.slice(8))}</span>
-                  <span className="mt-0.5 text-base font-semibold text-texto-2">{abreviar(m)}</span>
-                </span>
-                <span aria-hidden="true" className="h-9 w-px shrink-0 bg-borde" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-base font-semibold text-texto">{f.nombre}</span>
-                  <span className="block text-base text-texto-2">
-                    {[
-                      TIPO[f.tipo],
-                      f.edad != null ? `${f.edad} años` : '',
-                      rotulo(f),
-                      f.hora ? `${f.hora.slice(0, 5)} h` : '',
-                    ].filter(Boolean).join(' · ')}
+              <li key={f.id} data-fila className="flex min-h-[68px] items-center gap-1 rounded-2xl border border-borde bg-white py-2 pr-1.5 pl-3">
+                {/* ronda 6: tocar la fila abre la edición */}
+                <NuevaFecha
+                  hoy={hoyStr} etiqueta={`Editar ${f.nombre}`} className="flex items-center gap-3 self-stretch"
+                  inicial={{ id: f.id, nombre: f.nombre, tipo: f.tipo, dia: f.dia, anioNacimiento: f.anioNacimiento, repeticion: f.repeticion, anioEvento: f.anioEvento, hora: f.hora, diasSemana: f.diasSemana }}
+                >
+                  <span className="flex w-12 shrink-0 flex-col items-center leading-none">
+                    <span className="text-[26px] font-bold text-azul">{Number(f.proxima.slice(8))}</span>
+                    <span className="mt-0.5 text-base font-semibold text-texto-2">{abreviar(m)}</span>
                   </span>
-                </span>
+                  <span aria-hidden="true" className="h-9 w-px shrink-0 bg-borde" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-semibold text-texto">{f.nombre}</span>
+                    <span className="block text-base text-texto-2">
+                      {[
+                        TIPO[f.tipo],
+                        textoEdad(f.edad),
+                        rotulo(f),
+                        f.hora ? `${f.hora.slice(0, 5)} h` : '',
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                </NuevaFecha>
                 <BotonBorrar nombre={f.nombre} accion={borrarFecha.bind(null, f.id)} />
               </li>
             ))}

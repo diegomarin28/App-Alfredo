@@ -3,7 +3,10 @@ import { fechaCorta } from '@/domain/vencimientos'
 import { hoy } from '@/domain/fechas'
 import { EmptyState, Seccion, Titulo, Volver } from '@/components/ui'
 import { Icono } from '@/components/iconos'
+import { TocarParaEditar } from '@/components/Editar'
+import { clasesInput } from '@/components/ui'
 import NuevaNota from './NuevaNota'
+import { editarNota } from './actions'
 import Pendientes, { NuevoPendiente } from './Pendientes'
 
 export const dynamic = 'force-dynamic'
@@ -23,12 +26,18 @@ export default async function PendientesYNotas() {
         {notas.length === 0 && <EmptyState>Todavía no hay notas.</EmptyState>}
         <ul className="space-y-2.5">
           {notas.map((n) => (
-            <li key={n.id} data-fila className="space-y-1 rounded-2xl border border-borde bg-white px-4 py-3">
-              <p className="flex items-center gap-1.5 text-base text-texto-2">
-                {n.origen === 'voz' && <><Icono nombre="microfono" tamano={16} />Nota de voz ·</>}
-                {n.origen === 'voz' ? ` ${fechaCorta(n.creadoEn)}` : fechaCorta(n.creadoEn)}
-              </p>
-              <p className="text-base whitespace-pre-wrap text-texto">{n.texto}</p>
+            <li key={n.id} data-fila className="flex rounded-2xl border border-borde bg-white">
+              {/* ronda 6: tocar la nota abre la edición */}
+              <TocarParaEditar
+                etiqueta={`Editar nota: ${n.texto.slice(0, 40)}`} titulo="Editar nota" guardar={editarNota.bind(null, n.id)} className="space-y-1 px-4 py-3"
+                campos={<textarea name="texto" defaultValue={n.texto} aria-label="Nota" rows={5} maxLength={5000} autoFocus className={`${clasesInput} py-3`} />}
+              >
+                <span className="flex items-center gap-1.5 text-base text-texto-2">
+                  {n.origen === 'voz' && <><Icono nombre="microfono" tamano={16} />Nota de voz ·</>}
+                  {n.origen === 'voz' ? ` ${fechaCorta(n.creadoEn)}` : fechaCorta(n.creadoEn)}
+                </span>
+                <span className="block text-base whitespace-pre-wrap text-texto">{n.texto}</span>
+              </TocarParaEditar>
             </li>
           ))}
         </ul>

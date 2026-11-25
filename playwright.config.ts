@@ -1,5 +1,6 @@
 import { defineConfig, devices, type Project } from '@playwright/test'
 import { ENTORNO_E2E } from './tests/e2e/entorno'
+import { hoyMontevideo } from './src/domain/fechas'
 
 const PORT = 3100
 
@@ -51,7 +52,15 @@ export default defineConfig({
   globalSetup: './tests/e2e/precalentar.ts',
   workers: 1,
   fullyParallel: false,
-  use: { baseURL: `http://localhost:${PORT}` },
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    // El 25/11 (cumple de Alfredo) el brindis tapa la parte de arriba: se da por visto hoy (CLAVE_BRINDIS). Las pruebas
+    // que fijan "hoy" en un cumple lo manejan ellas; la del brindis arranca sin esto (detalles.spec).
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: 'alfredo:brindis', value: hoyMontevideo(new Date()) }] }],
+    },
+  },
   projects,
   webServer: {
     command: 'pnpm dev',

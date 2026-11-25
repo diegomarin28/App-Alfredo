@@ -1,15 +1,16 @@
 import type { Repo, Tabla } from '@/data/repo'
-import { nombreCasa, validarEventoCasa, validarPersonaCasa, validarServicioCasa } from '@/domain/casas'
-import { normalizarBusqueda, validarContacto } from '@/domain/contactos'
+import { normalizarBusqueda } from '@/domain/contactos'
 import { hoy } from '@/domain/fechas'
-import { fechaLarga, validarRecordatorio } from '@/domain/recordatorios'
-import { validarFecha } from '@/domain/validarFecha'
-import { fechaCompleta, MAX_NOTA, MAX_PENDIENTE, validarNota, validarPendiente, validarVencimiento } from '@/domain/vencimientos'
+import { esMuletilla, sinMuletillas } from '@/domain/muletillas'
+import { corregirNombres } from '@/domain/nombres'
+import { MAX_NOTA } from '@/domain/vencimientos'
+import { describir, textoLegible, textoLibre, validarAccion } from './acciones'
 import { MODELO_CONTAME, type AiArgs, type AiClient } from './client'
 import { construirSistema, construirUsuario, HERRAMIENTAS, type Accion, type ContextoContame, type Opcion } from './contamePrompt'
 import type { EmailSender } from './email'
 import { usarIa } from './presupuesto'
 
+export { describir, validarAccion } from './acciones'
 export type { Accion, Opcion } from './contamePrompt'
 
 export const OPCION_OTRA_COSA: Opcion = { etiqueta: 'Otra cosa · guardar en Tareas pendientes', respuesta: 'otra cosa' }
@@ -19,11 +20,16 @@ export const MAX_RESPUESTA = 500
 export const MAX_RONDAS = 3
 const MAX_ACCIONES = 200
 const MAX_OPCIONES = 5
-export const AVISO_CORTADA = 'Era mucho para ordenar de una vez: lo guardé todo como nota para que lo revises.'
+export const AVISO_CORTADA = 'Era mucho para ordenar de una vez: te lo dejo como nota para que lo revises.'
 
 export interface Guardado { accion: Accion; id: string; descripcion: string }
-export interface Guardados { guardado: Guardado[]; loteId: string; aviso?: string }
-export type ResultadoContame = Guardados | { pregunta: string; opciones: Opcion[] }
+export interface Guardados { guardado: Guardado[]; loteId: string }
+/**
+ * Ronda 6: Contame revisa antes de guardar. La IA propone; Alfredo revisa "Esto es lo que entendí" y recién con
+ * "Guardar todo" se guarda (guardarPropuesta). `noEntendi`: lo que no entendió, en filas aparte.
+ */
+export interface Propuesta { acciones: Accion[]; noEntendi: string[]; aviso?: string }
+export type ResultadoContame = { propuesta: Propuesta } | { pregunta: string; opciones: Opcion[] }
 export interface EntradaContame { texto: string; respuestas?: string[] }
 
 /** Entidades que pueden venir de Contame (llevan loteId). */
@@ -34,18 +40,24 @@ const TABLAS_LOTE = [
 
 const esOtraCosa = (s: string) => normalizarBusqueda(s).startsWith('otra cosa')
 
+/** Nombres que se le pasan a la IA para que los escriba bien (como mucho). */
+const MAX_NOMBRES = 300
+
 export async function contextoContame(repo: Repo): Promise<ContextoContame> {
-  const [personas, contactos] = await Promise.all([repo.personasCasa.list(), repo.contactos.list()])
+  const [personas, contactos, fechas] = await Promise.all([repo.personasCasa.list(), repo.contactos.list(), repo.fechas.list()])
+  // ronda 6: los nombres y apellidos que ya hay en Calendario, Contactos y Casas
+  const nombres = [...new Set([...fechas, ...contactos, ...personas].map((x) => x.nombre.trim()).filter(Boolean))]
   return {
     hoy: hoy(),
     personas: personas.map((p) => ({ nombre: p.nombre, rol: p.rol, casa: p.casa })),
     contactos: contactos.map((c) => c.nombre),
+    nombres: nombres.slice(0, MAX_NOMBRES),
   }
 }
 
 // ---------- salida del modelo (no confiable, R28) ----------
 
-type Clasificacion = { acciones: unknown[] } | { pregunta: string; opciones: Opcion[] } | { sinClasificar: true } | { cortada: true }
+type Clasificacion = { acciones: unknown[]; noEntendi: unknown[] } | { pregunta: string; opciones: Opcion[] } | { sinClasificar: true } | { cortada: true }
 
 const cadena = (v: unknown, max: number): string | null => {
   if (typeof v !== 'string') return null
@@ -71,116 +83,7 @@ export function validarPregunta(raw: unknown): { pregunta: string; opciones: Opc
   return { pregunta, opciones: [...opciones.slice(0, MAX_OPCIONES), OPCION_OTRA_COSA] }
 }
 
-const MMDD = /^(\d{2})-(\d{2})$/
-
-/** Valida una acción con los validadores del dominio. null si no sirve. */
-export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
-  if (!raw || typeof raw !== 'object') return null
-  const o = raw as Record<string, unknown>
-  const s = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : '')
-  const opc = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : undefined)
-  const entero = (k: string, porDefecto: number) => (o[k] === undefined || o[k] === null ? porDefecto : typeof o[k] === 'number' ? (o[k] as number) : NaN)
-  switch (o.tipo) {
-    case 'eventoCasa': {
-      const r = validarEventoCasa({ casa: s('casa'), que: s('que'), cuando: s('cuando') }, hoyStr)
-      return r.ok ? { tipo: 'eventoCasa', ...r.valor } : null
-    }
-    case 'personaCasa': {
-      const r = validarPersonaCasa({ casa: s('casa'), nombre: s('nombre'), rol: s('rol'), detalle: opc('detalle'), telefono: opc('telefono') })
-      return r.ok ? { tipo: 'personaCasa', ...r.valor } : null
-    }
-    case 'servicioCasa': {
-      // sin el número: se guarda igual y queda en "Para completar"
-      const r = validarServicioCasa({ casa: s('casa'), clave: s('clave'), valor: s('valor') }, { sinValor: true })
-      return r.ok ? { tipo: 'servicioCasa', ...r.valor } : null
-    }
-    case 'pendiente': {
-      const r = validarPendiente(s('texto'))
-      return r.ok ? { tipo: 'pendiente', texto: r.valor } : null
-    }
-    case 'nota': {
-      const r = validarNota(s('texto'))
-      return r.ok ? { tipo: 'nota', texto: r.valor } : null
-    }
-    case 'contacto': {
-      // Sin grupo: los grupos los arma Alfredo en Contactos.
-      const r = validarContacto({ nombre: s('nombre'), empresa: opc('empresa'), telefono: opc('telefono'), nota: opc('nota') })
-      if (!r.ok) return null
-      return { tipo: 'contacto', ...r.valor }
-    }
-    case 'fecha': {
-      const anio = o.anioNacimiento === undefined || o.anioNacimiento === null ? null : entero('anioNacimiento', NaN)
-      // cumpleaños sin fecha: se guarda igual y queda en "Para completar" (no aparece en el Calendario)
-      const sinFecha = s('tipoFecha') === 'cumple' && !s('dia').trim()
-      const m = sinFecha ? ['', '01', '01'] : MMDD.exec(s('dia'))
-      if (!m) return null
-      const r = validarFecha({ nombre: s('nombre'), tipo: s('tipoFecha'), dia: Number(m[2]), mes: Number(m[1]), anio }, Number(hoyStr.slice(0, 4)))
-      if (!r.ok || (anio !== null && r.valor.anioNacimiento === undefined)) return null
-      const { tipo, ...resto } = r.valor
-      return { tipo: 'fecha', tipoFecha: tipo, ...resto, ...(sinFecha ? { dia: null } : {}) }
-    }
-    case 'recordatorio': {
-      const m = MMDD.exec(s('dia'))
-      if (!m) return null
-      const r = validarRecordatorio({ titulo: s('titulo'), dia: Number(m[2]), mes: Number(m[1]), avisarDiasAntes: entero('avisarDiasAntes', 30) })
-      if (!r.ok || r.valor.dia === null) return null
-      return { tipo: 'recordatorio', titulo: r.valor.titulo, dia: r.valor.dia, avisarDiasAntes: r.valor.avisarDiasAntes }
-    }
-    case 'vencimiento': {
-      const r = validarVencimiento({ titulo: s('titulo'), ambito: s('ambito'), fecha: s('fecha'), avisarDiasAntes: entero('avisarDiasAntes', 7) })
-      if (!r.ok) return null
-      const { titulo, ambito, fecha, avisarDiasAntes } = r.valor
-      return { tipo: 'vencimiento', titulo, ambito, fecha, avisarDiasAntes }
-    }
-    default:
-      return null
-  }
-}
-
-/** Texto legible de una acción inválida, para no perderla. */
-const CAMPOS_LEGIBLES = ['que', 'texto', 'titulo', 'nombre', 'rol', 'clave', 'valor', 'empresa', 'detalle', 'telefono', 'nota', 'casa', 'cuando', 'fecha', 'dia', 'ambito']
-function textoLegible(raw: unknown): string {
-  if (typeof raw === 'string') return raw.trim()
-  if (!raw || typeof raw !== 'object') return ''
-  const o = raw as Record<string, unknown>
-  return CAMPOS_LEGIBLES.map((k) => o[k]).filter((v): v is string => typeof v === 'string' && !!v.trim()).map((v) => v.trim()).join(' · ')
-}
-
-/** Texto sin clasificar: pendiente si entra (y no se pide nota); si no, nota(s) de voz. */
-function textoLibre(texto: string, comoNota = false): Accion[] {
-  const t = texto.trim()
-  if (!t) return []
-  if (t.length <= MAX_PENDIENTE && !comoNota) return [{ tipo: 'pendiente', texto: t }]
-  const notas: Accion[] = []
-  let resto = t
-  while (resto.length > MAX_NOTA) {
-    const corte = resto.lastIndexOf(' ', MAX_NOTA)
-    const i = corte > MAX_NOTA / 2 ? corte : MAX_NOTA
-    notas.push({ tipo: 'nota', texto: resto.slice(0, i).trim() })
-    resto = resto.slice(i).trim()
-  }
-  if (resto) notas.push({ tipo: 'nota', texto: resto })
-  return notas
-}
-
 // ---------- guardar ----------
-
-const recortar = (t: string, max: number) => (t.length > max ? `${t.slice(0, max - 1).trimEnd()}…` : t)
-const NOMBRE_FECHA = { cumple: 'cumpleaños', otra: 'fecha' } as const
-
-export function describir(a: Accion): string {
-  switch (a.tipo) {
-    case 'eventoCasa': return `Historial de ${nombreCasa(a.casa)}: ${recortar(a.que, 120)} (${fechaLarga(a.cuando.slice(5))})`
-    case 'personaCasa': return `Quién se ocupa en ${nombreCasa(a.casa)}: ${a.nombre} (${a.rol})`
-    case 'servicioCasa': return `Servicios de ${nombreCasa(a.casa)}: ${a.clave}, ${a.valor ? recortar(a.valor, 80) : 'falta el número'}`
-    case 'pendiente': return `Tareas pendientes: ${a.texto}`
-    case 'nota': return `Notas: ${recortar(a.texto, 120)}`
-    case 'contacto': return `Contactos: ${a.nombre}${a.empresa ? ` (${a.empresa})` : ''}`
-    case 'fecha': return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${a.dia ? fechaLarga(a.dia) : 'falta la fecha'})`
-    case 'recordatorio': return `Recordatorios: ${a.titulo} (${fechaLarga(a.dia)})`
-    case 'vencimiento': return `Vencimientos: ${a.titulo} (${fechaCompleta(a.fecha)})`
-  }
-}
 
 async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
   switch (a.tipo) {
@@ -207,27 +110,76 @@ async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
   }
 }
 
-/** Valida y guarda todo con un mismo loteId. Lo inválido va a Tareas pendientes; nada se pierde. */
-export async function guardarAcciones(
-  repo: Repo, crudas: unknown[], texto: string, hoyStr: string, comoNota = false,
-): Promise<Guardados> {
-  let textoUsado = false
-  const todoElTexto = (): Accion[] => {
-    if (textoUsado) return []
-    textoUsado = true
-    return textoLibre(texto, comoNota)
-  }
-  const acciones: Accion[] = []
-  if (crudas.length === 0 || crudas.length > MAX_ACCIONES) acciones.push(...todoElTexto())
-  for (const c of crudas.slice(0, MAX_ACCIONES)) {
-    const a = validarAccion(c, hoyStr)
-    if (a) acciones.push(a)
-    else {
-      const legible = textoLegible(c)
-      acciones.push(...(legible ? textoLibre(legible) : todoElTexto()))
-    }
-  }
+// ---------- propuesta ----------
 
+/** Los textos de una acción pasan por el diccionario de nombres (Henrique → Gericke). */
+function corregirAccion(a: Accion, nombres: string[]): Accion {
+  const c = (t: string) => corregirNombres(t, nombres)
+  switch (a.tipo) {
+    case 'eventoCasa': return { ...a, que: c(a.que) }
+    case 'personaCasa': return { ...a, nombre: c(a.nombre), ...(a.detalle ? { detalle: c(a.detalle) } : {}) }
+    case 'servicioCasa': return a
+    case 'pendiente': return { ...a, texto: sinMuletillas(c(a.texto)) }
+    case 'nota': return { ...a, texto: sinMuletillas(c(a.texto)) }
+    case 'contacto': return { ...a, nombre: c(a.nombre), ...(a.nota ? { nota: c(a.nota) } : {}) }
+    case 'fecha': return { ...a, nombre: c(a.nombre) }
+    case 'recordatorio': return { ...a, titulo: c(a.titulo) }
+    case 'vencimiento': return { ...a, titulo: c(a.titulo) }
+  }
+}
+
+/** Lo que no entendió: textos cortos, sin muletillas ni repetidos. */
+function fragmentos(crudos: unknown[], nombres: string[]): string[] {
+  const vistos = new Set<string>()
+  const out: string[] = []
+  for (const x of crudos) {
+    const t = typeof x === 'string' ? sinMuletillas(corregirNombres(x.trim(), nombres)) : ''
+    if (!t || t.length > MAX_NOTA || esMuletilla(t)) continue
+    const k = normalizarBusqueda(t)
+    if (vistos.has(k)) continue
+    vistos.add(k)
+    out.push(t)
+  }
+  return out
+}
+
+/**
+ * Arma "Esto es lo que entendí" con lo que devolvió la IA. Sin guardar nada. Las tareas y notas que son solo
+ * muletillas ("eh", "perdón", "hay una vez") se descartan; lo inválido va a "No entendí".
+ */
+export function armarPropuesta(crudas: unknown[], noEntendi: unknown[], texto: string, hoyStr: string, nombres: string[] = []): Propuesta {
+  const acciones: Accion[] = []
+  const dudas: unknown[] = [...noEntendi]
+  if (crudas.length > MAX_ACCIONES) return { acciones: [], noEntendi: fragmentos([texto], nombres) }
+  for (const c of crudas) {
+    const v = validarAccion(c, hoyStr)
+    if (!v) {
+      dudas.push(textoLegible(c) || texto)
+      continue
+    }
+    const a = corregirAccion(v, nombres)
+    if ((a.tipo === 'pendiente' || a.tipo === 'nota') && esMuletilla(a.texto)) continue
+    acciones.push(a)
+  }
+  const lista = fragmentos(dudas, nombres)
+  // la IA no devolvió nada útil: que no se pierda lo que dijo (va a "No entendí", que por defecto se descarta)
+  if (acciones.length === 0 && lista.length === 0 && !esMuletilla(texto)) lista.push(...fragmentos([texto], nombres))
+  return { acciones, noEntendi: lista }
+}
+
+// ---------- guardar ----------
+
+export const ERROR_REVISAR = 'Revisá lo que entendí: hay algo que no se puede guardar así.'
+
+/** "Guardar todo": valida de nuevo cada fila (vienen del teléfono) y guarda todo con un mismo loteId. */
+export async function guardarPropuesta(repo: Repo, crudas: unknown[], hoyStr: string): Promise<Guardados | { error: string }> {
+  if (crudas.length === 0 || crudas.length > MAX_ACCIONES) return { error: 'No hay nada para guardar.' }
+  const acciones: Accion[] = []
+  for (const c of crudas) {
+    const a = validarAccion(c, hoyStr)
+    if (!a) return { error: ERROR_REVISAR }
+    acciones.push(a)
+  }
   const loteId = crypto.randomUUID()
   const guardado: Guardado[] = []
   try {
@@ -284,8 +236,9 @@ export async function clasificar(
   // Rechazo: puede cortar una herramienta a medias; nunca se usa.
   if (r.stopReason === 'refusal') return { sinClasificar: true }
   const input = r.toolInput as Record<string, unknown> | undefined
-  if (r.toolName === 'guardar' && input && Array.isArray(input.acciones) && input.acciones.length > 0) {
-    return { acciones: input.acciones }
+  if (r.toolName === 'guardar' && input && Array.isArray(input.acciones)) {
+    const noEntendi = Array.isArray(input.noEntendi) ? input.noEntendi : []
+    if (input.acciones.length > 0 || noEntendi.length > 0) return { acciones: input.acciones, noEntendi }
   }
   if (r.toolName === 'preguntar') {
     const p = validarPregunta(input)
@@ -294,19 +247,25 @@ export async function clasificar(
   return { sinClasificar: true }
 }
 
-/** Contame: clasifica con la IA (o pregunta) y guarda. Sin estado: el cliente reenvía texto + respuestas. */
+/**
+ * Contame: clasifica con la IA (o pregunta) y devuelve la propuesta, sin guardar (ronda 6).
+ * Sin estado: el cliente reenvía texto + respuestas, y después manda lo revisado a guardarPropuesta.
+ */
 export async function contame(repo: Repo, ai: AiClient, email: EmailSender, entrada: EntradaContame): Promise<ResultadoContame> {
-  const texto = entrada.texto.trim()
   const respuestas = entrada.respuestas ?? []
   const hoyStr = hoy()
+  const ctx = await contextoContame(repo)
+  // ronda 6: el dictado cambia apellidos; se corrige antes de ordenar
+  const texto = corregirNombres(entrada.texto.trim(), ctx.nombres)
   const ultima = respuestas[respuestas.length - 1]
-  if (ultima !== undefined && esOtraCosa(ultima)) return guardarAcciones(repo, [], texto, hoyStr)
+  if (ultima !== undefined && esOtraCosa(ultima)) return { propuesta: { acciones: textoLibre(texto), noEntendi: [] } }
 
-  const c = await clasificar(repo, ai, email, texto, respuestas, await contextoContame(repo))
-  if ('cortada' in c) return { ...(await guardarAcciones(repo, [], texto, hoyStr, true)), aviso: AVISO_CORTADA }
+  const c = await clasificar(repo, ai, email, texto, respuestas, ctx)
+  if ('cortada' in c) return { propuesta: { acciones: textoLibre(texto, true), noEntendi: [], aviso: AVISO_CORTADA } }
   if ('pregunta' in c) {
-    if (respuestas.length >= MAX_RONDAS) return guardarAcciones(repo, [], texto, hoyStr)
+    if (respuestas.length >= MAX_RONDAS) return { propuesta: { acciones: textoLibre(texto), noEntendi: [] } }
     return c
   }
-  return guardarAcciones(repo, 'acciones' in c ? c.acciones : [], texto, hoyStr)
+  if ('sinClasificar' in c) return { propuesta: armarPropuesta([], [], texto, hoyStr, ctx.nombres) }
+  return { propuesta: armarPropuesta(c.acciones, c.noEntendi, texto, hoyStr, ctx.nombres) }
 }

@@ -103,7 +103,7 @@ describe('pedido real a la API (SDK simulado)', () => {
       { input_tokens: 300, output_tokens: 80, cache_creation_input_tokens: 0, cache_read_input_tokens: 2500 }))
     const repo = new MemoryRepo()
     const c = await clasificar(repo, new AnthropicClient('k'), new FakeEmailSender(), 'Llamar al plomero', [], ctx)
-    expect(c).toEqual({ acciones })
+    expect(c).toEqual({ acciones, noEntendi: [] })
     const pedido = create.mock.calls[0][0]
     expect(pedido).toMatchObject({
       model: 'claude-haiku-5-5',
