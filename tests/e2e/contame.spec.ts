@@ -221,11 +221,13 @@ test('iPhone: grabar, repetir, grabar, cancelar, grabar… 10 de 10 veces vuelve
   }
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await terminarCon('la última')
+  // ronda 10: siempre la misma instancia (las nuevas quedan sordas en el iPhone)
+  expect(await page.evaluate(() => (window as unknown as { __voz: { instancias(): number } }).__voz.instancias())).toBe(1)
   // ningún aviso nuestro (el anunciador de rutas de Next también es role=alert, pero vacío)
   await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveCount(0)
 })
 
-type Voz = { __voz: { trabar(siempre?: boolean): void; error(c: string): void } }
+type Voz = { __voz: { trabar(siempre?: boolean): void; error(c: string): void; demorarFin(ms: number): void } }
 
 test('plan B: si el micrófono da error, recarga, vuelve el texto y con un toque sigue', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
@@ -245,7 +247,7 @@ test('plan B: si el micrófono da error, recarga, vuelve el texto y con un toque
   await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas y leche')
 })
 
-test('plan B: "Repetir" sin audio en 2 s recarga y el siguiente toque anda', async ({ page }) => {
+test('plan B: "Repetir" sordo (audiostart pero 5 s sin voz) recarga y el siguiente toque anda', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
@@ -282,10 +284,42 @@ test('registro de diagnóstico: muestra los eventos con hora y se puede copiar',
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
   await page.getByRole('button', { name: 'Ver registro' }).click()
   const registro = page.getByTestId('registro-dictado')
-  for (const ev of ['creado', 'start llamado', 'audiostart', 'result', 'abort llamado']) {
+  for (const ev of ['creado', 'start llamado', 'audiostart', 'result', 'stop llamado', 'end']) {
     await expect(registro).toContainText(new RegExp(`\\d{2}:\\d{2}:\\d{2}\\.\\d{3} #\\d+ ${ev}`))
   }
   await page.getByRole('button', { name: 'Copiar registro' }).click()
   await expect(page.getByRole('status').filter({ hasText: /Copiado|copialo a mano/ })).toBeVisible()
   if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/audiostart/)
+})
+
+test('plan B: si corta sin que haya llegado nada (sordo), recarga y pide un toque', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.evaluate(() => (window as unknown as Voz).__voz.trabar())
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'esto no llega', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible()
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'ahora sí', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('ahora sí')
+})
+
+test('Repetir espera a que el reconocedor anterior termine ("Un momento…")', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.evaluate(() => (window as unknown as Voz).__voz.demorarFin(1000))
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'primera', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  const repetir = page.getByRole('button', { name: 'Repetir' })
+  await expect(repetir).toBeDisabled()
+  await expect(page.getByText('Un momento…')).toBeVisible()
+  await expect(repetir).toBeEnabled()
+  await expect(page.getByText('Un momento…')).toHaveCount(0)
+  await repetir.click()
+  await decir(page, 'segunda', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('segunda')
 })
