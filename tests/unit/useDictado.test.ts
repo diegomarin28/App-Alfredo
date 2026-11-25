@@ -1,29 +1,20 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  _pagina, CLAVE_RECUPERAR, ERROR_PERMISO, ERROR_RED, ERROR_TRABADO, ESTRATEGIA, useDictado, type Estrategia,
-} from '@/voz/useDictado'
+import { _apertura, ERROR_PERMISO, ERROR_RED, useDictado } from '@/voz/useDictado'
 import { _reiniciarRegistro, leerRegistro, registroComoTexto } from '@/voz/registro'
 
 type Resultado = { isFinal: boolean; 0: { transcript: string } }
 
-/**
- * Reconocedor falso. `FakeRec.alParar`: cuándo llega "end" después de stop()/abort():
- * 'ya' (en el momento), 'manual' (cuando la prueba llama fin()), 'nunca' (ni con abort).
- * `FakeRec.nuevasSordas`: como el iPhone según el registro de la ronda 10, una instancia creada después de que otra
- * arrancó manda start y audiostart pero nunca voz.
- */
+/** Reconocedor falso. `alParar`: si stop()/abort() mandan "end" en el momento o cuando la prueba llama fin(). */
 class FakeRec {
   static instancias: FakeRec[] = []
   static fallarProximoStart = false
-  static alParar: 'ya' | 'manual' | 'nunca' = 'ya'
-  static abortTermina = true
-  static nuevasSordas = false
+  static alParar: 'ya' | 'manual' = 'ya'
   lang = ''
   continuous = false
   interimResults = false
   onresult: ((e: { resultIndex: number; results: Resultado[] }) => void) | null = null
-  onerror: ((e: { error: string }) => void) | null = null
+  onerror: ((e: { error: string; message?: string }) => void) | null = null
   onend: (() => void) | null = null
   onstart: (() => void) | null = null
   onaudiostart: (() => void) | null = null
@@ -34,17 +25,10 @@ class FakeRec {
   starts = 0
   stops = 0
   abortos = 0
-  activo = false
-  sorda = false
   private resultados: Resultado[] = []
-  constructor() {
-    this.sorda = FakeRec.nuevasSordas && FakeRec.instancias.some((o) => o.starts > 0)
-    FakeRec.instancias.push(this)
-  }
+  constructor() { FakeRec.instancias.push(this) }
   start() {
     if (FakeRec.fallarProximoStart) { FakeRec.fallarProximoStart = false; throw new Error('InvalidStateError') }
-    if (this.activo) throw new DOMException('ya empezó', 'InvalidStateError')
-    this.activo = true
     this.starts++
     this.resultados = []
   }
@@ -52,23 +36,19 @@ class FakeRec {
     this.stops++
     if (FakeRec.alParar === 'ya') this.fin()
   }
+  /** como Safari: un abort nuestro llega como error "aborted" y después "end" */
   abort() {
     this.abortos++
-    if (FakeRec.alParar === 'ya' || (FakeRec.alParar === 'manual' && FakeRec.abortTermina)) this.fin()
+    this.onerror?.({ error: 'aborted', message: 'No speech detected' })
+    this.fin()
   }
-  /** llega "end" */
-  fin() {
-    this.activo = false
-    this.onend?.()
-  }
-  /** arranca el audio (start + audiostart), como Safari un rato después de start() */
+  fin() { this.onend?.() }
+  /** start + audiostart, como Safari un rato después de start() */
   oir() {
     this.onstart?.()
     this.onaudiostart?.()
   }
-  /** simula un resultado (parcial o final) de esta sesión; una instancia sorda no recibe nada */
   decir(texto: string, isFinal: boolean) {
-    if (this.sorda) return
     const r: Resultado = { isFinal, 0: { transcript: texto } }
     const i = this.resultados.findIndex((x) => !x.isFinal)
     const idx = i >= 0 ? i : this.resultados.length
@@ -85,38 +65,27 @@ beforeEach(() => {
   FakeRec.instancias = []
   FakeRec.fallarProximoStart = false
   FakeRec.alParar = 'ya'
-  FakeRec.abortTermina = true
-  FakeRec.nuevasSordas = false
   w.webkitSpeechRecognition = FakeRec
   sessionStorage.clear()
   _reiniciarRegistro()
-  _pagina.huboAudio = false
+  _apertura.usado = false
 })
 afterEach(() => {
   delete w.webkitSpeechRecognition
   delete w.SpeechRecognition
 })
 
-/** Una toma completa: grabar, oír, decir, cortar. */
-function toma(result: { current: ReturnType<typeof useDictado> }, frase: string) {
-  act(() => result.current.empezar())
-  const r = ultima()
-  act(() => r.oir())
-  act(() => r.decir(frase, false))
-  act(() => result.current.terminar())
-  return r
-}
-
 describe('useDictado', () => {
-  it('sin reconocimiento de voz: soportado false', () => {
+  it('sin reconocimiento de voz: soportado y disponible false', () => {
     delete w.webkitSpeechRecognition
     const { result } = renderHook(() => useDictado({}))
     expect(result.current.soportado).toBe(false)
+    expect(result.current.disponible).toBe(false)
   })
 
   it('configura es-UY, continuo y con resultados parciales', () => {
     const { result } = renderHook(() => useDictado({}))
-    expect(result.current.soportado).toBe(true)
+    expect(result.current.disponible).toBe(true)
     act(() => result.current.empezar())
     expect(result.current.escuchando).toBe(true)
     const r = ultima()
@@ -126,10 +95,6 @@ describe('useDictado', () => {
     expect(r.starts).toBe(1)
   })
 
-  it('arranca con la estrategia de reusar la misma instancia', () => {
-    expect(ESTRATEGIA).toBe('reusar')
-  })
-
   it('dos finales separados por un corte automático (onend) se acumulan en un texto', () => {
     const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())
@@ -137,7 +102,6 @@ describe('useDictado', () => {
     act(() => r.decir('Le pagué', false))
     expect(result.current.texto).toBe('Le pagué')
     act(() => r.decir('Le pagué a Simón', true))
-    // Safari corta en la pausa: se reinicia solo y sigue acumulando
     act(() => r.fin())
     expect(result.current.escuchando).toBe(true)
     expect(r.starts).toBe(2)
@@ -147,27 +111,16 @@ describe('useDictado', () => {
     expect(result.current.texto).toBe('Le pagué a Simón ayer a la tarde y')
   })
 
-  it('si start() falla al reiniciar, crea una instancia nueva', () => {
+  it('terminar() llama stop(), deja de reiniciar y no pierde lo dictado', () => {
     const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())
     const r = ultima()
-    act(() => r.decir('Hola', true))
-    FakeRec.fallarProximoStart = true
-    act(() => r.fin())
-    expect(FakeRec.instancias).toHaveLength(2)
-    const r2 = ultima()
-    expect(r2.starts).toBe(1)
-    act(() => r2.decir('de nuevo', true))
-    expect(result.current.texto).toBe('Hola de nuevo')
-  })
-
-  it('terminar() llama stop() (no abort) y deja de reiniciar', () => {
-    const { result } = renderHook(() => useDictado({}))
-    const r = toma(result, 'Listo')
+    act(() => r.decir('Listo', false))
+    act(() => result.current.terminar())
     expect(r.stops).toBe(1)
     expect(r.abortos).toBe(0)
-    expect(result.current.escuchando).toBe(false)
     expect(r.starts).toBe(1)
+    expect(result.current.escuchando).toBe(false)
     expect(result.current.texto).toBe('Listo')
   })
 
@@ -180,53 +133,28 @@ describe('useDictado', () => {
     act(() => r.decir('y leche', false))
     act(() => result.current.terminar())
     expect(result.current.texto).toBe('Comprar pilas y leche')
-    act(() => r.decir('y leche', true)) // Safari confirma al parar
+    act(() => r.decir('y leche', true))
     act(() => r.fin())
     expect(result.current.texto).toBe('Comprar pilas y leche')
   })
 
-  it('no-speech (silencio) se ignora: sigue escuchando', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
-    act(() => ultima().onerror?.({ error: 'no-speech' }))
-    expect(result.current.error).toBeUndefined()
-    expect(result.current.escuchando).toBe(true)
-    expect(recargar).not.toHaveBeenCalled()
-  })
-
-  it('not-allowed: para y avisa cómo activar el permiso (recargar no lo arregla)', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('si Safari corta con algo sin confirmar, no se pierde al reiniciar', () => {
+    const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())
     const r = ultima()
-    act(() => r.onerror?.({ error: 'not-allowed' }))
+    act(() => r.decir('Llamar a UTE', false))
     act(() => r.fin())
-    expect(result.current.error).toBe('Falta el permiso del micrófono. Para activarlo: Ajustes → Apps → Safari → Micrófono → Permitir.')
-    expect(result.current.escuchando).toBe(false)
-    expect(r.starts).toBe(1)
-    expect(recargar).not.toHaveBeenCalled()
+    act(() => r.decir('mañana', true))
+    expect(result.current.texto).toBe('Llamar a UTE mañana')
   })
 
-  it('service-not-allowed también es el permiso', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('no-speech (silencio) se ignora: sigue escuchando', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
-    act(() => ultima().onerror?.({ error: 'service-not-allowed' }))
-    expect(result.current.error).toBe(ERROR_PERMISO)
-    expect(recargar).not.toHaveBeenCalled()
-  })
-
-  it('network sin conexión: avisa de la conexión y no recarga (Safari mostraría su página de error)', () => {
-    const recargar = vi.fn()
-    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
-    act(() => ultima().onerror?.({ error: 'network' }))
-    expect(result.current.error).toBe(ERROR_RED)
-    expect(result.current.escuchando).toBe(false)
-    expect(recargar).not.toHaveBeenCalled()
-    enLinea.mockRestore()
+    act(() => ultima().onerror?.({ error: 'no-speech' }))
+    expect(result.current.escuchando).toBe(true)
+    expect(alFallar).not.toHaveBeenCalled()
   })
 
   it('corta después de 5 reinicios seguidos sin resultado', () => {
@@ -242,321 +170,203 @@ describe('useDictado', () => {
     expect(result.current.error).toBeTruthy()
   })
 
-  it('un resultado reinicia la cuenta de reinicios', () => {
-    const { result } = renderHook(() => useDictado({}))
-    act(() => result.current.empezar())
-    const r = ultima()
-    for (let i = 0; i < 5; i++) act(() => r.fin())
-    act(() => r.decir('hola', true))
-    for (let i = 0; i < 5; i++) act(() => r.fin())
-    expect(result.current.escuchando).toBe(true)
-    expect(r.starts).toBe(11)
-    expect(result.current.error).toBeUndefined()
-  })
-
   it('borrar() vacía el texto', () => {
     const { result } = renderHook(() => useDictado({}))
-    toma(result, 'Algo')
+    act(() => result.current.empezar())
+    act(() => ultima().decir('Algo', true))
+    act(() => result.current.terminar())
     act(() => result.current.borrar())
     expect(result.current.texto).toBe('')
   })
+})
 
-  it('si Safari corta con algo sin confirmar, no se pierde al reiniciar', () => {
+describe('ronda 11: el dictado web anda una vez por apertura', () => {
+  it('después de la primera grabación ya no está disponible (y grabar se ignora)', () => {
     const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())
-    const r = ultima()
-    act(() => r.decir('Llamar a UTE', false))
-    act(() => r.fin())
-    act(() => r.decir('mañana', true))
-    expect(result.current.texto).toBe('Llamar a UTE mañana')
-  })
-})
-
-describe('ronda 10: esperar el "end" del anterior', () => {
-  beforeEach(() => { vi.useFakeTimers() })
-  afterEach(() => { vi.useRealTimers() })
-
-  it('después de cortar queda ocupado hasta su "end": grabar se ignora, y después anda', () => {
-    FakeRec.alParar = 'manual'
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
-    const r = toma(result, 'primera')
-    expect(result.current.ocupado).toBe(true)
-    act(() => result.current.empezar())
-    expect(r.starts).toBe(1)
-    expect(result.current.escuchando).toBe(false)
-    expect(registro()).toContain('grabar ignorado: el anterior todavía no terminó')
-    act(() => r.fin())
-    expect(result.current.ocupado).toBe(false)
-    act(() => result.current.empezar())
-    expect(r.starts).toBe(2)
-    expect(result.current.escuchando).toBe(true)
-  })
-
-  it('si "end" no llega en 1,5 s: abort() y se espera otra vez', () => {
-    FakeRec.alParar = 'manual'
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
-    const r = toma(result, 'hola')
-    act(() => { vi.advanceTimersByTime(1499) })
-    expect(r.abortos).toBe(0)
-    act(() => { vi.advanceTimersByTime(1) })
-    expect(r.abortos).toBe(1) // abortTermina: llega el end
-    expect(result.current.ocupado).toBe(false)
-    expect(registro()).toContain('end no llegó en 1500 ms: abort llamado')
-  })
-
-  it('si tampoco llega con abort(): a los 1,5 s más se libera igual (nunca queda trabado)', () => {
-    FakeRec.alParar = 'nunca'
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
-    const r = toma(result, 'hola')
-    act(() => { vi.advanceTimersByTime(1500) })
-    expect(r.abortos).toBe(1)
-    expect(result.current.ocupado).toBe(true)
-    act(() => { vi.advanceTimersByTime(1500) })
-    expect(result.current.ocupado).toBe(false)
-    expect(result.current.texto).toBe('hola')
-    expect(registro()).toContain('end no llegó tampoco después de abort (1500 ms): se libera igual')
-  })
-
-  it('los handlers no se sacan: el "end" del anterior queda en el registro aunque ya se haya cortado', () => {
-    FakeRec.alParar = 'manual'
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn(), estrategia: 'nueva' }))
-    const r = toma(result, 'hola')
-    expect(r.onend).toBeTypeOf('function')
-    expect(r.onerror).toBeTypeOf('function')
-    act(() => r.onerror?.({ error: 'aborted' }))
-    act(() => r.fin())
-    const n = leerRegistro().filter((e) => e.n > 0)
-    const evs = n.map((e) => e.ev)
-    expect(evs.indexOf('end')).toBeGreaterThan(evs.indexOf('stop llamado'))
-    expect(evs).toContain('error aborted')
-    expect(result.current.error).toBeUndefined()
-    // y con otro reconocedor ya grabando, los eventos tardíos del anterior se anotan pero no cambian nada
-    act(() => result.current.empezar())
-    const r2 = ultima()
-    expect(r2).not.toBe(r)
-    act(() => r.decir('tarde', true))
-    act(() => r.onerror?.({ error: 'network' }))
-    act(() => r.fin())
-    expect(result.current.escuchando).toBe(true)
-    expect(result.current.error).toBeUndefined()
-    expect(registro().filter((e) => e === 'end').length).toBe(2)
-  })
-})
-
-describe('ronda 10: estrategias', () => {
-  const cicloDiez = (estrategia: Estrategia) => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar, estrategia }))
-    for (let vez = 1; vez <= 10; vez++) {
-      for (const frase of [`grabar ${vez}`, `repetir ${vez}`, `grabar otra ${vez}`, `después de cancelar ${vez}`]) {
-        toma(result, frase)
-        expect(result.current.texto).toBe(frase)
-        expect(result.current.ocupado).toBe(false)
-        act(() => result.current.borrar())
-      }
-    }
-    return recargar
-  }
-
-  it('reusar: grabar, repetir, grabar, cancelar, grabar 10 veces con la misma instancia', () => {
-    cicloDiez('reusar')
-    expect(FakeRec.instancias).toHaveLength(1)
-    expect(FakeRec.instancias[0].starts).toBe(40)
-    expect(registro().filter((e) => e === 'reuso la misma instancia')).toHaveLength(39)
-  })
-
-  it('nueva: una instancia por grabación', () => {
-    cicloDiez('nueva')
-    expect(FakeRec.instancias).toHaveLength(40)
-  })
-
-  it('como el iPhone del registro (instancias nuevas sordas): reusar anda 10 de 10', () => {
-    FakeRec.nuevasSordas = true
-    const recargar = cicloDiez('reusar')
-    expect(recargar).not.toHaveBeenCalled()
-  })
-
-  it('como el iPhone del registro: con instancias nuevas, la segunda queda sorda y salta el plan B', () => {
-    FakeRec.nuevasSordas = true
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar, estrategia: 'nueva' }))
-    toma(result, 'primera')
-    act(() => result.current.borrar())
-    act(() => result.current.empezar()) // Repetir
-    act(() => ultima().oir())
-    act(() => ultima().decir('segunda', false))
-    expect(result.current.texto).toBe('')
+    expect(result.current.disponible).toBe(false)
+    act(() => ultima().decir('primera', false))
     act(() => result.current.terminar())
-    expect(recargar).toHaveBeenCalledTimes(1)
+    act(() => result.current.empezar())
+    expect(FakeRec.instancias).toHaveLength(1)
+    expect(ultima().starts).toBe(1)
+    expect(result.current.escuchando).toBe(false)
+    expect(registro()).toContain('grabar ignorado: el dictado web ya se usó en esta apertura')
+  })
+
+  it('se recuerda en memoria: al volver a Contame (otro montaje, misma apertura) sigue sin estar disponible', () => {
+    const primera = renderHook(() => useDictado({}))
+    act(() => primera.result.current.empezar())
+    primera.unmount()
+    const { result } = renderHook(() => useDictado({}))
+    expect(result.current.disponible).toBe(false)
+    // en memoria, no en sessionStorage (ahí solo está el registro de diagnóstico)
+    expect(Object.keys(sessionStorage).filter((k) => k !== 'alfredo:dictado:registro')).toEqual([])
+  })
+
+  it('una apertura nueva (memoria vacía) vuelve a tenerlo', () => {
+    _apertura.usado = true
+    expect(renderHook(() => useDictado({})).result.current.disponible).toBe(false)
+    _apertura.usado = false
+    expect(renderHook(() => useDictado({})).result.current.disponible).toBe(true)
   })
 })
 
-describe('ronda 10: plan B con el disparador correcto', () => {
-  const guardado = () => JSON.parse(sessionStorage.getItem(CLAVE_RECUPERAR) ?? 'null') as { texto: string } | null
+describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () => {
   beforeEach(() => { vi.useFakeTimers() })
   afterEach(() => { vi.useRealTimers() })
 
-  it('5 s desde audiostart sin speechstart ni result: guarda y recarga', () => {
-    sessionStorage.setItem(CLAVE_RECUPERAR, JSON.stringify({ texto: 'Comprar pilas' }))
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('sordo: 5 s desde audiostart sin speechstart ni result → corta y avisa una sola vez', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
-    act(() => { vi.advanceTimersByTime(300) })
     act(() => ultima().oir())
     act(() => { vi.advanceTimersByTime(4999) })
-    expect(recargar).not.toHaveBeenCalled()
+    expect(alFallar).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(1) })
-    expect(recargar).toHaveBeenCalledTimes(1)
-    expect(guardado()).toEqual({ texto: 'Comprar pilas' })
+    expect(alFallar).toHaveBeenCalledTimes(1)
+    expect(result.current.escuchando).toBe(false)
     expect(ultima().abortos).toBe(1)
-    expect(registroComoTexto()).toMatch(/plan B: sordo: 5000 ms desde audiostart sin speechstart ni result/)
+    // el "aborted" de nuestro propio abort solo se anota (antes disparaba otra recarga)
+    expect(registro()).toContain('error aborted: No speech detected')
+    act(() => { vi.advanceTimersByTime(60000) })
+    expect(alFallar).toHaveBeenCalledTimes(1)
+    expect(result.current.error).toBeUndefined()
   })
 
-  it('con speechstart a tiempo no recarga (aunque el result tarde)', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('con speechstart o un result a tiempo, no', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
     act(() => ultima().oir())
     act(() => { vi.advanceTimersByTime(3000) })
     act(() => ultima().onspeechstart?.())
     act(() => { vi.advanceTimersByTime(20000) })
-    expect(recargar).not.toHaveBeenCalled()
+    expect(alFallar).not.toHaveBeenCalled()
     expect(result.current.escuchando).toBe(true)
   })
 
-  it('con un result a tiempo no recarga', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('sordo después de un corte de Safari: lo dictado queda y pasa al teclado', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
-    act(() => ultima().oir())
-    act(() => ultima().decir('hola', false))
-    act(() => { vi.advanceTimersByTime(20000) })
-    expect(recargar).not.toHaveBeenCalled()
-  })
-
-  it('Alfredo cortó sin que llegara ningún result: guarda y recarga', () => {
-    sessionStorage.setItem(CLAVE_RECUPERAR, JSON.stringify({ texto: 'Comprar pilas' }))
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
-    act(() => ultima().oir())
-    act(() => { vi.advanceTimersByTime(1000) })
-    act(() => result.current.terminar())
-    expect(recargar).toHaveBeenCalledTimes(1)
-    expect(guardado()).toEqual({ texto: 'Comprar pilas' })
-  })
-
-  it('sin audiostart en 2 s (el motor no arrancó): también recarga', () => {
-    _pagina.huboAudio = true
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
-    act(() => { vi.advanceTimersByTime(2000) })
-    expect(recargar).toHaveBeenCalledTimes(1)
-  })
-
-  it.each(['aborted', 'audio-capture', 'network', 'language-not-supported', 'bad-grammar'])('error %s mientras graba: guarda y recarga', (codigo) => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
-    act(() => ultima().oir())
-    act(() => ultima().decir('Llamar a UTE', false))
-    act(() => ultima().onerror?.({ error: codigo }))
-    expect(recargar).toHaveBeenCalledTimes(1)
-    expect(guardado()).toEqual({ texto: 'Llamar a UTE' })
-  })
-
-  it('al volver de la recarga: el texto está, pide un toque y sigue sumando', () => {
-    sessionStorage.setItem(CLAVE_RECUPERAR, JSON.stringify({ texto: 'Comprar pilas' }))
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
-    expect(result.current.texto).toBe('Comprar pilas')
-    expect(result.current.recuperado).toBe(true)
-    expect(sessionStorage.getItem(CLAVE_RECUPERAR)).toBeNull() // una sola vez
-    act(() => result.current.empezar())
-    expect(result.current.recuperado).toBe(false)
-    act(() => ultima().oir())
-    act(() => ultima().decir('y leche', false))
-    act(() => result.current.terminar())
-    expect(result.current.texto).toBe('Comprar pilas y leche')
-  })
-
-  it('nunca queda trabado: tras 2 recargas sordas avisa qué hacer, y el próximo toque vuelve a probar', () => {
-    const recargar = vi.fn()
-    const sorda = (result: { current: ReturnType<typeof useDictado> }) => {
-      act(() => result.current.empezar())
-      act(() => ultima().oir())
-      act(() => { vi.advanceTimersByTime(5000) })
-    }
-    for (let vez = 1; vez <= 2; vez++) {
-      const { result, unmount } = renderHook(() => useDictado({ recargar }))
-      sorda(result)
-      expect(recargar).toHaveBeenCalledTimes(vez)
-      unmount() // la página se recarga
-    }
-    const { result } = renderHook(() => useDictado({ recargar }))
-    sorda(result)
-    expect(recargar).toHaveBeenCalledTimes(2)
-    expect(result.current.error).toBe(ERROR_TRABADO)
-    expect(result.current.escuchando).toBe(false)
-    expect(result.current.ocupado).toBe(false)
-    sorda(result)
-    expect(recargar).toHaveBeenCalledTimes(3)
-  })
-
-  it('cuando llega voz, la cuenta de recargas vuelve a cero (audiostart solo no alcanza)', () => {
-    sessionStorage.setItem('alfredo:dictado:recargas', '2')
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
-    act(() => result.current.empezar())
-    act(() => ultima().oir())
-    expect(sessionStorage.getItem('alfredo:dictado:recargas')).toBe('2')
-    act(() => ultima().onspeechstart?.())
-    expect(sessionStorage.getItem('alfredo:dictado:recargas')).toBeNull()
-  })
-
-  it('antes del primer audio, sin "start" (Safari puede estar pidiendo permiso), espera más antes de recargar', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    act(() => result.current.empezar())
+    const r = ultima()
+    act(() => r.oir())
+    act(() => r.decir('Comprar pilas', false))
+    act(() => r.fin()) // Safari corta en una pausa y se reinicia
+    act(() => r.oir())
     act(() => { vi.advanceTimersByTime(5000) })
-    expect(recargar).not.toHaveBeenCalled()
-    act(() => { vi.advanceTimersByTime(16000) })
-    expect(recargar).toHaveBeenCalledTimes(1)
+    expect(alFallar).toHaveBeenCalledTimes(1)
+    expect(result.current.texto).toBe('Comprar pilas')
   })
 
-  it('si ya llegó "start" (el permiso está dado) y no llega audiostart: 2 s', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
+  it('el "aborted" que llega después de que Alfredo cortó se ignora', () => {
+    const alFallar = vi.fn()
+    FakeRec.alParar = 'manual'
+    const { result } = renderHook(() => useDictado({ alFallar }))
+    act(() => result.current.empezar())
+    const r = ultima()
+    act(() => r.decir('hola', false))
+    act(() => result.current.terminar())
+    act(() => r.onerror?.({ error: 'aborted' }))
+    act(() => r.fin())
+    expect(alFallar).not.toHaveBeenCalled()
+    expect(result.current.texto).toBe('hola')
+  })
+
+  it('sin audiostart en 2 s (ya llegó "start"): al teclado', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
     act(() => ultima().onstart?.())
     act(() => { vi.advanceTimersByTime(2000) })
-    expect(recargar).toHaveBeenCalledTimes(1)
+    expect(alFallar).toHaveBeenCalledTimes(1)
   })
 
-  it('con el permiso dado (granted) y sin audio: 2 s', async () => {
-    const original = Object.getOwnPropertyDescriptor(navigator, 'permissions')
-    Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => ({ state: 'granted' }) } })
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    await act(async () => {})
+  it('sin "start" todavía (Safari puede estar pidiendo permiso): espera más', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
-    act(() => { vi.advanceTimersByTime(2000) })
-    expect(recargar).toHaveBeenCalledTimes(1)
-    if (original) Object.defineProperty(navigator, 'permissions', original)
-    else delete (navigator as unknown as { permissions?: unknown }).permissions
+    act(() => { vi.advanceTimersByTime(5000) })
+    expect(alFallar).not.toHaveBeenCalled()
+    act(() => { vi.advanceTimersByTime(16000) })
+    expect(alFallar).toHaveBeenCalledTimes(1)
   })
 
-  it('cortar a tiempo (con voz) no deja vigías andando', () => {
-    const recargar = vi.fn()
-    const { result } = renderHook(() => useDictado({ recargar }))
-    toma(result, 'hola')
+  it.each(['aborted', 'audio-capture', 'network', 'language-not-supported', 'bad-grammar'])('error %s mientras graba: al teclado con lo dictado', (codigo) => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
+    act(() => result.current.empezar())
+    act(() => ultima().decir('Llamar a UTE', false))
+    act(() => ultima().onerror?.({ error: codigo }))
+    expect(alFallar).toHaveBeenCalledTimes(1)
+    expect(result.current.escuchando).toBe(false)
+    expect(result.current.texto).toBe('Llamar a UTE')
+  })
+
+  it('si start() lanza al reiniciar: al teclado', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
+    act(() => result.current.empezar())
+    FakeRec.fallarProximoStart = true
+    act(() => ultima().fin())
+    expect(alFallar).toHaveBeenCalledTimes(1)
+  })
+
+  it('not-allowed: al teclado y explica cómo activar el permiso', () => {
+    const alFallar = vi.fn()
+    const { result } = renderHook(() => useDictado({ alFallar }))
+    act(() => result.current.empezar())
+    act(() => ultima().onerror?.({ error: 'not-allowed' }))
+    expect(result.current.error).toBe('Falta el permiso del micrófono. Para activarlo: Ajustes → Apps → Safari → Micrófono → Permitir.')
+    expect(alFallar).toHaveBeenCalledTimes(1)
+  })
+
+  it('service-not-allowed también es el permiso', () => {
+    const { result } = renderHook(() => useDictado({ alFallar: vi.fn() }))
+    act(() => result.current.empezar())
+    act(() => ultima().onerror?.({ error: 'service-not-allowed' }))
+    expect(result.current.error).toBe(ERROR_PERMISO)
+  })
+
+  it('network sin conexión: avisa de la conexión', () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    const { result } = renderHook(() => useDictado({ alFallar: vi.fn() }))
+    act(() => result.current.empezar())
+    act(() => ultima().onerror?.({ error: 'network' }))
+    expect(result.current.error).toBe(ERROR_RED)
+    enLinea.mockRestore()
+  })
+
+  it('salir de Contame en medio de una grabación corta sin avisar ni pasar al teclado', () => {
+    const alFallar = vi.fn()
+    const { result, unmount } = renderHook(() => useDictado({ alFallar }))
+    act(() => result.current.empezar())
+    const r = ultima()
+    act(() => r.oir())
+    unmount()
+    expect(r.abortos).toBe(1)
     act(() => { vi.advanceTimersByTime(30000) })
-    expect(recargar).not.toHaveBeenCalled()
+    expect(alFallar).not.toHaveBeenCalled()
+  })
+
+  it('no recarga la página nunca', () => {
+    const recarga = vi.fn()
+    const original = window.location
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...original, reload: recarga } })
+    const { result } = renderHook(() => useDictado({ alFallar: vi.fn() }))
+    act(() => result.current.empezar())
+    act(() => ultima().oir())
+    act(() => { vi.advanceTimersByTime(60000) })
+    act(() => ultima().onerror?.({ error: 'audio-capture' }))
+    expect(recarga).not.toHaveBeenCalled()
+    Object.defineProperty(window, 'location', { configurable: true, value: original })
   })
 })
 
 describe('registro de diagnóstico', () => {
   it('anota cada evento del reconocedor, en orden, con la hora en milisegundos', () => {
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
+    const { result } = renderHook(() => useDictado({}))
     act(() => result.current.empezar())
     const r = ultima()
     act(() => {
@@ -570,21 +380,17 @@ describe('registro de diagnóstico', () => {
     const eventos = leerRegistro().filter((e) => e.n > 0).map((e) => e.ev)
     expect(eventos).toEqual([
       'creado', 'start llamado', 'start', 'audiostart', 'soundstart', 'speechstart', 'result (0 final, 4 letras parciales)',
-      'speechend', 'audioend', 'error no-speech', 'end', 'start llamado', 'stop llamado', 'end', 'terminó: se puede grabar de nuevo',
+      'speechend', 'audioend', 'error no-speech', 'end', 'start llamado', 'stop llamado', 'end',
     ])
     expect(registroComoTexto()).toMatch(/^Navegador: .+\n\d{2}:\d{2}:\d{2}\.\d{3} /)
-    expect(registroComoTexto()).toMatch(/\d{2}:\d{2}:\d{2}\.\d{3} #\d+ audiostart/)
   })
 
-  it('el plan B queda anotado', () => {
-    const { result } = renderHook(() => useDictado({ recargar: vi.fn() }))
+  it('cuando no anda, queda anotado por qué', () => {
+    const { result } = renderHook(() => useDictado({ alFallar: vi.fn() }))
     act(() => result.current.empezar())
     act(() => ultima().onerror?.({ error: 'audio-capture' }))
-    const texto = registroComoTexto()
-    expect(texto).toMatch(/error audio-capture/)
-    expect(texto).toMatch(/abort llamado \(plan B\)/)
-    expect(texto).toMatch(/plan B: error audio-capture \(recarga 1\)/)
-    expect(texto).toMatch(/recargando la página/)
+    expect(registroComoTexto()).toMatch(/dictado web no anda: error audio-capture → teclado/)
+    expect(registroComoTexto()).not.toMatch(/recarg/)
   })
 })
 

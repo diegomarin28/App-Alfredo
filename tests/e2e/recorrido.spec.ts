@@ -76,7 +76,7 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await decir(page, 'Ayer cambié la bomba de agua en Portofino')
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Esto es lo que entendí' })).toBeVisible()
   await revisar('Contame revisión')
   await page.getByRole('button', { name: 'Guardar todo' }).click()
