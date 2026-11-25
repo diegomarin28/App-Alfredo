@@ -86,8 +86,8 @@ describe('nombres bien escritos (punto 3)', () => {
     expect(corregirNombres('Llamar a Enrique el plomero')).toBe('Llamar a Enrique el plomero')
     expect(corregirNombres('Juan Enrique Pérez')).toBe('Juan Enrique Pérez')
   })
-  it('la familia: Alfredo, Pau, Paula, Paulina, María, Santiago, Álvaro, Ignacio, Alfonso y Eugenia', () => {
-    const familia = ['Alfredo', 'Pau', 'Paula', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
+  it('la familia: Alfredo, Pau, Paulina, María, Santiago, Álvaro, Ignacio, Alfonso y Eugenia (ronda 7: sin Paula)', () => {
+    const familia = ['Alfredo', 'Pau', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
     expect(FAMILIA).toEqual(familia)
     for (const n of familia) expect(corregirNombres(`Llamar a ${n} Enrique mañana`)).toBe(`Llamar a ${n} Gericke mañana`)
     // con o sin tildes, y en minúscula, como lo escribe el dictado
@@ -153,7 +153,8 @@ describe('revisión de Contame: editar una fila (punto 2)', () => {
     expect(fechaQuePide('vencPersonal')).toBe('completa')
     expect(fechaQuePide('recordatorio')).toBe('diaMes')
     expect(fechaQuePide('cumple')).toBe('diaMesOpcional')
-    expect(fechaQuePide('pendiente')).toBeNull()
+    expect(fechaQuePide('pendiente')).toBe('completaOpcional') // ronda 7: la tarea puede tener fecha
+    expect(fechaQuePide('nota')).toBeNull()
   })
 
   it('edicionDe: texto, fecha y sección cargados', () => {

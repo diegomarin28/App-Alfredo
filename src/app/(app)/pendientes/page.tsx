@@ -21,7 +21,7 @@ export default async function PendientesYNotas() {
       <Volver />
       <Titulo accion={<NuevoPendiente />}>Tareas pendientes</Titulo>
       {/* los que creó Contame (vienen de un dictado) llevan el micrófono */}
-      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId) }))} nombre={config.nombre || 'Alfredo'} hoy={hoy()} />
+      <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId), fecha: p.fecha }))} nombre={config.nombre || 'Alfredo'} hoy={hoy()} />
       <Seccion id="notas" titulo="Notas" accion={<NuevaNota />}>
         {notas.length === 0 && <EmptyState>Todavía no hay notas.</EmptyState>}
         <ul className="space-y-2.5">

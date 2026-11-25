@@ -111,6 +111,8 @@ export interface Pendiente {
   id: string
   loteId?: string
   texto: string
+  /** YYYY-MM-DD opcional (ronda 7, migración 0010): para cuándo; va aparte del texto */
+  fecha?: string
   hecho: boolean
   creadoEn: string
 }

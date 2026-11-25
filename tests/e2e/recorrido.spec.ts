@@ -139,7 +139,9 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
 
   // Ajustes y de vuelta a Inicio
   await page.goto('/')
-  await page.getByRole('link', { name: 'Ajustes' }).click()
+  const ajustes = page.getByRole('link', { name: 'Ajustes' })
+  await hidratado(ajustes)
+  await ajustes.click()
   await expect(page.getByRole('heading', { name: 'Ajustes' })).toBeVisible()
   await revisar('Ajustes')
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' }).click()

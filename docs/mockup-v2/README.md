@@ -101,8 +101,18 @@ Ninguna animación bloquea: se puede seguir tocando mientras corre.
   - Una nota solo se crea si Alfredo dice algo para anotar ("anotá", "tomá nota", "acordate de que…").
   - En cumpleaños, la relación ("hijo") no va pegada al nombre: "Juan", no "Juan (hijo)" (prompt + limpieza en código).
   - La caja de texto de antes de mandar pasa a decir "Esto escuché. Podés corregirlo antes de mandar.", para no confundirla con la revisión.
-- Nombres bien escritos. El dictado del iPhone cambia apellidos ("Henrique" por "Gericke"). Al ordenar con la IA se le pasa la lista de nombres y apellidos que ya hay en Calendario, Contactos y Casas, con la instrucción de corregir palabras que suenen parecido a uno conocido. Además, un diccionario fijo en código (src/domain/nombres.ts): Henrique → Gericke siempre, y Enrique → Gericke cuando va después de un nombre de la familia (Alfredo, Pau, Paula, Paulina, María, Santiago, Álvaro, Ignacio, Alfonso, Eugenia —con o sin tildes— y cualquiera guardado como "… Gericke"). Con tests.
+- Nombres bien escritos. El dictado del iPhone cambia apellidos ("Henrique" por "Gericke"). Al ordenar con la IA se le pasa la lista de nombres y apellidos que ya hay en Calendario, Contactos y Casas, con la instrucción de corregir palabras que suenen parecido a uno conocido. Además, un diccionario fijo en código (src/domain/nombres.ts): Henrique → Gericke siempre, y Enrique → Gericke cuando va después de un nombre de la familia (Alfredo, Pau, Paulina, María, Santiago, Álvaro, Ignacio, Alfonso, Eugenia —con o sin tildes— y cualquiera guardado como "… Gericke"; Paula salió en la ronda 7). Con tests.
 - Lo próximo en Inicio: cada fila aparece solo si tiene algo (sin "No hay vencimientos pendientes" ni parecidos); si no hay nada en ninguna, no se muestra la sección.
 - Singular: "Cumpleaños · 1 años" pasa a "Cumpleaños · cumple 1 año". Todas las cantidades con número pasan por la misma función: 1 año, 1 día, 1 tarea, 1 mes, 1 foto.
 - Íconos de servicios: UTE (rayo), OSE (gota), DirecTV/TV (tele), internet (wifi), Prosegur, alarma o seguridad (escudo), y una herramienta para el resto.
 - Sin migraciones nuevas: nada de esta ronda cambia la base.
+
+## Ronda 7: ajustes de Contame
+
+- "No entendí" editable. Además de "Descartar" y "Guardar como nota", tocar la fila abre la misma hoja "Corregir" que las demás filas de la revisión: el texto, a qué sección va ("Va en": tareas, notas, Calendario, recordatorios, vencimientos, contactos, casas) y la fecha si la sección la pide. Arranca como tarea (o nota, si es largo). Al tocar "Listo", pasa a "Lo que voy a guardar".
+- Fechas en el texto. Nunca se muestra una fecha como 2026-11-30: se lee "lunes 30/11".
+  - Si algo tiene día y hora o es un evento (una reunión, un viaje, un turno), va al Calendario como "Otra" sin repetición, con el texto limpio: "Reunión en Canelones", lunes 30/11 (y la hora, si la dijo). En "Va en" es "Calendario · una vez (reunión, viaje…)".
+  - Una tarea con fecha: el texto va sin la fecha y la fecha va aparte. En Tareas pendientes se ve debajo del texto ("lunes 30/11"), y la hoja de agregar y la de editar tienen "Para cuándo (opcional)".
+  - Lo dice el prompt (una acción `evento` nueva, `fecha` en `pendiente` y la regla 13), y además se limpia en código: si una tarea trae 2026-11-30 en el texto, se saca de ahí y va a su fecha; en cualquier otro texto (y en "No entendí") se cambia por "lunes 30/11".
+- Familia de la corrección Enrique → Gericke: sale "Paula". Pau es Paulina, que ya está.
+- Migración 0010 (supabase/migrations/0010_pendientes_fecha.sql): la columna `pendientes.fecha`. Queda escrita sin aplicar. Mientras no esté, la app guarda igual la tarea, con la fecha escrita al final del texto ("Llamar al contador (lunes 30/11)").

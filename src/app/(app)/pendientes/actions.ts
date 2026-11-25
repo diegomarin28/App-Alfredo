@@ -4,6 +4,7 @@ import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
 import { validarId } from '@/domain/ids'
 import { validarNota, validarPendiente } from '@/domain/vencimientos'
+import { fechaOpcional } from '@/domain/fechaTexto'
 
 type Res = { ok: true } | { ok: false; error: string }
 
@@ -22,12 +23,15 @@ function refrescar() {
   revalidatePath('/')
 }
 
-export async function agregarPendiente(texto: string): Promise<Res> {
+/** fecha: YYYY-MM-DD opcional (ronda 7), aparte del texto */
+export async function agregarPendiente(texto: string, fecha?: string): Promise<Res> {
   const p = await permitido()
   if (!p.ok) return p
   const v = validarPendiente(texto)
   if (!v.ok) return v
-  await (await getRepo()).pendientes.create({ texto: v.valor, hecho: false })
+  const fe = fechaOpcional(fecha)
+  if (!fe.ok) return fe
+  await (await getRepo()).pendientes.create({ texto: v.valor, ...(fe.valor ? { fecha: fe.valor } : {}), hecho: false })
   refrescar()
   return { ok: true }
 }
@@ -59,10 +63,14 @@ export async function editarPendiente(id: string, f: FormData): Promise<Res> {
   const p = await permitido()
   if (!p.ok) return p
   const repo = getRepo()
-  if (!validarId(id) || !(await repo.pendientes.get(id))) return { ok: false, error: 'No existe esa tarea.' }
+  const actual = validarId(id) ? await repo.pendientes.get(id) : null
+  if (!actual) return { ok: false, error: 'No existe esa tarea.' }
   const v = validarPendiente(String(f.get('texto') ?? ''))
   if (!v.ok) return v
-  await repo.pendientes.update(id, { texto: v.valor })
+  const fe = fechaOpcional(f.get('fecha'))
+  if (!fe.ok) return fe
+  // la fecha solo viaja si hay o había (null la borra)
+  await repo.pendientes.update(id, { texto: v.valor, ...(fe.valor || actual.fecha ? { fecha: fe.valor } : {}) })
   refrescar()
   return { ok: true }
 }

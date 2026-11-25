@@ -3,6 +3,7 @@ import { normalizarBusqueda } from '@/domain/contactos'
 import { hoy } from '@/domain/fechas'
 import { esMuletilla, sinMuletillas } from '@/domain/muletillas'
 import { corregirNombres } from '@/domain/nombres'
+import { fechasLegibles } from '@/domain/fechaTexto'
 import { MAX_NOTA } from '@/domain/vencimientos'
 import { describir, textoLegible, textoLibre, validarAccion } from './acciones'
 import { MODELO_CONTAME, type AiArgs, type AiClient } from './client'
@@ -93,7 +94,7 @@ async function crear(repo: Repo, a: Accion, loteId: string): Promise<string> {
       return (await repo.personasCasa.create({ ...datos, loteId })).id
     }
     case 'servicioCasa': return (await repo.serviciosCasa.create({ casa: a.casa, clave: a.clave, valor: a.valor, loteId })).id
-    case 'pendiente': return (await repo.pendientes.create({ texto: a.texto, hecho: false, loteId })).id
+    case 'pendiente': return (await repo.pendientes.create({ texto: a.texto, ...(a.fecha ? { fecha: a.fecha } : {}), hecho: false, loteId })).id
     case 'nota': return (await repo.notas.create({ texto: a.texto, origen: 'voz', loteId })).id
     case 'contacto': {
       const { tipo: _t, ...datos } = a
@@ -133,7 +134,7 @@ function fragmentos(crudos: unknown[], nombres: string[]): string[] {
   const vistos = new Set<string>()
   const out: string[] = []
   for (const x of crudos) {
-    const t = typeof x === 'string' ? sinMuletillas(corregirNombres(x.trim(), nombres)) : ''
+    const t = typeof x === 'string' ? fechasLegibles(sinMuletillas(corregirNombres(x.trim(), nombres))) : ''
     if (!t || t.length > MAX_NOTA || esMuletilla(t)) continue
     const k = normalizarBusqueda(t)
     if (vistos.has(k)) continue
