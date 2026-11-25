@@ -1,3 +1,4 @@
+import { cantidad, enDias } from '@/domain/cantidades'
 import { proximosCumples, recordatoriosActivos, vencimientosProximos } from '@/domain/fechas'
 import type { Fecha, Recordatorio, Vencimiento } from '@/domain/tipos'
 import { proximaDeFecha } from '@/domain/repeticion'
@@ -15,10 +16,7 @@ export interface DatosAvisos {
 }
 
 function cuandoVence(dias: number): string {
-  if (dias === 0) return 'Hoy'
-  if (dias === 1) return 'Mañana'
-  if (dias > 1) return `En ${dias} días`
-  return dias === -1 ? 'Venció hace 1 día' : `Venció hace ${-dias} días`
+  return enDias(dias, { ayer: false })
 }
 
 /** Puro: avisos que corresponden al día `hoy` (YYYY-MM-DD, hora de Montevideo). */
@@ -34,7 +32,7 @@ export function avisosDelDia(datos: DatosAvisos, hoy: string): Aviso[] {
     avisos.push({ titulo: `Hoy: ${f.nombre}`, cuerpo: f.hora ? `A las ${f.hora.slice(0, 5)}` : '', url: '/calendario' })
   }
   for (const r of recordatoriosActivos(datos.recordatorios, hoy)) {
-    const cuerpo = r.dias === 0 ? 'Es hoy' : r.dias === 1 ? 'Falta 1 día' : `Faltan ${r.dias} días`
+    const cuerpo = r.dias === 0 ? 'Es hoy' : r.dias === 1 ? 'Falta 1 día' : `Faltan ${cantidad(r.dias, 'día')}`
     avisos.push({ titulo: r.titulo, cuerpo, url: '/recordatorios' })
   }
   for (const v of vencimientosProximos(datos.vencimientos, hoy)) {

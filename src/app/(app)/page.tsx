@@ -5,7 +5,8 @@ import { fotoDelDia } from '@/domain/fotoDelDia'
 import { saludoDelMomento } from '@/domain/detalles'
 import Actualizar from '@/components/Actualizar'
 import { hoy, proximosCumples, vencimientosProximos } from '@/domain/fechas'
-import { EmptyState, IconoTile, Lista, clasesFila, clasesSeparador } from '@/components/ui'
+import { EmptyState, IconoTile, Lista, clasesSeparador } from '@/components/ui'
+import { cantidad, enDias, textoEdad } from '@/domain/cantidades'
 import { Icono, type NombreIcono } from '@/components/iconos'
 import { paraCompletar } from '@/domain/completar'
 import ParaCompletar, { type DatosCompletar, type FilaCompletar } from './ParaCompletar'
@@ -17,13 +18,6 @@ function fechaLarga(hoyStr: string): string {
   const f = (o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('es', { timeZone: 'UTC', ...o }).format(new Date(Date.UTC(y, m - 1, d, 12)))
   const t = `${f({ weekday: 'long' })} ${d} de ${f({ month: 'long' })}`
   return t.charAt(0).toUpperCase() + t.slice(1)
-}
-
-function enDias(n: number): string {
-  if (n < 0) return n === -1 ? 'Venció ayer' : `Venció hace ${-n} días`
-  if (n === 0) return 'Hoy'
-  if (n === 1) return 'Mañana'
-  return `En ${n} días`
 }
 
 /** Accesos de Inicio (mockup v2): 2 columnas, ícono + texto, 52 px de alto. */
@@ -77,10 +71,10 @@ export default async function Inicio() {
   // Modo familia (mockup v2): pantalla de carga, con lo que ya hay de cada cosa.
   if (!owner) {
     const tarjetas: [string, string, string, NombreIcono][] = [
-      ['Cumpleaños y fechas', `${fechas.length} ${fechas.length === 1 ? 'cargada' : 'cargadas'}`, '/calendario', 'torta'],
-      ['Fotos de la familia', `${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'}`, '/fotos', 'imagen'],
+      ['Cumpleaños y fechas', cantidad(fechas.length, 'cargada'), '/calendario', 'torta'],
+      ['Fotos de la familia', cantidad(fotos.length, 'foto'), '/fotos', 'imagen'],
       ['Portofino y Malibú', 'Personas y servicios', '/casas', 'casa'],
-      ['Recordatorios', `${recordatorios?.length ?? 0} ${recordatorios?.length === 1 ? 'cargado' : 'cargados'}`, '/recordatorios', 'campana'],
+      ['Recordatorios', cantidad(recordatorios?.length ?? 0, 'cargado'), '/recordatorios', 'campana'],
     ]
     return (
       <Actualizar>
@@ -175,20 +169,17 @@ export default async function Inicio() {
         ))}
       </nav>
 
-      <section aria-labelledby="proximo" className="space-y-2.5">
-        <h2 id="proximo" className="text-[17px] font-bold">Lo próximo</h2>
-        <Lista>
-          {cumple
-            ? <Proximo href="/calendario" icono="torta" tono="azul" titulo={`Cumple de ${cumple.nombre}`} detalle={[enDias(cumple.dias), cumple.edad ? `cumple ${cumple.edad}` : ''].filter(Boolean).join(' · ')} />
-            : <li className={`${clasesFila} text-base text-texto-2`}>No hay cumpleaños cargados.</li>}
-          {venc
-            ? <Proximo href="/vencimientos" icono="reloj" tono={venc.urgente ? 'naranja' : 'gris'} titulo={venc.titulo} detalle={venc.dias < 0 ? enDias(venc.dias) : `Vence ${enDias(venc.dias).toLowerCase()}`} urgente={venc.urgente} />
-            : <li className={`${clasesFila} text-base text-texto-2`}>No hay vencimientos pendientes.</li>}
-          {abiertos > 0
-            ? <Proximo href="/pendientes" icono="tilde" tono="gris" titulo={`${abiertos} ${abiertos === 1 ? 'tarea pendiente' : 'tareas pendientes'}`} detalle="Para hacer" />
-            : <li className={`${clasesFila} text-base text-texto-2`}>No hay tareas pendientes.</li>}
-        </Lista>
-      </section>
+      {/* ronda 6: cada fila solo si tiene algo; sin nada en ninguna, no hay sección */}
+      {(cumple || venc || abiertos > 0) && (
+        <section aria-labelledby="proximo" className="space-y-2.5">
+          <h2 id="proximo" className="text-[17px] font-bold">Lo próximo</h2>
+          <Lista>
+            {cumple && <Proximo href="/calendario" icono="torta" tono="azul" titulo={`Cumple de ${cumple.nombre}`} detalle={[enDias(cumple.dias), textoEdad(cumple.edad)].filter(Boolean).join(' · ')} />}
+            {venc && <Proximo href="/vencimientos" icono="reloj" tono={venc.urgente ? 'naranja' : 'gris'} titulo={venc.titulo} detalle={venc.dias < 0 ? enDias(venc.dias) : `Vence ${enDias(venc.dias).toLowerCase()}`} urgente={venc.urgente} />}
+            {abiertos > 0 && <Proximo href="/pendientes" icono="tilde" tono="gris" titulo={cantidad(abiertos, 'tarea pendiente')} detalle="Para hacer" />}
+          </Lista>
+        </section>
+      )}
 
       {completar.length > 0 && <ParaCompletar items={completar} grupos={[...grupos].sort((a, b) => a.orden - b.orden).map((g) => ({ id: g.id, nombre: g.nombre }))} />}
     </main>

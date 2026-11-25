@@ -45,7 +45,7 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   await decir(page, 'dos mil pesos')
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
 
-  const caja = page.getByLabel('Lo que entendí · podés corregirlo')
+  const caja = page.getByLabel('Lo que escuché · podés corregirlo')
   await expect(caja).toHaveValue('Ayer le pagué al jardinero dos mil pesos')
   await caja.fill('Ayer le pagué al jardinero 2000 pesos')
   await expect(page.getByRole('button', { name: 'Repetir' })).toBeVisible()
@@ -55,6 +55,10 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   await expect(page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' })).toBeVisible()
   await page.getByRole('button', { name: 'Malibú', exact: true }).click()
 
+  // ronda 6: primero "Esto es lo que entendí"; nada se guarda hasta "Guardar todo"
+  await expect(page.getByRole('heading', { name: 'Esto es lo que entendí' })).toBeVisible()
+  await expect(page.locator('[data-fila]')).toContainText(['Le pagué al jardinero 2000 pesos (21 de noviembre)Historial de Malibú'])
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
   await expect(page.getByText('Historial de Malibú: Le pagué al jardinero 2000 pesos (21 de noviembre)')).toBeVisible()
 
@@ -90,6 +94,7 @@ test('"Otra cosa" guarda en Tareas pendientes sin otra llamada a la IA', async (
   await page.getByLabel('Escribí o dictá con el teclado').fill('Arreglar la canilla')
   await page.getByRole('button', { name: 'Enviar' }).click()
   await page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' }).click()
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Tareas pendientes: Arreglar la canilla')).toBeVisible()
   const llamadas = (await (await page.request.get('/api/test/ai-llamadas')).json()).llamadas
   expect(llamadas).toHaveLength(1)
@@ -109,6 +114,7 @@ test('sin reconocimiento de voz: se puede escribir o pegar', async ({ page }) =>
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toHaveCount(0)
   await page.getByLabel('Escribí o dictá con el teclado').fill('Comprar pilas')
   await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Tareas pendientes: Comprar pilas')).toBeVisible()
 })
 
@@ -122,7 +128,7 @@ test('permiso de micrófono denegado: aviso claro, sin perder lo dictado', async
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
   await expect(page.getByText('Comprar pilas')).toBeVisible()
   await page.getByRole('button', { name: 'Revisar y enviar' }).click()
-  await expect(page.getByLabel('Lo que entendí · podés corregirlo')).toHaveValue('Comprar pilas')
+  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas')
 })
 
 test('sin conexión: deja de escuchar y avisa (no se queda reiniciando)', async ({ page }) => {
@@ -135,7 +141,7 @@ test('sin conexión: deja de escuchar y avisa (no se queda reiniciando)', async 
   expect(await page.evaluate(() => (window as unknown as { __voz: { starts(): number } }).__voz.starts())).toBe(1)
 })
 
-test('respuesta de la IA cortada: guarda todo como nota y lo avisa', async ({ page }) => {
+test('respuesta de la IA cortada: propone todo como nota y lo avisa', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await guion(page, [{
     texto: '',
@@ -147,16 +153,17 @@ test('respuesta de la IA cortada: guarda todo como nota y lo avisa', async ({ pa
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await page.getByLabel('Escribí o dictá con el teclado').fill('Primera cosa en Portofino. Segunda cosa en Malibú.')
   await page.getByRole('button', { name: 'Enviar' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
   await expect(page.getByText('Notas: Primera cosa en Portofino. Segunda cosa en Malibú.')).toBeVisible()
-  await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Casas' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Casas' })).toBeVisible()
   await expect(page.getByText('Primera cosa', { exact: true })).toHaveCount(0)
 })
 
 test('sin saldo: mensaje amable', async ({ page }) => {
-  await resetear(page, { datos: { usoIa: [{ tokensIn: 0, tokensOut: 0, costoUsd: 25 }] } })
+  await resetear(page, { hoy: '2026-11-22', datos: { usoIa: [{ tokensIn: 0, tokensOut: 0, costoUsd: 25 }] } })
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
@@ -174,7 +181,14 @@ test('APIs: familia 403, validación 400, deshacer con lote inválido 400', asyn
   expect(r.status()).toBe(400)
   r = await page.request.post('/api/contame/deshacer', { data: { loteId: 'no-es-uuid' } })
   expect(r.status()).toBe(400)
+  // ronda 6: "Guardar todo" valida de nuevo lo que llega del teléfono
+  r = await page.request.post('/api/contame/guardar', { data: { acciones: 'no' } })
+  expect(r.status()).toBe(400)
+  r = await page.request.post('/api/contame/guardar', { data: { acciones: [{ tipo: 'vencimiento', titulo: 'X', ambito: 'empresa', fecha: 'mal' }] } })
+  expect(r.status()).toBe(400)
   await entrarComo(page, 'familia')
+  r = await page.request.post('/api/contame/guardar', { data: { acciones: [{ tipo: 'pendiente', texto: 'x' }] } })
+  expect(r.status()).toBe(403)
   r = await page.request.post('/api/ai/contame', { data: { texto: 'hola' } })
   expect(r.status()).toBe(403)
   r = await page.request.post('/api/contame/deshacer', { data: { loteId: crypto.randomUUID() } })

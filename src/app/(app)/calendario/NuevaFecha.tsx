@@ -1,49 +1,53 @@
 'use client'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, BotonMas, CampoSelect, Field, Sheet, clasesFechaHora, clasesInput, clasesSelect } from '@/components/ui'
 import { CampoDias, Segmentado } from '@/components/controles'
-import { MESES } from '@/domain/validarFecha'
-import { REPETICIONES, diaDeSemana } from '@/domain/repeticion'
-import type { Repeticion } from '@/domain/tipos'
-import { agregarFecha } from './actions'
+import { DiaMes, diaMesDe } from '@/components/campos'
+import { REPETICIONES, diaDeSemana, diasMarcados } from '@/domain/repeticion'
+import type { Fecha, Repeticion } from '@/domain/tipos'
+import { agregarFecha, editarFecha } from './actions'
 
 const TIPOS = [['cumple', 'Cumpleaños'], ['otra', 'Otra']] as const
 type Tipo = (typeof TIPOS)[number][0]
 
-/** "Elegí" en gris hasta elegir (ronda 4b). */
-export const clasesElegir = `${clasesSelect} invalid:text-texto-2`
+export { DiaMes, clasesElegir } from '@/components/campos'
 
-/** Día y mes con "Elegí" (vacío hasta elegir). */
-export function DiaMes() {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <Field label="Día">
-        <select name="dia" aria-label="Día" defaultValue="" required className={clasesElegir}>
-          <option value="" disabled>Elegí</option>
-          {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
-        </select>
-      </Field>
-      <Field label="Mes">
-        <select name="mes" aria-label="Mes" defaultValue="" required className={clasesElegir}>
-          <option value="" disabled>Elegí</option>
-          {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-        </select>
-      </Field>
-    </div>
-  )
-}
+/** Lo que hace falta para editar una fecha. */
+export type InicialFecha = Pick<Fecha, 'id' | 'nombre' | 'tipo' | 'dia' | 'anioNacimiento' | 'repeticion' | 'anioEvento' | 'hora' | 'diasSemana'>
 
-/** hoy (YYYY-MM-DD): "Todas las semanas" viene con el día de hoy marcado. */
-export default function NuevaFecha({ hoy }: { hoy: string }) {
+/**
+ * hoy (YYYY-MM-DD): "Todas las semanas" viene con el día de hoy marcado.
+ * Con `inicial` (ronda 6) es la hoja de editar: se abre tocando la fila (`children`), con los datos cargados.
+ */
+export default function NuevaFecha({ hoy, inicial, etiqueta, children, className = '' }: {
+  hoy: string; inicial?: InicialFecha; etiqueta?: string; children?: ReactNode; className?: string
+}) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
-  const [tipo, setTipo] = useState<Tipo>('cumple')
-  const [repeticion, setRepeticion] = useState<Repeticion>('anual')
-  const [dias, setDias] = useState<number[]>([diaDeSemana(hoy)])
+  const tipoInicial: Tipo = inicial?.tipo ?? 'cumple'
+  const repInicial: Repeticion = inicial?.tipo === 'otra' ? inicial.repeticion ?? 'anual' : 'anual'
+  const diasIniciales = () => (inicial && repInicial === 'semanal' ? diasMarcados(inicial, hoy) : [diaDeSemana(hoy)])
+  const [tipo, setTipo] = useState<Tipo>(tipoInicial)
+  const [repeticion, setRepeticion] = useState<Repeticion>(repInicial)
+  const [dias, setDias] = useState<number[]>(diasIniciales)
   const semanal = tipo === 'otra' && repeticion === 'semanal'
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
+
+  function abrir() {
+    setError('')
+    setTipo(tipoInicial)
+    setRepeticion(repInicial)
+    setDias(diasIniciales())
+    setAbierto(true)
+  }
+
+  // semanal con días: la fecha guardada es solo desde cuándo; no se muestra
+  const conDias = Boolean(inicial?.diasSemana?.length)
+  const dm = conDias ? {} : diaMesDe(inicial?.dia)
+  const anioIni = inicial ? (inicial.tipo === 'cumple' ? inicial.anioNacimiento : conDias ? undefined : inicial.anioEvento) : undefined
+  const horaIni = inicial?.hora?.slice(0, 5) ?? ''
 
   async function guardar(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,11 +56,12 @@ export default function NuevaFecha({ hoy }: { hoy: string }) {
     setEnviando(true)
     setError('')
     try {
-      const r = await agregarFecha({
+      const entrada = {
         nombre: String(f.get('nombre') ?? ''), tipo,
         dia: Number(f.get('dia') || NaN), mes: Number(f.get('mes') || NaN), anio: anio ? Number(anio) : null,
         ...(tipo === 'otra' ? { repeticion, hora: String(f.get('hora') ?? ''), ...(semanal ? { diasSemana: dias } : {}) } : {}),
-      })
+      }
+      const r = inicial ? await editarFecha(inicial.id, entrada) : await agregarFecha(entrada)
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
       router.refresh()
@@ -69,10 +74,12 @@ export default function NuevaFecha({ hoy }: { hoy: string }) {
 
   return (
     <>
-      <BotonMas nombre="Agregar fecha" onClick={() => { setError(''); setTipo('cumple'); setRepeticion('anual'); setDias([diaDeSemana(hoy)]); setAbierto(true) }} />
-      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nueva fecha">
+      {inicial
+        ? <button type="button" aria-label={etiqueta ?? `Editar ${inicial.nombre}`} data-editar onClick={abrir} className={`min-w-0 flex-1 text-left ${className}`}>{children}</button>
+        : <BotonMas nombre="Agregar fecha" onClick={abrir} />}
+      <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={inicial ? 'Editar fecha' : 'Nueva fecha'}>
         <form onSubmit={guardar} className="space-y-4" noValidate>
-          <Field label="Nombre"><input name="nombre" className={clasesInput} autoComplete="off" /></Field>
+          <Field label="Nombre"><input name="nombre" defaultValue={inicial?.nombre ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
           <div>
             <span className="mb-1.5 block text-base font-semibold text-texto">Tipo</span>
             <Segmentado etiqueta="Tipo" opciones={TIPOS} valor={tipo} onCambio={setTipo} />
@@ -80,9 +87,9 @@ export default function NuevaFecha({ hoy }: { hoy: string }) {
           {tipo === 'cumple' ? (
             <>
               <p className="text-base text-texto-2">Se repite todos los años.</p>
-              <DiaMes />
+              <DiaMes {...dm} />
               <Field label="Año de nacimiento (opcional)">
-                <input name="anio" inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
+                <input name="anio" defaultValue={inicial?.tipo === 'cumple' ? anioIni ?? '' : ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
               </Field>
             </>
           ) : (
@@ -98,18 +105,18 @@ export default function NuevaFecha({ hoy }: { hoy: string }) {
                 <>
                   <CampoDias dias={dias} setDias={setDias} />
                   <Field label="Hora (opcional)">
-                    <input name="hora" type="time" className={clasesFechaHora} />
+                    <input name="hora" type="time" defaultValue={horaIni} className={clasesFechaHora} />
                   </Field>
                 </>
               ) : (
                 <>
-                  <DiaMes />
+                  <DiaMes {...dm} />
                   <div className="grid grid-cols-2 gap-3">
                     <Field label={repeticion === 'nunca' ? 'Año' : 'Año (desde)'}>
-                      <input name="anio" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder={repeticion === 'nunca' ? '' : 'Opcional'} className={clasesInput} />
+                      <input name="anio" defaultValue={inicial?.tipo === 'otra' ? anioIni ?? '' : ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder={repeticion === 'nunca' ? '' : 'Opcional'} className={clasesInput} />
                     </Field>
                     <Field label="Hora (opcional)">
-                      <input name="hora" type="time" className={clasesFechaHora} />
+                      <input name="hora" type="time" defaultValue={horaIni} className={clasesFechaHora} />
                     </Field>
                   </div>
                 </>

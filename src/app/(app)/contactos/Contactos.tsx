@@ -6,6 +6,9 @@ import { Icono } from '@/components/iconos'
 import { useTextoEscrito } from '@/components/useTextoEscrito'
 import { coincide } from '@/domain/contactos'
 import type { Contacto } from '@/domain/tipos'
+import { TocarParaEditar } from '@/components/Editar'
+import { CamposContacto, entradaContacto } from '@/components/campos'
+import { editarContacto } from '../completar'
 import { crearGrupo } from './actions'
 
 export interface Grupo { id: string; nombre: string }
@@ -88,14 +91,22 @@ export default function Contactos({ contactos, grupos }: { contactos: Contacto[]
         <Lista>
           {lista.map((c) => (
             <li key={c.id} data-fila className={clasesFila}>
-              <Avatar nombre={c.nombre} />
-              <div className="min-w-0 flex-1">
-                <p className="text-base font-semibold text-texto">{c.nombre}</p>
-                {(c.empresa || c.grupoId) && (
-                  <p className="text-base text-texto-2">{[c.empresa, c.grupoId && nombreGrupo.get(c.grupoId)].filter(Boolean).join(' · ')}</p>
-                )}
-                {c.nota && <p className="text-base whitespace-pre-wrap text-texto-2">{c.nota}</p>}
-              </div>
+              {/* ronda 6: tocar la fila abre la edición; sin teléfono, la fila lo pide */}
+              <TocarParaEditar
+                etiqueta={`Editar ${c.nombre}`} titulo="Editar contacto" guardar={(f) => editarContacto(c.id, entradaContacto(f))}
+                campos={<CamposContacto c={c} grupos={grupos} enfocarTelefono={!c.telefono} />}
+                className="flex items-center gap-3"
+              >
+                <Avatar nombre={c.nombre} />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-semibold text-texto">{c.nombre}</span>
+                  {(c.empresa || c.grupoId) && (
+                    <span className="block text-base text-texto-2">{[c.empresa, c.grupoId && nombreGrupo.get(c.grupoId)].filter(Boolean).join(' · ')}</span>
+                  )}
+                  {c.nota && <span className="block text-base whitespace-pre-wrap text-texto-2">{c.nota}</span>}
+                  {!c.telefono && <span className="block text-base font-semibold text-azul">Agregar teléfono</span>}
+                </span>
+              </TocarParaEditar>
               {c.telefono && (
                 <div className="flex shrink-0 gap-2">
                   <BotonIcono nombre={`Llamar a ${c.nombre}`} icono="telefono" href={`tel:+${c.telefono}`} />

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Boton, Sheet, clasesFechaHora } from '@/components/ui'
 import { Icono } from '@/components/iconos'
 import { OPCIONES_POSPONER } from '@/domain/posponer'
+import { cantidad } from '@/domain/cantidades'
 
 export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number; posponerDias: number }
 
@@ -74,7 +75,7 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
         ? '¡Listo!'
         : cuanto && 'hasta' in cuanto
           ? `Te lo recuerdo de nuevo el ${diaLargo(cuanto.hasta)}.`
-          : `Te lo recuerdo de nuevo en ${cuanto?.dias === 1 ? '1 día' : `${cuanto?.dias} días`}.`
+          : `Te lo recuerdo de nuevo en ${cantidad(cuanto?.dias ?? 0, 'día')}.`
       setAvisos((v) => [...v, { id, msg }])
       router.refresh()
     } catch {
@@ -98,7 +99,7 @@ export default function ListaActivos({ items }: { items: ItemActivo[] }) {
             <div className="min-w-0">
               <h3 className="text-base font-semibold text-texto">{r.titulo}</h3>
               <p className={`text-base ${r.dias <= 7 ? 'text-urg-tx' : 'text-texto-2'}`}>
-                {r.fecha} · {r.dias === 0 ? 'es hoy' : r.dias === 1 ? 'falta 1 día' : `faltan ${r.dias} días`}
+                {r.fecha} · {r.dias === 0 ? 'es hoy' : r.dias === 1 ? 'falta 1 día' : `faltan ${cantidad(r.dias, 'día')}`}
               </p>
             </div>
           </div>

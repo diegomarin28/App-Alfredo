@@ -1,11 +1,12 @@
+import { cantidad } from './cantidades'
 import type { Recordatorio, Repeticion } from './tipos'
 import { posponerPor, proximaDeRecordatorio, validarDiasSemana } from './repeticion'
 import { MESES, validarDiaMes } from './validarFecha'
 
 export function chipAviso(dias: number): string {
-  if (dias >= 30 && dias % 30 === 0) return dias === 30 ? '1 mes antes' : `${dias / 30} meses antes`
-  if (dias >= 7 && dias % 7 === 0) return dias === 7 ? '1 semana antes' : `${dias / 7} semanas antes`
-  return dias === 1 ? '1 día antes' : `${dias} días antes`
+  if (dias >= 30 && dias % 30 === 0) return `${cantidad(dias / 30, 'mes')} antes`
+  if (dias >= 7 && dias % 7 === 0) return `${cantidad(dias / 7, 'semana')} antes`
+  return `${cantidad(dias, 'día')} antes`
 }
 
 /** "12-25" -> "25 de diciembre"; null -> "Fecha a cargar". */

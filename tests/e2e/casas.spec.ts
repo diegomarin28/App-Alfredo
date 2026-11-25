@@ -80,7 +80,7 @@ test('agregar en cada sección persiste', async ({ page }) => {
   await page.getByRole('button', { name: 'Agregar persona' }).click()
   const d = page.getByRole('dialog')
   await d.getByLabel('Nombre').fill('Ana Plomera')
-  await d.getByLabel('Rol').fill('Plomería')
+  await d.getByLabel('Qué hace').fill('Plomería')
   await d.getByLabel('Teléfono').fill('12')
   await d.getByRole('button', { name: 'Guardar' }).click()
   await expect(d.getByRole('alert')).toHaveText('Revisá el número')

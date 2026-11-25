@@ -50,3 +50,18 @@ export async function marcarHecho(id: string): Promise<Res> {
 export async function deshacerHecho(id: string): Promise<Res> {
   return cambiarHecho(id, false)
 }
+
+/** Ronda 6: editar un vencimiento (tocando la fila). */
+export async function editarVencimiento(id: string, entrada: EntradaVencimiento): Promise<Res> {
+  const p = await permitido()
+  if (!p.ok) return p
+  const repo = getRepo()
+  const actual = validarId(id) ? await repo.vencimientos.get(id) : null
+  if (!actual) return { ok: false, error: 'No existe ese vencimiento.' }
+  const r = validarVencimiento(entrada)
+  if (!r.ok) return r
+  const { titulo, ambito, fecha, avisarDiasAntes } = r.valor
+  await repo.vencimientos.update(id, { titulo, ambito, fecha, avisarDiasAntes })
+  refrescar()
+  return { ok: true }
+}

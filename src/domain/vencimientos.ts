@@ -1,3 +1,4 @@
+import { enDias } from './cantidades'
 import { hoyMontevideo } from './fechas'
 import type { Vencimiento } from './tipos'
 import { MESES } from './validarFecha'
@@ -24,10 +25,7 @@ export function fechaCorta(iso: string): string {
 }
 
 export function chipVencimiento(dias: number): string {
-  if (dias === 0) return 'Hoy'
-  if (dias === 1) return 'Mañana'
-  if (dias > 1) return `En ${dias} días`
-  return dias === -1 ? 'Venció hace 1 día' : `Venció hace ${-dias} días`
+  return enDias(dias, { ayer: false })
 }
 
 export interface EntradaVencimiento { titulo: string; ambito: string; fecha: string; avisarDiasAntes: number }

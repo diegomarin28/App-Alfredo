@@ -85,3 +85,24 @@ Ninguna animación bloquea: se puede seguir tocando mientras corre.
 - Para completar (punto 9): en Inicio, debajo de "Lo próximo", una tarjeta "Para completar" que solo aparece si hay algo pendiente: cumpleaños sin fecha ("Cumple de Ariel Luz, falta la fecha"), servicios de las casas sin número ("Prosegur, falta el número") y contactos sin teléfono ("Anabel, falta el teléfono"). Cada fila con "Agregar" (abre el formulario de edición de ese ítem) y "Omitir" (lo saca de la lista para siempre, sin borrar el ítem). Si hay más de 3, se ven 3 y "Ver todo". En Calendario, los cumpleaños sin fecha no aparecen hasta que tengan fecha. Contame guarda un cumpleaños sin fecha o un servicio sin número en vez de descartarlo.
   - Migración 0009_para_completar.sql, SIN aplicar (la aplica Diego junto con la 0008): fechas.dia y servicios_casa.valor aceptan null (el check de formato de dia sigue para cuando no es null); completar_omitido boolean not null default false en fechas, servicios_casa y contactos. Tests unitarios de qué entra en la lista.
 - Respetar la Regla de textos: nada sobre números de tarjeta ni cuentas bancarias.
+
+## Ronda 6: editar todo, Contame y detalles
+- Todo se puede editar tocándolo. En cada lista, tocar la fila abre la hoja de edición con los datos cargados y "Guardar"; el borrar (y llamar, copiar, tildar) sigue como está, al costado. Va en:
+  - Calendario: cumpleaños y "Otra", con repetición, días de la semana y hora.
+  - Casas: "Quién se ocupa" (nombre, qué hace, qué días va, teléfono), Servicios (nombre y número) e Historial.
+  - Contactos.
+  - Vencimientos.
+  - Recordatorios (ya se podía con el lápiz; ahora toda la fila).
+  - Tareas pendientes y Notas.
+  Las hojas son las mismas de "Para completar" (y las de agregar), con los datos cargados. Si una persona o un servicio no tiene número, la fila dice "Agregar teléfono" o "Falta el número" y tocarla abre la edición con ese campo listo para escribir.
+- Contame revisa antes de guardar. Después de dictar (y de "Enviar"), "Esto es lo que entendí" con cada ítem como fila. Tocar la fila corrige el texto, la fecha y a qué sección va ("Va en"); la ✕ la saca. Abajo, "Guardar todo" y "Cancelar". Nada se guarda hasta "Guardar todo"; después queda "Deshacer" como antes.
+  - Las muletillas, correcciones y frases sueltas ("hay una vez", "perdón", "eh", "vamos a crearlo") se descartan: no se guardan como nota. Lo dice el prompt y además se filtran en código.
+  - Lo que no entienda va en una fila aparte, "No entendí: «…»", con "Guardar como nota" o "Descartar". Por defecto se descarta.
+  - Una nota solo se crea si Alfredo dice algo para anotar ("anotá", "tomá nota", "acordate de que…").
+  - En cumpleaños, la relación ("hijo") no va pegada al nombre: "Juan", no "Juan (hijo)" (prompt + limpieza en código).
+  - La caja de texto de antes de mandar pasa a decir "Esto escuché. Podés corregirlo antes de mandar.", para no confundirla con la revisión.
+- Nombres bien escritos. El dictado del iPhone cambia apellidos ("Henrique" por "Gericke"). Al ordenar con la IA se le pasa la lista de nombres y apellidos que ya hay en Calendario, Contactos y Casas, con la instrucción de corregir palabras que suenen parecido a uno conocido. Además, un diccionario fijo en código (src/domain/nombres.ts): Henrique → Gericke siempre, y Enrique → Gericke cuando va después de un nombre de la familia (Alfredo, Pau, Paula y cualquiera guardado como "… Gericke"). Con tests.
+- Lo próximo en Inicio: cada fila aparece solo si tiene algo (sin "No hay vencimientos pendientes" ni parecidos); si no hay nada en ninguna, no se muestra la sección.
+- Singular: "Cumpleaños · 1 años" pasa a "Cumpleaños · cumple 1 año". Todas las cantidades con número pasan por la misma función: 1 año, 1 día, 1 tarea, 1 mes, 1 foto.
+- Íconos de servicios: UTE (rayo), OSE (gota), DirecTV/TV (tele), internet (wifi), Prosegur, alarma o seguridad (escudo), y una herramienta para el resto.
+- Sin migraciones nuevas: nada de esta ronda cambia la base.

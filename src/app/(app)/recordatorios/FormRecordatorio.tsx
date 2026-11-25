@@ -1,5 +1,5 @@
 'use client'
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, BotonIcono, BotonMas, CampoSelect, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
 import { CampoDias } from '@/components/controles'
@@ -24,7 +24,10 @@ export interface Inicial {
 }
 
 /** hoy (YYYY-MM-DD): "Todas las semanas" viene con el día de hoy marcado. */
-export default function FormRecordatorio({ inicial, etiqueta, soloIcono, hoy }: { inicial?: Inicial; etiqueta: string; soloIcono?: boolean; hoy: string }) {
+/** Con `children` (ronda 6), la fila entera es el botón que abre la edición. */
+export default function FormRecordatorio({ inicial, etiqueta, soloIcono, hoy, children, className = '' }: {
+  inicial?: Inicial; etiqueta: string; soloIcono?: boolean; hoy: string; children?: ReactNode; className?: string
+}) {
   const router = useRouter()
   const idForm = useId()
   const [abierto, setAbierto] = useState(false)
@@ -80,7 +83,9 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono, hoy }: 
 
   return (
     <>
-      {soloIcono ? <BotonIcono nombre={etiqueta} icono="lapiz" tono="nada" onClick={abrir} /> : <BotonMas nombre={etiqueta} onClick={abrir} />}
+      {children
+        ? <button type="button" aria-label={etiqueta} data-editar onClick={abrir} className={`min-w-0 flex-1 text-left ${className}`}>{children}</button>
+        : soloIcono ? <BotonIcono nombre={etiqueta} icono="lapiz" tono="nada" onClick={abrir} /> : <BotonMas nombre={etiqueta} onClick={abrir} />}
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo={inicial ? 'Editar recordatorio' : 'Agregar recordatorio'}>
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Título"><input name="titulo" defaultValue={inicial?.titulo ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>

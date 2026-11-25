@@ -87,7 +87,7 @@ test('Vencimientos sin nada pendiente: el swing y "Nada por vencer · Vas bajo p
   await expect(swing).toContainText('Todo en regla. Vas bajo par.')
 })
 
-test('Contame guardando: la pelota de pádel rebota con "Guardando…"', async ({ page }) => {
+test('Contame ordenando y guardando: la pelota de pádel rebota con "Ordenando…" y "Guardando…"', async ({ page }) => {
   await resetear(page, { hoy: HOY })
   await entrarComo(page, 'owner')
   await page.addInitScript(instalarVozFalsa)
@@ -102,9 +102,18 @@ test('Contame guardando: la pelota de pádel rebota con "Guardando…"', async (
   await page.getByLabel('Escribí o dictá con el teclado').fill('Comprar pilas')
   await page.getByRole('button', { name: 'Enviar' }).click()
   const padel = page.locator('[data-detalle="padel"]')
-  await expect(padel).toContainText('Guardando')
+  await expect(padel).toContainText('Ordenando')
   await expect(padel).toContainText('Estoy ordenando lo que me contaste.')
   soltar()
+  await expect(page.getByRole('heading', { name: 'Esto es lo que entendí' })).toBeVisible()
+  await expect(padel).toHaveCount(0)
+  // ronda 6: con "Guardar todo", "Guardando…"
+  let soltarGuardar!: () => void
+  const esperaGuardar = new Promise<void>((r) => { soltarGuardar = r })
+  await page.route('**/api/contame/guardar', async (ruta) => { await esperaGuardar; await ruta.continue() })
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
+  await expect(padel).toContainText('Guardando')
+  soltarGuardar()
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
   await expect(padel).toHaveCount(0)
 })

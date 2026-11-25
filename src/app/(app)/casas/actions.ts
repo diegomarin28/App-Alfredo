@@ -72,3 +72,49 @@ export async function borrarEvento(id: string): Promise<Res> {
 export async function borrarServicio(id: string): Promise<Res> {
   return borrar('serviciosCasa', id, 'Ese servicio ya no está.')
 }
+
+// ---------- editar (ronda 6: tocar la fila abre la hoja con los datos cargados) ----------
+
+const s = (f: FormData, k: string) => String(f.get(k) ?? '')
+
+export async function editarPersona(id: string, f: FormData): Promise<Res> {
+  const no = await permitir()
+  if (no) return no
+  const repo = getRepo()
+  const actual = validarId(id) ? await repo.personasCasa.get(id) : null
+  if (!actual) return { ok: false, error: 'Esa persona ya no está.' }
+  const r = validarPersonaCasa({ casa: actual.casa, nombre: s(f, 'nombre'), rol: s(f, 'rol'), detalle: s(f, 'detalle'), telefono: s(f, 'telefono') })
+  if (!r.ok) return r
+  const v = r.valor
+  await repo.personasCasa.update(id, { nombre: v.nombre, rol: v.rol, detalle: v.detalle ?? null, telefono: v.telefono ?? null })
+  revalidatePath('/casas')
+  return { ok: true }
+}
+
+export async function editarEvento(id: string, f: FormData): Promise<Res> {
+  const no = await permitir()
+  if (no) return no
+  const repo = getRepo()
+  const actual = validarId(id) ? await repo.eventosCasa.get(id) : null
+  if (!actual) return { ok: false, error: 'Eso del historial ya no está.' }
+  const r = validarEventoCasa({ casa: actual.casa, que: s(f, 'que'), cuando: s(f, 'cuando') }, hoy())
+  if (!r.ok) return r
+  await repo.eventosCasa.update(id, { que: r.valor.que, cuando: r.valor.cuando })
+  revalidatePath('/casas')
+  return { ok: true }
+}
+
+/** Servicio: nombre y número. Si se borra el número, queda "Falta el número" (y vuelve a "Para completar"). */
+export async function editarServicioCasa(id: string, f: FormData): Promise<Res> {
+  const no = await permitir()
+  if (no) return no
+  const repo = getRepo()
+  const actual = validarId(id) ? await repo.serviciosCasa.get(id) : null
+  if (!actual) return { ok: false, error: 'Ese servicio ya no está.' }
+  const r = validarServicioCasa({ casa: actual.casa, clave: s(f, 'clave'), valor: s(f, 'valor') }, { sinValor: true })
+  if (!r.ok) return r
+  await repo.serviciosCasa.update(id, { clave: r.valor.clave, valor: r.valor.valor })
+  revalidatePath('/casas')
+  revalidatePath('/')
+  return { ok: true }
+}

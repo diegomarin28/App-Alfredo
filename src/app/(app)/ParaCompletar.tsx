@@ -1,10 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Field, Lista, Sheet, clasesInput, clasesSelect } from '@/components/ui'
+import { Boton, Lista } from '@/components/ui'
+import { HojaEditar } from '@/components/Editar'
+import { CamposContacto, CamposCumple, CamposServicio, entradaContacto } from '@/components/campos'
 import { VISIBLES_COMPLETAR, type ItemCompletar } from '@/domain/completar'
 import { nombreCasa } from '@/domain/casas'
-import { DiaMes } from './calendario/NuevaFecha'
 import { completarCumple, editarContacto, editarServicio, omitirCompletar } from './completar'
 
 /** Lo que necesita el formulario de edición de cada ítem. */
@@ -30,8 +31,6 @@ export default function ParaCompletar({ items, grupos }: { items: FilaCompletar[
   const [todos, setTodos] = useState(false)
   const [editando, setEditando] = useState<FilaCompletar | null>(null)
   const [error, setError] = useState('')
-  const [errorHoja, setErrorHoja] = useState('')
-  const [enviando, setEnviando] = useState(false)
 
   const quedan = items.filter((i) => !omitidos.has(i.id))
   if (quedan.length === 0) return null
@@ -49,31 +48,16 @@ export default function ParaCompletar({ items, grupos }: { items: FilaCompletar[
     router.refresh()
   }
 
-  async function guardar(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!editando) return
-    const f = new FormData(e.currentTarget)
+  /** Lo mismo que las hojas de editar de cada lista (ronda 6), con las acciones de "Para completar". */
+  async function guardar(f: FormData): Promise<Res> {
+    if (!editando) return { ok: true }
     const s = (k: string) => String(f.get(k) ?? '')
-    setEnviando(true)
-    setErrorHoja('')
-    try {
-      let r: Res
-      if (editando.tipo === 'fecha') {
-        const anio = s('anio').trim()
-        r = await completarCumple(editando.id, { nombre: s('nombre'), dia: Number(s('dia') || NaN), mes: Number(s('mes') || NaN), anio: anio ? Number(anio) : null })
-      } else if (editando.tipo === 'servicio') {
-        r = await editarServicio(editando.id, { clave: s('clave'), valor: s('valor') })
-      } else {
-        r = await editarContacto(editando.id, { nombre: s('nombre'), grupoId: s('grupo'), empresa: s('empresa'), telefono: s('telefono'), nota: s('nota') })
-      }
-      if (!r.ok) { setErrorHoja(r.error); return }
-      setEditando(null)
-      router.refresh()
-    } catch {
-      setErrorHoja('No se pudo guardar. Probá de nuevo.')
-    } finally {
-      setEnviando(false)
+    if (editando.tipo === 'fecha') {
+      const anio = s('anio').trim()
+      return completarCumple(editando.id, { nombre: s('nombre'), dia: Number(s('dia') || NaN), mes: Number(s('mes') || NaN), anio: anio ? Number(anio) : null })
     }
+    if (editando.tipo === 'servicio') return editarServicio(editando.id, { clave: s('clave'), valor: s('valor') })
+    return editarContacto(editando.id, entradaContacto(f))
   }
 
   const d = editando?.datos
@@ -91,7 +75,7 @@ export default function ParaCompletar({ items, grupos }: { items: FilaCompletar[
             <div className="flex gap-2">
               <Boton
                 variante="suave" aria-label={`Agregar: ${i.titulo}`} className="min-h-11 px-4"
-                onClick={() => { setErrorHoja(''); setEditando(i) }}
+                onClick={() => setEditando(i)}
               >
                 Agregar
               </Boton>
@@ -111,49 +95,11 @@ export default function ParaCompletar({ items, grupos }: { items: FilaCompletar[
         </button>
       )}
 
-      <Sheet abierto={editando !== null} onCerrar={() => setEditando(null)} titulo={editando ? TITULO_HOJA[editando.tipo] : ''}>
-        {editando && d && (
-          <form key={editando.id} onSubmit={guardar} className="space-y-4" noValidate>
-            {d.tipo === 'fecha' && (
-              <>
-                <Field label="Nombre"><input name="nombre" defaultValue={d.nombre} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-                <DiaMes />
-                <Field label="Año de nacimiento (opcional)">
-                  <input name="anio" defaultValue={d.anioNacimiento ?? ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
-                </Field>
-              </>
-            )}
-            {d.tipo === 'servicio' && (
-              <>
-                <Field label="Servicio"><input name="clave" defaultValue={d.clave} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-                <Field label="Dato" hint="Por ejemplo Cliente 123456">
-                  <input name="valor" defaultValue={d.valor ?? ''} maxLength={500} autoFocus className={clasesInput} autoComplete="off" />
-                </Field>
-              </>
-            )}
-            {d.tipo === 'contacto' && (
-              <>
-                <Field label="Nombre"><input name="nombre" defaultValue={d.nombre} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-                {grupos.length > 0 && (
-                  <Field label="Grupo (opcional)">
-                    <select name="grupo" defaultValue={d.grupoId ?? ''} className={clasesSelect}>
-                      <option value="">Sin grupo</option>
-                      {grupos.map((g) => <option key={g.id} value={g.id}>{g.nombre}</option>)}
-                    </select>
-                  </Field>
-                )}
-                <Field label="Empresa"><input name="empresa" defaultValue={d.empresa ?? ''} maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-                <Field label="Teléfono" hint="Por ejemplo 099 123 456">
-                  <input name="telefono" defaultValue={d.telefono ?? ''} type="tel" inputMode="tel" autoFocus className={clasesInput} autoComplete="off" />
-                </Field>
-                <Field label="Nota"><textarea name="nota" defaultValue={d.nota ?? ''} maxLength={2000} rows={3} className={`${clasesInput} py-3`} /></Field>
-              </>
-            )}
-            {errorHoja && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{errorHoja}</p>}
-            <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>
-          </form>
-        )}
-      </Sheet>
+      <HojaEditar abierto={editando !== null} onCerrar={() => setEditando(null)} titulo={editando ? TITULO_HOJA[editando.tipo] : ''} guardar={guardar}>
+        {d?.tipo === 'fecha' && <CamposCumple nombre={d.nombre} anio={d.anioNacimiento} />}
+        {d?.tipo === 'servicio' && <CamposServicio clave={d.clave} valor={d.valor} enfocarDato />}
+        {d?.tipo === 'contacto' && <CamposContacto c={d} grupos={grupos} enfocarTelefono />}
+      </HojaEditar>
     </section>
   )
 }

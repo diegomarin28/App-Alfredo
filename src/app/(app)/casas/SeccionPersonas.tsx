@@ -1,9 +1,11 @@
-import { Avatar, BotonIcono, EmptyState, Field, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
+import { Avatar, BotonIcono, EmptyState, Lista, Seccion, clasesFila } from '@/components/ui'
+import { CamposPersona } from '@/components/campos'
+import { TocarParaEditar } from '@/components/Editar'
 import { telLink } from '@/domain/telefono'
 import type { Casa, PersonaCasa } from '@/domain/tipos'
 import BotonBorrar from '@/components/Borrar'
 import Agregar from './Agregar'
-import { agregarPersona, borrarPersona } from './actions'
+import { agregarPersona, borrarPersona, editarPersona } from './actions'
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? '')
 
@@ -15,22 +17,27 @@ export default function SeccionPersonas({ casa, personas }: { casa: Casa; person
   return (
     <Seccion id="ocupa" titulo="Quién se ocupa" accion={
       <Agregar boton="Agregar persona" titulo="Nueva persona" guardar={guardar}>
-        <Field label="Nombre"><input name="nombre" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-        <Field label="Rol" hint="Por ejemplo Limpieza o Jardín"><input name="rol" maxLength={80} className={clasesInput} autoComplete="off" /></Field>
-        <Field label="Detalle" hint="Por ejemplo los jueves"><input name="detalle" maxLength={500} className={clasesInput} autoComplete="off" /></Field>
-        <Field label="Teléfono" hint="Por ejemplo 099 123 456"><input name="telefono" type="tel" inputMode="tel" className={clasesInput} autoComplete="off" /></Field>
+        <CamposPersona />
       </Agregar>
     }>
       {personas.length === 0 ? <EmptyState>Todavía no hay nadie cargado.</EmptyState> : (
         <Lista>
           {personas.map((p) => (
             <li key={p.id} data-fila className={clasesFila}>
-              <Avatar nombre={p.nombre} tono="verde" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-base font-semibold text-texto">{p.nombre}</p>
-                {/* en una sola línea: lo que no entra se corta con "…" */}
-                <p className="truncate text-base text-texto-2">{[p.rol, p.detalle].filter(Boolean).join(' · ')}</p>
-              </div>
+              {/* ronda 6: tocar la fila abre la edición; sin teléfono, la fila lo pide */}
+              <TocarParaEditar
+                etiqueta={`Editar ${p.nombre}`} titulo="Editar persona" guardar={editarPersona.bind(null, p.id)}
+                campos={<CamposPersona nombre={p.nombre} rol={p.rol} detalle={p.detalle} telefono={p.telefono} enfocarTelefono={!p.telefono} />}
+                className="flex items-center gap-3"
+              >
+                <Avatar nombre={p.nombre} tono="verde" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-base font-semibold text-texto">{p.nombre}</span>
+                  {/* en una sola línea: lo que no entra se corta con "…" */}
+                  <span className="block truncate text-base text-texto-2">{[p.rol, p.detalle].filter(Boolean).join(' · ')}</span>
+                  {!p.telefono && <span className="block text-base font-semibold text-azul">Agregar teléfono</span>}
+                </span>
+              </TocarParaEditar>
               <div className="-mr-2 flex shrink-0 items-center">
                 {p.telefono && <BotonIcono nombre="Llamar" icono="telefono" tono="nada" href={telLink(p.telefono)} />}
                 <BotonBorrar nombre={p.nombre} accion={borrarPersona.bind(null, p.id)} />
