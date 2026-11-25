@@ -54,6 +54,18 @@ html {
   font-size: 16px;
 }
 
+/* Fecha y hora (ronda 5): el valor a la izquierda, como los otros campos, y sin ancho mínimo propio. */
+input[type='date'],
+input[type='time'] {
+  min-width: 0;
+  -webkit-appearance: none;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+
 /* Cuadros de texto (ronda 3): sin la esquina para estirar; crecen solos con lo que se escribe. */
 textarea {
   resize: none;

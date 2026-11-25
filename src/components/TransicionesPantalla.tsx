@@ -61,7 +61,8 @@ export default function TransicionesPantalla() {
     function alTocar(e: MouseEvent) {
       if (reducir.matches || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a[href]') : null
-      if (!a || a.target || a.hasAttribute('download')) return
+      // "‹ Volver" decide solo adónde va (atrás, o Inicio si no hay pantalla anterior)
+      if (!a || a.target || a.hasAttribute('download') || a.hasAttribute('data-volver')) return
       const url = new URL(a.href, location.href)
       // Solo pantallas de la app: nada de archivos (/api) ni de otra página del mismo lugar (p. ej. ?casa=).
       if (url.origin !== location.origin || url.pathname.startsWith('/api/') || url.pathname === location.pathname) return

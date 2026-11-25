@@ -15,6 +15,8 @@ export interface Fecha {
   anioEvento?: number
   /** HH:MM, opcional */
   hora?: string
+  /** solo "otra" semanal: días marcados, 1 = lunes … 7 = domingo (falta = el día de la semana de la fecha) */
+  diasSemana?: number[]
 }
 
 export type Repeticion = 'nunca' | 'diaria' | 'semanal' | 'mensual' | 'anual'
@@ -37,6 +39,8 @@ export interface Recordatorio {
   anio?: number
   /** "Posponer" por defecto, en días (falta = 15) */
   posponerDias?: number
+  /** semanal: días marcados, 1 = lunes … 7 = domingo (falta = el día de la semana de la fecha) */
+  diasSemana?: number[]
 }
 
 export interface Vencimiento {

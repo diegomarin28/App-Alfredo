@@ -1,4 +1,4 @@
-import { EmptyState, Field, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
+import { EmptyState, Field, Lista, Seccion, clasesFila, clasesFechaHora, clasesInput } from '@/components/ui'
 import { fechaCompleta } from '@/domain/vencimientos'
 import { hoy } from '@/domain/fechas'
 import type { Casa, EventoCasa } from '@/domain/tipos'
@@ -18,7 +18,7 @@ export default function SeccionHistorial({ casa, eventos }: { casa: Casa; evento
     <Seccion id="historial" titulo="Historial" accion={
       <Agregar boton="Agregar al historial" titulo="Agregar al historial" guardar={guardar}>
         <Field label="¿Qué pasó?"><textarea name="que" maxLength={2000} rows={4} className={`${clasesInput} py-3`} /></Field>
-        <Field label="Fecha"><input name="cuando" type="date" defaultValue={hoy()} className={clasesInput} /></Field>
+        <Field label="Fecha"><input name="cuando" type="date" defaultValue={hoy()} className={clasesFechaHora} /></Field>
       </Agregar>
     }>
       {eventos.length === 0 ? <EmptyState>Todavía no hay nada en el historial.</EmptyState> : (

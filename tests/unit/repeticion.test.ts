@@ -71,13 +71,15 @@ describe('recordatorios con repetición y posponer', () => {
     expect(recordatoriosActivos([r], '2026-11-24')).toHaveLength(0)
     expect(recordatoriosActivos([r], '2027-12-01')).toHaveLength(1)
   })
-  it('resolver uno semanal: vuelve para la próxima semana', () => {
-    // lunes; avisar 2 días antes
+  it('resolver uno semanal: vuelve para la próxima semana (los semanales avisan el mismo día)', () => {
+    // lunes; aunque diga 2 días antes, un semanal avisa ese mismo día (ronda 5)
     const r = rec({ dia: '11-23', anio: 2026, repeticion: 'semanal', avisarDiasAntes: 2 })
-    expect(recordatoriosActivos([r], '2026-11-29').map((x) => x.proxima)).toEqual(['2026-11-30'])
-    const hecho = resolverRecordatorio(r, '2026-11-29')
+    expect(recordatoriosActivos([r], '2026-11-29')).toHaveLength(0)
+    expect(recordatoriosActivos([r], '2026-11-30').map((x) => x.proxima)).toEqual(['2026-11-30'])
+    const hecho = resolverRecordatorio(r, '2026-11-30')
     expect(recordatoriosActivos([hecho], '2026-11-30')).toHaveLength(0)
-    expect(recordatoriosActivos([hecho], '2026-12-05').map((x) => x.proxima)).toEqual(['2026-12-07'])
+    expect(recordatoriosActivos([hecho], '2026-12-06')).toHaveLength(0)
+    expect(recordatoriosActivos([hecho], '2026-12-07').map((x) => x.proxima)).toEqual(['2026-12-07'])
   })
   it('uno que no se repite y ya pasó no aparece más', () => {
     expect(recordatoriosActivos([rec({ dia: '11-20', anio: 2026, repeticion: 'nunca' })], '2026-11-24')).toHaveLength(0)

@@ -2,8 +2,8 @@ import { getRepo } from '@/data/getRepo'
 import { hoy, recordatoriosActivos } from '@/domain/fechas'
 import { chipAviso, ordenarAnuales } from '@/domain/recordatorios'
 import { MESES } from '@/domain/validarFecha'
-import { rotuloRepeticion } from '@/domain/repeticion'
-import { EmptyState, Lista, Seccion, Titulo, clasesFila } from '@/components/ui'
+import { rotuloDiasSemana, rotuloRepeticion } from '@/domain/repeticion'
+import { EmptyState, Lista, Seccion, Titulo, Volver, clasesFila } from '@/components/ui'
 import ListaActivos from './Activo'
 import FormRecordatorio from './FormRecordatorio'
 
@@ -30,7 +30,8 @@ export default async function Recordatorios() {
 
   return (
     <main className="space-y-5">
-      <Titulo accion={<FormRecordatorio etiqueta="Agregar recordatorio" />}>Recordatorios</Titulo>
+      <Volver />
+      <Titulo accion={<FormRecordatorio etiqueta="Agregar recordatorio" hoy={hoyStr} />}>Recordatorios</Titulo>
 
       <Seccion id="ahora" titulo="Para gestionar ahora">
         {activos.length === 0 && <EmptyState>Nada para gestionar por ahora. Quedate tranquilo.</EmptyState>}
@@ -44,16 +45,18 @@ export default async function Recordatorios() {
               <span className="min-w-0 flex-1">
                 <span className="block text-base font-semibold text-texto">{r.titulo}</span>
                 <span className="block text-base text-texto-2">
-                  {[
-                    (r.repeticion ?? 'anual') === 'nunca' && r.dia && r.anio ? `${diaCorto(r.dia)} ${r.anio}` : diaCorto(r.dia),
-                    (r.repeticion ?? 'anual') !== 'anual' ? rotuloRepeticion(r.repeticion ?? 'anual') : '',
-                    `aviso ${chipAviso(r.avisarDiasAntes)}`,
-                  ].filter(Boolean).join(' · ')}
+                  {(r.repeticion === 'semanal' && r.diasSemana?.length
+                    ? [`cada semana: ${rotuloDiasSemana(r.diasSemana)}`, 'aviso ese día']
+                    : [
+                      (r.repeticion ?? 'anual') === 'nunca' && r.dia && r.anio ? `${diaCorto(r.dia)} ${r.anio}` : diaCorto(r.dia),
+                      (r.repeticion ?? 'anual') !== 'anual' ? rotuloRepeticion(r.repeticion ?? 'anual') : '',
+                      r.repeticion === 'semanal' ? 'aviso ese día' : `aviso ${chipAviso(r.avisarDiasAntes)}`,
+                    ]).filter(Boolean).join(' · ')}
                 </span>
               </span>
               <FormRecordatorio
-                inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes, repeticion: r.repeticion, anio: r.anio, posponerDias: r.posponerDias }}
-                etiqueta={`Editar ${r.titulo}`} soloIcono
+                inicial={{ id: r.id, titulo: r.titulo, dia: r.dia, avisarDiasAntes: r.avisarDiasAntes, repeticion: r.repeticion, anio: r.anio, posponerDias: r.posponerDias, diasSemana: r.diasSemana }}
+                etiqueta={`Editar ${r.titulo}`} soloIcono hoy={hoyStr}
               />
             </li>
           ))}

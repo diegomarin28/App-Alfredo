@@ -1,6 +1,8 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { Icono } from '@/components/iconos'
+import { Sheet, useBloquearFondo } from '@/components/Hoja'
+import { Boton } from '@/components/ui'
 
 export interface FotoVisor { id: string; url: string }
 
@@ -9,7 +11,7 @@ const UMBRAL = 60
 
 /**
  * Foto grande (pedido de Diego): deslizar izquierda/derecha para pasar de foto, "3 de 18" arriba, cerrar deslizando
- * hacia abajo o con ×, Borrar abajo. Con teclado: flechas y Escape.
+ * hacia abajo o con ×, Borrar abajo (pide confirmación: "¿Borrar esta foto?", ronda 5). Con teclado: flechas y Escape.
  */
 export default function Visor({ fotos, inicio, onCerrar, onBorrar }: {
   fotos: FotoVisor[]; inicio: number; onCerrar: () => void; onBorrar: (f: FotoVisor) => void
@@ -17,18 +19,21 @@ export default function Visor({ fotos, inicio, onCerrar, onBorrar }: {
   const [i, setI] = useState(inicio)
   const [dx, setDx] = useState(0)
   const [dy, setDy] = useState(0)
+  const [confirmar, setConfirmar] = useState<FotoVisor | null>(null)
   const arrastre = useRef<{ x0: number; y0: number; eje: 'x' | 'y' | null } | null>(null)
   const foto = fotos[Math.min(i, fotos.length - 1)]
+  useBloquearFondo(true)
 
   useEffect(() => {
     const alTeclado = (e: KeyboardEvent) => {
+      if (confirmar) return // la confirmación atiende su propio Escape
       if (e.key === 'Escape') onCerrar()
       if (e.key === 'ArrowRight') setI((n) => Math.min(fotos.length - 1, n + 1))
       if (e.key === 'ArrowLeft') setI((n) => Math.max(0, n - 1))
     }
     document.addEventListener('keydown', alTeclado)
     return () => document.removeEventListener('keydown', alTeclado)
-  }, [fotos.length, onCerrar])
+  }, [fotos.length, onCerrar, confirmar])
 
   useEffect(() => { if (fotos.length === 0) onCerrar() }, [fotos.length, onCerrar])
   if (!foto) return null
@@ -83,12 +88,18 @@ export default function Visor({ fotos, inicio, onCerrar, onBorrar }: {
       </div>
       <div className="px-4 pt-2 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <button
-          type="button" aria-label="Borrar foto" onClick={() => onBorrar(foto)}
+          type="button" aria-label="Borrar foto" onClick={() => setConfirmar(foto)}
           className="mx-auto flex min-h-12 items-center justify-center gap-2 rounded-xl px-5 text-base font-semibold text-[#FF8A80]"
         >
           <Icono nombre="basura" tamano={20} />Borrar
         </button>
       </div>
+      <Sheet abierto={confirmar !== null} onCerrar={() => setConfirmar(null)} titulo="¿Borrar esta foto?" rol="alertdialog">
+        <div className="grid grid-cols-2 gap-2.5">
+          <Boton variante="gris" onClick={() => setConfirmar(null)}>Cancelar</Boton>
+          <Boton variante="rojo" onClick={() => { const f = confirmar!; setConfirmar(null); onBorrar(f) }}>Borrar</Boton>
+        </div>
+      </Sheet>
     </div>
   )
 }

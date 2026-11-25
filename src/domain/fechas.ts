@@ -1,5 +1,5 @@
 import type { Fecha, Recordatorio, Vencimiento } from './tipos'
-import { posponerPor, proximaDeRecordatorio, resolverRecordatorio } from './repeticion'
+import { diasDeAviso, posponerPor, proximaDeRecordatorio, resolverRecordatorio } from './repeticion'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -73,7 +73,7 @@ export function recordatoriosActivos(rs: Recordatorio[], hoyStr: string) {
     const proxima = proximaDeRecordatorio(r, hoyStr)
     if (proxima === null) continue
     const dias = diasHasta(proxima, hoyStr)
-    if (dias > r.avisarDiasAntes) continue
+    if (dias > diasDeAviso(r)) continue
     const rep = r.repeticion ?? 'anual'
     if ((rep === 'anual' || rep === 'nunca') && r.resueltoAnio === Number(proxima.slice(0, 4))) continue
     if (r.pospuestoHasta && r.pospuestoHasta > hoyStr) continue

@@ -16,13 +16,14 @@ const DATOS = {
   ],
 }
 
-test('próximo cumple destacado: los otros días sin "Mandar saludo"', async ({ page }) => {
+test('ronda 5: sin tarjeta destacada del próximo cumple, solo la lista; los otros días sin "Mandar saludo"', async ({ page }) => {
   await resetear(page, { datos: DATOS, hoy: HOY })
   await entrarComo(page, 'owner')
   await page.goto('/calendario')
-  const card = page.getByRole('region', { name: 'Próximo cumpleaños' })
-  await expect(card).toContainText('Ana Pérez cumple 36')
-  await expect(card).toContainText('En 3 días, miércoles 25')
+  await expect(page.getByRole('region', { name: 'Cumpleaños de hoy' })).toHaveCount(0)
+  await expect(page.getByText('En 3 días')).toHaveCount(0)
+  // Ana sigue en la lista, con su edad
+  await expect(page.locator('[data-fila]').filter({ hasText: 'Ana Pérez' })).toContainText('36 años')
   await expect(page.getByRole('button', { name: 'Mandar saludo' })).toHaveCount(0)
 })
 
@@ -32,7 +33,8 @@ test('el día del cumple: "Mandar saludo" abre el saludo Formal, editable, con t
   // el 25/11 también es el cumple de Alfredo: el brindis ya se vio hoy (tiene su prueba en detalles)
   await page.addInitScript(() => { try { localStorage.setItem('alfredo:brindis', '2026-11-25') } catch { /* nada */ } })
   await page.goto('/calendario')
-  const card = page.getByRole('region', { name: 'Próximo cumpleaños' })
+  // el día del cumpleaños sí queda la tarjeta, para mandar el saludo
+  const card = page.getByRole('region', { name: 'Cumpleaños de hoy' })
   await expect(card).toContainText('Hoy cumple Ana Pérez')
   await card.getByRole('button', { name: 'Mandar saludo' }).click()
   const hoja = page.getByRole('dialog', { name: 'Saludo para Ana' })
@@ -119,7 +121,7 @@ test('ronda 4b: solo Cumpleaños u Otra; el cumple dice "Se repite todos los añ
   await expect(hoja.getByLabel('Día', { exact: true }).locator('option:checked')).toHaveText('Elegí')
 })
 
-test('ronda 4b: "Otra" que se repite cada semana, con hora: la lista muestra la próxima vez y "cada semana"', async ({ page }) => {
+test('"Otra" que se repite cada semana, con hora: la lista muestra la próxima vez y los días (ronda 5: chips)', async ({ page }) => {
   await resetear(page, { datos: DATOS, hoy: HOY })
   await entrarComo(page, 'owner')
   await page.goto('/calendario')
@@ -128,16 +130,15 @@ test('ronda 4b: "Otra" que se repite cada semana, con hora: la lista muestra la 
   await hoja.getByLabel('Nombre').fill('Truco en el club')
   await hoja.getByRole('radio', { name: 'Otra' }).click()
   await hoja.getByLabel('Se repite').selectOption('semanal')
-  // jueves 5 de noviembre de 2026 → el próximo jueves desde el domingo 22 es el 26
-  await hoja.getByLabel('Día', { exact: true }).selectOption('5')
-  await hoja.getByLabel('Mes').selectOption('11')
-  await hoja.getByLabel('Año (desde)').fill('2026')
+  // hoy es domingo 22 (viene marcado); se marca el jueves y se desmarca el domingo → el próximo es el jueves 26
+  await hoja.getByRole('checkbox', { name: 'jueves' }).click()
+  await hoja.getByRole('checkbox', { name: 'domingo' }).click()
   await hoja.getByLabel('Hora (opcional)').fill('18:30')
   await hoja.getByRole('button', { name: 'Guardar' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   const fila = page.getByRole('region', { name: 'Noviembre' }).getByRole('listitem').filter({ hasText: 'Truco en el club' })
   await expect(fila).toContainText('26')
-  await expect(fila).toContainText('Otra fecha · cada semana · 18:30 h')
+  await expect(fila).toContainText('Otra fecha · jue · 18:30 h')
 })
 
 test('ronda 4b: "No se repite" pide el año; una vez que pasó, ya no aparece', async ({ page }) => {

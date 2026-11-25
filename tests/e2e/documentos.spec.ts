@@ -33,7 +33,7 @@ test('owner: carpetas sugeridas, crea carpeta con descripción, sube documento (
   await page.getByRole('link', { name: /^Barco/ }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Barco')
   await expect(page.getByText('0 documentos')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Documentos' })).toHaveAttribute('href', '/documentos')
+  await expect(page.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/documentos')
   const mas = page.getByRole('button', { name: 'Agregar documento' })
   await hidratado(mas)
   await mas.click()

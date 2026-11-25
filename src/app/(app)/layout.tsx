@@ -6,6 +6,7 @@ import BottomNav from '@/components/BottomNav'
 import { ProveedorDeshacer } from '@/components/Borrar'
 import { Icono } from '@/components/iconos'
 import TransicionesPantalla from '@/components/TransicionesPantalla'
+import { RastroNavegacion } from '@/components/Volver'
 import Brindis from '@/components/Brindis'
 import { esCumpleDeAlfredo } from '@/domain/detalles'
 import { hoy } from '@/domain/fechas'
@@ -43,6 +44,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {config && esCumpleDeAlfredo(hoyStr) && <Brindis hoy={hoyStr} nombre={config.nombre || 'Alfredo'} />}
       <BottomNav rol={sesion.rol} />
       <TransicionesPantalla />
+      <RastroNavegacion />
     </ProveedorDeshacer>
   )
 }

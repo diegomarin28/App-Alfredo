@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonMas, Field, Sheet, clasesInput } from '@/components/ui'
+import { Boton, BotonMas, Field, Sheet, clasesFechaHora, clasesInput } from '@/components/ui'
 import { Segmentado } from '@/components/controles'
 import AvisoChips, { diasAviso } from '@/components/AvisoChips'
 import type { UnidadAviso } from '@/domain/avisoDias'
@@ -51,7 +51,7 @@ export default function FormVencimiento() {
             <span className="mb-1.5 block text-base font-semibold text-texto">Ámbito</span>
             <Segmentado etiqueta="Ámbito" opciones={[['empresa', 'Empresa'], ['personal', 'Personal']] as const} valor={ambito} onCambio={setAmbito} />
           </div>
-          <Field label="Fecha"><input name="fecha" type="date" className={clasesInput} /></Field>
+          <Field label="Fecha"><input name="fecha" type="date" className={clasesFechaHora} /></Field>
           <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} unidad={unidad} setUnidad={setUnidad} />
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
           <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>

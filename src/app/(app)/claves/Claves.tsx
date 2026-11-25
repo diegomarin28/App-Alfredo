@@ -6,7 +6,7 @@ import { Icono } from '@/components/iconos'
  * Se bloquea al ocultar la app, al salir de la pantalla y a los 2 minutos sin tocar nada.
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Boton, Card, Field, clasesInput } from '@/components/ui'
+import { Boton, Card, Field, Volver, clasesInput } from '@/components/ui'
 import { aBase64, cifrar, deBase64, derivarClavePin, derivarClavePrf, descifrar } from '@/claves/cripto'
 
 interface Item { id: string; sitio: string; usuario?: string; cifrado: string; iv: string }
@@ -327,6 +327,7 @@ export default function Claves() {
 
   return (
     <main className="space-y-5">
+      <Volver />
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto">Contraseñas</h1>
         {paso.t === 'abierta' && <Boton variante="suave" onClick={bloquear}>Bloquear</Boton>}

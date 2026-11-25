@@ -2,6 +2,7 @@
 import { revalidatePath } from 'next/cache'
 import { requerirRol, SinPermiso } from '@/auth/session'
 import { getRepo } from '@/data/getRepo'
+import { hoy } from '@/domain/fechas'
 import { cambioEdicion, validarRecordatorio, type EntradaRecordatorio } from '@/domain/recordatorios'
 
 type Res = { ok: true } | { ok: false; error: string }
@@ -22,7 +23,9 @@ export async function guardarRecordatorio(id: string | null, entrada: EntradaRec
   const repo = await getRepo()
   const actual = id === null ? null : await repo.recordatorios.get(id)
   if (id !== null && !actual) return { ok: false, error: 'No existe ese recordatorio.' }
-  const r = validarRecordatorio(entrada, actual !== null && actual.dia === null)
+  // Semanal con días: guarda como inicio hoy, o el que ya tenía si ya era semanal con días.
+  const desde = actual?.diasSemana?.length && actual.dia ? `${actual.anio ?? hoy().slice(0, 4)}-${actual.dia}` : hoy()
+  const r = validarRecordatorio(entrada, actual !== null && actual.dia === null, desde)
   if (!r.ok) return r
   if (actual) await repo.recordatorios.update(actual.id, cambioEdicion(actual, r.valor))
   else await repo.recordatorios.create(r.valor)

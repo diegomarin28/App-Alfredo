@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { Icono } from './iconos'
+import { DIAS_SEMANA } from '@/domain/repeticion'
 
 /**
  * Control segmentado (mockup v2): pista gris con la opción elegida en blanco. Es un grupo de botones de radio:
@@ -51,5 +52,41 @@ export function Circulo({ marcado, nombre, onCambio, disabled = false }: {
         <Icono nombre="tilde" tamano={16} trazo={2.6} />
       </span>
     </label>
+  )
+}
+
+/**
+ * Días de la semana (ronda 5): chips L M M J V S D para "Todas las semanas". Se pueden marcar varios; siempre queda
+ * al menos uno (el último marcado no se desmarca). Cada chip es un checkbox con el nombre del día.
+ */
+export function DiasSemana({ valor, onCambio }: { valor: number[]; onCambio: (dias: number[]) => void }) {
+  return (
+    <div role="group" aria-label="Qué días" className="flex justify-between gap-1">
+      {DIAS_SEMANA.map(([n, letra, nombre]) => {
+        const marcado = valor.includes(n)
+        return (
+          <button
+            key={n} type="button" role="checkbox" aria-checked={marcado} aria-label={nombre}
+            onClick={() => {
+              if (marcado && valor.length === 1) return
+              onCambio(marcado ? valor.filter((d) => d !== n) : [...valor, n].sort((a, b) => a - b))
+            }}
+            className={`flex size-11 shrink-0 items-center justify-center rounded-full text-base font-semibold ${marcado ? 'bg-azul text-white' : 'border border-borde bg-white text-texto-2'}`}
+          >
+            {letra}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+/** Campo "Qué días" de "Todas las semanas" (Calendario y Recordatorios). */
+export function CampoDias({ dias, setDias }: { dias: number[]; setDias: (d: number[]) => void }) {
+  return (
+    <div>
+      <span className="mb-1.5 block text-base font-semibold text-texto">Qué días</span>
+      <DiasSemana valor={dias} onCambio={setDias} />
+    </div>
   )
 }

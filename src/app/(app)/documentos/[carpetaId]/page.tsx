@@ -27,7 +27,7 @@ export default async function Page({ params }: { params: Promise<{ carpetaId: st
   if (!carpeta) notFound()
   return (
     <main className="space-y-3">
-      <Volver href="/documentos">Documentos</Volver>
+      <Volver si="/documentos" />
       <Titulo accion={<NuevoDocumento carpetaId={carpeta.id} />}>{carpeta.nombre}</Titulo>
       <p className="text-base text-texto-2">{items.length} {items.length === 1 ? 'documento' : 'documentos'}</p>
       {items.length === 0 ? <EmptyState>Todavía no hay documentos en esta carpeta. Tocá el + para sacarle una foto al primero.</EmptyState> : <Galeria items={items} />}

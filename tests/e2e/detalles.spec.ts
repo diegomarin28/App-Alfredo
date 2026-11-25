@@ -231,12 +231,13 @@ test.describe('con "reducir movimiento": el cuadro final, sin moverse', () => {
 })
 
 test.describe('ronda 3: arreglos de la revisión de capturas', () => {
-  test('"‹ Documentos": la flecha de volver apunta a la izquierda', async ({ page }) => {
+  test('"‹ Volver": la flecha de volver apunta a la izquierda', async ({ page }) => {
     await resetear(page, { hoy: HOY })
     await entrarComo(page, 'owner')
     await page.goto('/documentos')
     await page.getByRole('link', { name: /^Seguros/ }).click()
-    const volver = page.getByRole('link', { name: 'Documentos' })
+    // ronda 5: "‹ Documentos" pasó a ser "‹ Volver"
+    const volver = page.getByRole('link', { name: 'Volver' })
     await expect(volver.locator('path')).toHaveAttribute('d', 'M15 6l-6 6 6 6')
   })
 

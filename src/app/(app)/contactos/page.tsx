@@ -1,5 +1,5 @@
 import { getRepo } from '@/data/getRepo'
-import { Titulo } from '@/components/ui'
+import { Titulo, Volver } from '@/components/ui'
 import NuevoContacto from './NuevoContacto'
 import Contactos from './Contactos'
 
@@ -12,6 +12,7 @@ export default async function Page() {
   const ordenados = grupos.sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre, 'es')).map((g) => ({ id: g.id, nombre: g.nombre }))
   return (
     <main className="space-y-4">
+      <Volver />
       <Titulo accion={<NuevoContacto grupos={ordenados} />}>Contactos</Titulo>
       <Contactos contactos={todos} grupos={ordenados} />
     </main>

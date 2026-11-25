@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonMas, CampoSelect, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
-import { Segmentado } from '@/components/controles'
+import { Boton, BotonMas, CampoSelect, Field, Sheet, clasesFechaHora, clasesInput, clasesSelect } from '@/components/ui'
+import { CampoDias, Segmentado } from '@/components/controles'
 import { MESES } from '@/domain/validarFecha'
-import { REPETICIONES } from '@/domain/repeticion'
+import { REPETICIONES, diaDeSemana } from '@/domain/repeticion'
 import type { Repeticion } from '@/domain/tipos'
 import { agregarFecha } from './actions'
 
@@ -34,11 +34,14 @@ export function DiaMes() {
   )
 }
 
-export default function NuevaFecha() {
+/** hoy (YYYY-MM-DD): "Todas las semanas" viene con el día de hoy marcado. */
+export default function NuevaFecha({ hoy }: { hoy: string }) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [tipo, setTipo] = useState<Tipo>('cumple')
   const [repeticion, setRepeticion] = useState<Repeticion>('anual')
+  const [dias, setDias] = useState<number[]>([diaDeSemana(hoy)])
+  const semanal = tipo === 'otra' && repeticion === 'semanal'
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -52,7 +55,7 @@ export default function NuevaFecha() {
       const r = await agregarFecha({
         nombre: String(f.get('nombre') ?? ''), tipo,
         dia: Number(f.get('dia') || NaN), mes: Number(f.get('mes') || NaN), anio: anio ? Number(anio) : null,
-        ...(tipo === 'otra' ? { repeticion, hora: String(f.get('hora') ?? '') } : {}),
+        ...(tipo === 'otra' ? { repeticion, hora: String(f.get('hora') ?? ''), ...(semanal ? { diasSemana: dias } : {}) } : {}),
       })
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
@@ -66,7 +69,7 @@ export default function NuevaFecha() {
 
   return (
     <>
-      <BotonMas nombre="Agregar fecha" onClick={() => { setError(''); setTipo('cumple'); setRepeticion('anual'); setAbierto(true) }} />
+      <BotonMas nombre="Agregar fecha" onClick={() => { setError(''); setTipo('cumple'); setRepeticion('anual'); setDias([diaDeSemana(hoy)]); setAbierto(true) }} />
       <Sheet abierto={abierto} onCerrar={() => setAbierto(false)} titulo="Nueva fecha">
         <form onSubmit={guardar} className="space-y-4" noValidate>
           <Field label="Nombre"><input name="nombre" className={clasesInput} autoComplete="off" /></Field>
@@ -91,15 +94,26 @@ export default function NuevaFecha() {
                   </select>
                 )}
               </CampoSelect>
-              <DiaMes />
-              <div className="grid grid-cols-2 gap-3">
-                <Field label={repeticion === 'nunca' ? 'Año' : 'Año (desde)'}>
-                  <input name="anio" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder={repeticion === 'nunca' ? '' : 'Opcional'} className={clasesInput} />
-                </Field>
-                <Field label="Hora (opcional)">
-                  <input name="hora" type="time" className={clasesInput} />
-                </Field>
-              </div>
+              {semanal ? (
+                <>
+                  <CampoDias dias={dias} setDias={setDias} />
+                  <Field label="Hora (opcional)">
+                    <input name="hora" type="time" className={clasesFechaHora} />
+                  </Field>
+                </>
+              ) : (
+                <>
+                  <DiaMes />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label={repeticion === 'nunca' ? 'Año' : 'Año (desde)'}>
+                      <input name="anio" inputMode="numeric" pattern="[0-9]*" maxLength={4} placeholder={repeticion === 'nunca' ? '' : 'Opcional'} className={clasesInput} />
+                    </Field>
+                    <Field label="Hora (opcional)">
+                      <input name="hora" type="time" className={clasesFechaHora} />
+                    </Field>
+                  </div>
+                </>
+              )}
             </>
           )}
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}

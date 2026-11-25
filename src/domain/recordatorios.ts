@@ -1,5 +1,5 @@
 import type { Recordatorio, Repeticion } from './tipos'
-import { posponerPor, proximaDeRecordatorio } from './repeticion'
+import { posponerPor, proximaDeRecordatorio, validarDiasSemana } from './repeticion'
 import { MESES, validarDiaMes } from './validarFecha'
 
 export function chipAviso(dias: number): string {
@@ -29,19 +29,35 @@ export interface EntradaRecordatorio {
   anio?: number | null
   /** "Posponer" por defecto (días); falta = 15 */
   posponerDias?: number
+  /** semanal: días marcados (1 = lunes … 7 = domingo); con días no se piden día, mes ni año y avisa ese mismo día */
+  diasSemana?: number[] | null
 }
 export interface ValorRecordatorio {
   titulo: string; dia: string | null; avisarDiasAntes: number; repeticion: Repeticion; anio?: number; posponerDias: number
+  diasSemana?: number[]
 }
 export type ResultadoRecordatorio = { ok: true; valor: ValorRecordatorio } | { ok: false; error: string }
 
 const REPS: Repeticion[] = ['nunca', 'diaria', 'semanal', 'mensual', 'anual']
 
-/** permitirSinFecha: solo al editar un recordatorio que todavía no tiene fecha (dia null). */
-export function validarRecordatorio(e: EntradaRecordatorio, permitirSinFecha = false): ResultadoRecordatorio {
+/**
+ * permitirSinFecha: solo al editar un recordatorio que todavía no tiene fecha (dia null).
+ * desde (YYYY-MM-DD): fecha de inicio que guardan los semanales con días marcados (hoy, o la que ya tenían).
+ */
+export function validarRecordatorio(e: EntradaRecordatorio, permitirSinFecha = false, desde?: string): ResultadoRecordatorio {
   const titulo = typeof e.titulo === 'string' ? e.titulo.trim() : ''
   if (!titulo) return { ok: false, error: 'Escribí el título.' }
   if (titulo.length > MAX_TITULO) return { ok: false, error: `El título puede tener hasta ${MAX_TITULO} letras.` }
+  if (e.repeticion === 'semanal' && e.diasSemana != null && desde) {
+    const ds = validarDiasSemana(e.diasSemana)
+    if (!ds.ok) return ds
+    const posponerDias = e.posponerDias ?? 15
+    if (!Number.isInteger(posponerDias) || posponerDias < 1 || posponerDias > 365) return { ok: false, error: 'Elegí cuánto posponer.' }
+    return {
+      ok: true,
+      valor: { titulo, dia: desde.slice(5), avisarDiasAntes: 0, repeticion: 'semanal', anio: Number(desde.slice(0, 4)), posponerDias, diasSemana: ds.valor },
+    }
+  }
   let dia: string | null = null
   if (e.dia === null && e.mes === null) {
     if (!permitirSinFecha) return { ok: false, error: 'Elegí el día y el mes.' }
@@ -80,9 +96,11 @@ export function destinoPosponer(p: { dias?: unknown; hasta?: unknown }, hoyStr: 
 export function cambioEdicion(actual: Recordatorio, v: { titulo: string; dia: string | null; avisarDiasAntes: number } & Partial<ValorRecordatorio>) {
   const cambia = v.dia !== actual.dia || v.avisarDiasAntes !== actual.avisarDiasAntes
     || (v.repeticion ?? 'anual') !== (actual.repeticion ?? 'anual') || (v.anio ?? null) !== (actual.anio ?? null)
-  // sin año (no "nunca"): borrar el que tenía
+    || (v.diasSemana ?? []).join() !== (actual.diasSemana ?? []).join()
+  // sin año (no "nunca"): borrar el que tenía; sin días marcados: borrar los que tenía
   const anio = v.repeticion && v.anio === undefined && actual.anio !== undefined ? { anio: null } : {}
-  return { ...v, ...anio, ...(cambia ? { pospuestoHasta: null, resueltoAnio: null } : {}) }
+  const dias = v.diasSemana === undefined && actual.diasSemana !== undefined ? { diasSemana: null } : {}
+  return { ...v, ...anio, ...dias, ...(cambia ? { pospuestoHasta: null, resueltoAnio: null } : {}) }
 }
 
 /** Cambio a guardar al resolver: marca el año y borra cualquier posposición vieja. */

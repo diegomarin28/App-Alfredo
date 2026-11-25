@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { getRepo } from '@/data/getRepo'
 import { edadQueCumple, hoy, proximosCumples, recordatoriosActivos } from '@/domain/fechas'
-import { proximaDeFecha, rotuloRepeticion } from '@/domain/repeticion'
+import { proximaDeFecha, rotuloDiasSemana, rotuloRepeticion } from '@/domain/repeticion'
 import { MESES } from '@/domain/validarFecha'
 import { EmptyState, IconoTile, Seccion, Titulo } from '@/components/ui'
 import BotonBorrar from '@/components/Borrar'
@@ -14,12 +14,19 @@ export const dynamic = 'force-dynamic'
 
 const TIPO = { cumple: 'Cumpleaños', otra: 'Otra fecha' } as const
 
-/** "Mañana, miércoles 25" / "En 3 días, viernes 27" / "Hoy, miércoles 25". */
-function cuando(dias: number, proxima: string): string {
-  const [y, m, d] = proxima.split('-').map(Number)
+/** "Hoy, miércoles 25". */
+function hoyLargo(fecha: string): string {
+  const [y, m, d] = fecha.split('-').map(Number)
   const dia = new Intl.DateTimeFormat('es', { timeZone: 'UTC', weekday: 'long' }).format(new Date(Date.UTC(y, m - 1, d, 12)))
-  const rel = dias === 0 ? 'Hoy' : dias === 1 ? 'Mañana' : `En ${dias} días`
-  return `${rel}, ${dia} ${d}`
+  return `Hoy, ${dia} ${d}`
+}
+
+/** Rótulo chico de cómo se repite: "cada mes"; las semanales con días, "lun y jue". */
+function rotulo(f: { tipo: string; repeticion?: Parameters<typeof rotuloRepeticion>[0]; diasSemana?: number[] }): string {
+  if (f.tipo !== 'otra') return ''
+  const rep = f.repeticion ?? 'anual'
+  if (rep === 'semanal' && f.diasSemana?.length) return rotuloDiasSemana(f.diasSemana)
+  return rep === 'anual' ? '' : rotuloRepeticion(rep)
 }
 
 const abreviar = (m: number) => MESES[m - 1].slice(0, 3).toLowerCase()
@@ -36,7 +43,8 @@ export default async function Calendario() {
   const hoyStr = hoy()
   const repo = getRepo()
   const [fechas, recordatorios, config] = await Promise.all([repo.fechas.list(), repo.recordatorios.list(), repo.getConfig()])
-  const proximo = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr)[0]
+  // Ronda 5: sin el recuadro azul del próximo cumple; solo el día del cumpleaños, para mandar el saludo.
+  const cumpleHoy = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr).find((c) => c.dias === 0)
   const activos = recordatoriosActivos(recordatorios, hoyStr).length
   // Cada fecha en su próxima vez (las que se repiten muestran la próxima; las de una vez que ya pasaron, no).
   const todas = fechas
@@ -52,27 +60,20 @@ export default async function Calendario() {
 
   return (
     <main className="space-y-4">
-      <Titulo accion={<NuevaFecha />}>Calendario</Titulo>
+      <Titulo accion={<NuevaFecha hoy={hoyStr} />}>Calendario</Titulo>
 
-      {proximo && (
-        <section aria-label="Próximo cumpleaños" className="rounded-[20px] bg-azul p-4 text-white">
+      {cumpleHoy && (
+        <section aria-label="Cumpleaños de hoy" className="rounded-[20px] bg-azul p-4 text-white">
           <div className="flex items-center gap-3.5">
             <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
               <Icono nombre="torta" tamano={22} />
             </span>
             <div className="min-w-0">
-              <p className="text-[20px] leading-tight font-bold">
-                {proximo.dias === 0
-                  ? `Hoy cumple ${proximo.nombre}`
-                  : proximo.edad != null ? `${proximo.nombre} cumple ${proximo.edad}` : `Cumple de ${proximo.nombre}`}
-              </p>
-              <p className="text-base text-tinte">{cuando(proximo.dias, proximo.proxima)}</p>
+              <p className="text-[20px] leading-tight font-bold">Hoy cumple {cumpleHoy.nombre}</p>
+              <p className="text-base text-tinte">{hoyLargo(cumpleHoy.proxima)}</p>
             </div>
           </div>
-          {/* El saludo se manda solo el día del cumple. */}
-          {proximo.dias === 0 && (
-            <Saludo key={proximo.id} nombre={proximo.nombre.trim().split(/\s+/)[0]} firma={config.nombre || 'Alfredo'} />
-          )}
+          <Saludo key={cumpleHoy.id} nombre={cumpleHoy.nombre.trim().split(/\s+/)[0]} firma={config.nombre || 'Alfredo'} />
         </section>
       )}
 
@@ -104,7 +105,7 @@ export default async function Calendario() {
                     {[
                       TIPO[f.tipo],
                       f.edad != null ? `${f.edad} años` : '',
-                      f.tipo === 'otra' && (f.repeticion ?? 'anual') !== 'anual' ? rotuloRepeticion(f.repeticion ?? 'anual') : '',
+                      rotulo(f),
                       f.hora ? `${f.hora.slice(0, 5)} h` : '',
                     ].filter(Boolean).join(' · ')}
                   </span>

@@ -43,6 +43,8 @@ for (const rol of ['owner', 'familia'] as const) {
     await hidratado(ver)
     await ver.click()
     await page.getByRole('dialog', { name: 'Foto' }).getByRole('button', { name: 'Borrar foto' }).click()
+    // ronda 5: antes de borrar, confirma
+    await page.getByRole('alertdialog', { name: '¿Borrar esta foto?' }).getByRole('button', { name: 'Borrar' }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(ver).toBeHidden()
     const aviso = page.getByRole('status').filter({ hasText: 'Se borró la foto' })

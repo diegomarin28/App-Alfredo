@@ -2,10 +2,11 @@
 import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, BotonIcono, BotonMas, CampoSelect, Field, Sheet, clasesInput, clasesSelect } from '@/components/ui'
+import { CampoDias } from '@/components/controles'
 import AvisoChips, { claveAviso, diasAviso, otroDesdeDias } from '@/components/AvisoChips'
 import type { UnidadAviso } from '@/domain/avisoDias'
 import { MESES } from '@/domain/validarFecha'
-import { REPETICIONES } from '@/domain/repeticion'
+import { REPETICIONES, diaDeSemana, diasMarcados } from '@/domain/repeticion'
 import { OPCIONES_POSPONER } from '@/domain/posponer'
 import type { Repeticion } from '@/domain/tipos'
 import { guardarRecordatorio } from './actions'
@@ -19,21 +20,26 @@ const clasesElegir = `${clasesSelect} invalid:text-texto-2`
 
 export interface Inicial {
   id: string; titulo: string; dia: string | null; avisarDiasAntes: number
-  repeticion?: Repeticion; anio?: number; posponerDias?: number
+  repeticion?: Repeticion; anio?: number; posponerDias?: number; diasSemana?: number[]
 }
 
-export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { inicial?: Inicial; etiqueta: string; soloIcono?: boolean }) {
+/** hoy (YYYY-MM-DD): "Todas las semanas" viene con el día de hoy marcado. */
+export default function FormRecordatorio({ inicial, etiqueta, soloIcono, hoy }: { inicial?: Inicial; etiqueta: string; soloIcono?: boolean; hoy: string }) {
   const router = useRouter()
   const idForm = useId()
   const [abierto, setAbierto] = useState(false)
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
-  const claveInicial = inicial ? claveAviso(inicial.avisarDiasAntes) : 'mes'
+  // los semanales avisan el mismo día (0): si deja de ser semanal, arranca en "1 mes"
+  const claveInicial = inicial && inicial.avisarDiasAntes > 0 ? claveAviso(inicial.avisarDiasAntes) : 'mes'
   const otroInicial = inicial && claveInicial === 'otro' ? otroDesdeDias(inicial.avisarDiasAntes) : { otro: '', unidad: 'dias' as UnidadAviso }
   const [aviso, setAviso] = useState<string>(claveInicial)
   const [otro, setOtro] = useState(otroInicial.otro)
   const [unidad, setUnidad] = useState<UnidadAviso>(otroInicial.unidad)
   const [repeticion, setRepeticion] = useState<Repeticion>(inicial?.repeticion ?? 'anual')
+  const diasIniciales = () => (inicial?.repeticion === 'semanal' ? diasMarcados(inicial, hoy) : [diaDeSemana(hoy)])
+  const [dias, setDias] = useState<number[]>(diasIniciales)
+  const semanal = repeticion === 'semanal'
 
   function abrir() {
     setError('')
@@ -41,6 +47,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
     setOtro(otroInicial.otro)
     setUnidad(otroInicial.unidad)
     setRepeticion(inicial?.repeticion ?? 'anual')
+    setDias(diasIniciales())
     setAbierto(true)
   }
 
@@ -53,7 +60,7 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
       const r = await guardarRecordatorio(inicial?.id ?? null, {
         titulo: String(f.get('titulo') ?? ''), dia: numeroONulo(f.get('dia')), mes: numeroONulo(f.get('mes')),
         avisarDiasAntes: diasAviso(aviso, otro, unidad), repeticion, anio: numeroONulo(f.get('anio')),
-        posponerDias: Number(f.get('posponer') ?? 15),
+        posponerDias: Number(f.get('posponer') ?? 15), ...(semanal ? { diasSemana: dias } : {}),
       })
       if (!r.ok) { setError(r.error); return }
       setAbierto(false)
@@ -65,7 +72,9 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
     }
   }
 
-  const mmdd = inicial?.dia ?? null
+  // semanal con días: la fecha guardada es solo el inicio; no se muestra si pasa a otra repetición
+  const conDias = Boolean(inicial?.diasSemana?.length)
+  const mmdd = conDias ? null : inicial?.dia ?? null
   const diaIni = mmdd ? Number(mmdd.slice(3)) : ''
   const mesIni = mmdd ? Number(mmdd.slice(0, 2)) : ''
 
@@ -82,24 +91,33 @@ export default function FormRecordatorio({ inicial, etiqueta, soloIcono }: { ini
               </select>
             )}
           </CampoSelect>
-          <div className="grid grid-cols-3 gap-3">
-            <Field label="Día">
-              <select name="dia" aria-label="Día" defaultValue={diaIni} required className={clasesElegir}>
-                <option value="">Elegí</option>
-                {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
-              </select>
-            </Field>
-            <Field label="Mes">
-              <select name="mes" aria-label="Mes" defaultValue={mesIni} required className={clasesElegir}>
-                <option value="">Elegí</option>
-                {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-              </select>
-            </Field>
-            <Field label={repeticion === 'nunca' ? 'Año' : 'Año (opc.)'}>
-              <input name="anio" aria-label="Año" defaultValue={inicial?.anio ?? ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
-            </Field>
-          </div>
-          <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} unidad={unidad} setUnidad={setUnidad} />
+          {semanal ? (
+            <>
+              <CampoDias dias={dias} setDias={setDias} />
+              <p className="text-base text-texto-2">Te aviso ese mismo día.</p>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Día">
+                  <select name="dia" aria-label="Día" defaultValue={diaIni} required className={clasesElegir}>
+                    <option value="">Elegí</option>
+                    {Array.from({ length: 31 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+                  </select>
+                </Field>
+                <Field label="Mes">
+                  <select name="mes" aria-label="Mes" defaultValue={mesIni} required className={clasesElegir}>
+                    <option value="">Elegí</option>
+                    {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                  </select>
+                </Field>
+                <Field label={repeticion === 'nunca' ? 'Año' : 'Año (opc.)'}>
+                  <input name="anio" aria-label="Año" defaultValue={conDias ? '' : inicial?.anio ?? ''} inputMode="numeric" pattern="[0-9]*" maxLength={4} className={clasesInput} />
+                </Field>
+              </div>
+              <AvisoChips aviso={aviso} setAviso={setAviso} otro={otro} setOtro={setOtro} unidad={unidad} setUnidad={setUnidad} />
+            </>
+          )}
           <CampoSelect id={`${idForm}-posponer`} label="Posponer, por defecto">
             {(p) => (
               <select {...p} name="posponer" defaultValue={inicial?.posponerDias ?? 15} className={clasesSelect}>
