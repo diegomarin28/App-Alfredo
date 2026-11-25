@@ -1,15 +1,27 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, BotonMas, Lista, Sheet, clasesInput, clasesSeparador } from '@/components/ui'
+import { Boton, BotonMas, Field, Lista, Sheet, clasesFechaHora, clasesInput, clasesSeparador } from '@/components/ui'
 import { Flor, Flotante, Golf } from '@/components/detalles'
 import { contarTildado, tocaFlor, type CuentaDelDia } from '@/domain/detalles'
 import { Circulo } from '@/components/controles'
 import { Icono } from '@/components/iconos'
 import { TocarParaEditar } from '@/components/Editar'
+import { diaCorto } from '@/domain/fechaTexto'
 import { agregarPendiente, editarPendiente, tildarPendiente } from './actions'
 
-export interface ItemPendiente { id: string; texto: string; hecho: boolean; deVoz: boolean }
+export interface ItemPendiente { id: string; texto: string; hecho: boolean; deVoz: boolean; fecha?: string }
+
+/** Ronda 7: la fecha de una tarea, aparte del texto y opcional. */
+function CampoFechaTarea({ valor, onCambio }: { valor?: string; onCambio?: (v: string) => void }) {
+  return (
+    <Field label="Para cuándo (opcional)">
+      {onCambio
+        ? <input type="date" value={valor ?? ''} onChange={(e) => onCambio(e.target.value)} className={clasesFechaHora} />
+        : <input type="date" name="fecha" defaultValue={valor ?? ''} className={clasesFechaHora} />}
+    </Field>
+  )
+}
 
 /** Lo que dura el rebote del círculo antes de mover la fila (220 ms + un poco). */
 const REBOTE_MS = 250
@@ -19,6 +31,7 @@ export function NuevoPendiente() {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [texto, setTexto] = useState('')
+  const [fecha, setFecha] = useState('')
   const [error, setError] = useState('')
   const [enviando, setEnviando] = useState(false)
 
@@ -27,9 +40,10 @@ export function NuevoPendiente() {
     setEnviando(true)
     setError('')
     try {
-      const r = await agregarPendiente(texto)
+      const r = await agregarPendiente(texto, fecha)
       if (!r.ok) { setError(r.error); return }
       setTexto('')
+      setFecha('')
       setAbierto(false)
       router.refresh()
     } catch {
@@ -48,6 +62,7 @@ export function NuevoPendiente() {
             value={texto} onChange={(e) => setTexto(e.target.value)} aria-label="Qué hay que hacer" placeholder="Por ejemplo: llamar al contador"
             maxLength={200} autoComplete="off" enterKeyHint="done" autoFocus className={clasesInput}
           />
+          <CampoFechaTarea valor={fecha} onCambio={setFecha} />
           {error && <p role="alert" className="rounded-xl bg-urg-bg p-3 text-base text-urg-tx">{error}</p>}
           <Boton type="submit" disabled={enviando} className="w-full">Guardar</Boton>
         </form>
@@ -123,9 +138,15 @@ export default function Pendientes({ items, nombre, hoy }: { items: ItemPendient
       {/* ronda 6: tocar el texto abre la edición */}
       <TocarParaEditar
         etiqueta={`Editar ${i.texto}`} titulo="Editar tarea" guardar={(f) => editarPendiente(i.id, f)} className="flex min-h-12 items-center gap-1.5"
-        campos={<input name="texto" defaultValue={i.texto} aria-label="Qué hay que hacer" maxLength={200} autoComplete="off" enterKeyHint="done" autoFocus className={clasesInput} />}
+        campos={<>
+          <input name="texto" defaultValue={i.texto} aria-label="Qué hay que hacer" maxLength={200} autoComplete="off" enterKeyHint="done" autoFocus className={clasesInput} />
+          <CampoFechaTarea valor={i.fecha} />
+        </>}
       >
-        <span className={`flex-1 text-base ${i.hecho ? 'text-texto-2 line-through' : 'text-texto'}`}>{i.texto}</span>
+        <span className="min-w-0 flex-1">
+          <span className={`block text-base ${i.hecho ? 'text-texto-2 line-through' : 'text-texto'}`}>{i.texto}</span>
+          {i.fecha && <span className="block text-base text-texto-2">{diaCorto(i.fecha)}</span>}
+        </span>
         {i.deVoz && <span title="Lo dictaste en Contame" className="text-texto-2"><Icono nombre="microfono" tamano={18} /></span>}
       </TocarParaEditar>
     </li>

@@ -6,6 +6,7 @@ import { nombreCasa, validarEventoCasa, validarPersonaCasa, validarServicioCasa 
 import { validarContacto } from '@/domain/contactos'
 import { fechaLarga, validarRecordatorio } from '@/domain/recordatorios'
 import { limpiarNombreCumple } from '@/domain/nombres'
+import { diaCorto, esFechaIso, fechasLegibles, sacarFechaIso } from '@/domain/fechaTexto'
 import { validarFecha } from '@/domain/validarFecha'
 import { fechaCompleta, MAX_NOTA, MAX_PENDIENTE, validarNota, validarPendiente, validarVencimiento } from '@/domain/vencimientos'
 import type { Casa } from '@/domain/tipos'
@@ -21,14 +22,17 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
   const o = raw as Record<string, unknown>
   const s = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : '')
   const opc = (k: string) => (typeof o[k] === 'string' ? (o[k] as string) : undefined)
+  // ronda 7: nunca una fecha 2026-11-30 a la vista dentro de un texto
+  const t = (k: string) => fechasLegibles(s(k))
+  const tOpc = (k: string) => { const v = opc(k); return v === undefined ? undefined : fechasLegibles(v) }
   const entero = (k: string, porDefecto: number) => (o[k] === undefined || o[k] === null ? porDefecto : typeof o[k] === 'number' ? (o[k] as number) : NaN)
   switch (o.tipo) {
     case 'eventoCasa': {
-      const r = validarEventoCasa({ casa: s('casa'), que: s('que'), cuando: s('cuando') }, hoyStr)
+      const r = validarEventoCasa({ casa: s('casa'), que: t('que'), cuando: s('cuando') }, hoyStr)
       return r.ok ? { tipo: 'eventoCasa', ...r.valor } : null
     }
     case 'personaCasa': {
-      const r = validarPersonaCasa({ casa: s('casa'), nombre: s('nombre'), rol: s('rol'), detalle: opc('detalle'), telefono: opc('telefono') })
+      const r = validarPersonaCasa({ casa: s('casa'), nombre: s('nombre'), rol: s('rol'), detalle: tOpc('detalle'), telefono: opc('telefono') })
       return r.ok ? { tipo: 'personaCasa', ...r.valor } : null
     }
     case 'servicioCasa': {
@@ -37,20 +41,39 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
       return r.ok ? { tipo: 'servicioCasa', ...r.valor } : null
     }
     case 'pendiente': {
-      const r = validarPendiente(s('texto'))
-      return r.ok ? { tipo: 'pendiente', texto: r.valor } : null
+      // ronda 7: la fecha va aparte; si vino dentro del texto, se saca de ahí
+      const dada = (opc('fecha') ?? '').trim()
+      if (dada && !esFechaIso(dada)) return null
+      const sacada = sacarFechaIso(s('texto'))
+      const fecha = dada || sacada.fecha
+      const r = validarPendiente(fechasLegibles(sacada.texto))
+      return r.ok ? { tipo: 'pendiente', texto: r.valor, ...(fecha ? { fecha } : {}) } : null
+    }
+    case 'evento': {
+      // ronda 7: una reunión o un viaje va al Calendario como "otra" sin repetición
+      return validarAccion({ tipo: 'fecha', tipoFecha: 'otra', repeticion: 'nunca', nombre: o.titulo, fecha: o.fecha, hora: o.hora }, hoyStr)
     }
     case 'nota': {
-      const r = validarNota(s('texto'))
+      const r = validarNota(t('texto'))
       return r.ok ? { tipo: 'nota', texto: r.valor } : null
     }
     case 'contacto': {
       // Sin grupo: los grupos los arma Alfredo en Contactos.
-      const r = validarContacto({ nombre: s('nombre'), empresa: opc('empresa'), telefono: opc('telefono'), nota: opc('nota') })
+      const r = validarContacto({ nombre: s('nombre'), empresa: opc('empresa'), telefono: opc('telefono'), nota: tOpc('nota') })
       if (!r.ok) return null
       return { tipo: 'contacto', ...r.valor }
     }
     case 'fecha': {
+      if (s('tipoFecha') === 'otra' && o.repeticion === 'nunca') {
+        // una vez: un día con año (fecha YYYY-MM-DD, o dia MM-DD + anioEvento) y hora opcional
+        const iso = s('fecha') || (MMDD.test(s('dia')) && typeof o.anioEvento === 'number' ? `${o.anioEvento}-${s('dia')}` : '')
+        if (!esFechaIso(iso)) return null
+        const nombre = sacarFechaIso(s('nombre')).texto
+        const hora = (opc('hora') ?? '').trim()
+        const r = validarFecha({ nombre, tipo: 'otra', dia: Number(iso.slice(8)), mes: Number(iso.slice(5, 7)), anio: Number(iso.slice(0, 4)), repeticion: 'nunca', hora }, Number(hoyStr.slice(0, 4)))
+        if (!r.ok || r.valor.dia === null) return null
+        return { tipo: 'fecha', tipoFecha: 'otra', nombre: fechasLegibles(r.valor.nombre), dia: r.valor.dia, repeticion: 'nunca', anioEvento: Number(iso.slice(0, 4)), ...(r.valor.hora ? { hora: r.valor.hora } : {}) }
+      }
       const anio = o.anioNacimiento === undefined || o.anioNacimiento === null ? null : entero('anioNacimiento', NaN)
       // cumpleaños sin fecha: se guarda igual y queda en "Para completar" (no aparece en el Calendario)
       const cumple = s('tipoFecha') === 'cumple'
@@ -67,12 +90,12 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
     case 'recordatorio': {
       const m = MMDD.exec(s('dia'))
       if (!m) return null
-      const r = validarRecordatorio({ titulo: s('titulo'), dia: Number(m[2]), mes: Number(m[1]), avisarDiasAntes: entero('avisarDiasAntes', 30) })
+      const r = validarRecordatorio({ titulo: t('titulo'), dia: Number(m[2]), mes: Number(m[1]), avisarDiasAntes: entero('avisarDiasAntes', 30) })
       if (!r.ok || r.valor.dia === null) return null
       return { tipo: 'recordatorio', titulo: r.valor.titulo, dia: r.valor.dia, avisarDiasAntes: r.valor.avisarDiasAntes }
     }
     case 'vencimiento': {
-      const r = validarVencimiento({ titulo: s('titulo'), ambito: s('ambito'), fecha: s('fecha'), avisarDiasAntes: entero('avisarDiasAntes', 7) })
+      const r = validarVencimiento({ titulo: t('titulo'), ambito: s('ambito'), fecha: s('fecha'), avisarDiasAntes: entero('avisarDiasAntes', 7) })
       if (!r.ok) return null
       const { titulo, ambito, fecha, avisarDiasAntes } = r.valor
       return { tipo: 'vencimiento', titulo, ambito, fecha, avisarDiasAntes }
@@ -83,12 +106,12 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
 }
 
 /** Texto legible de una acción inválida, para mostrarla en "No entendí". */
-const CAMPOS_LEGIBLES = ['que', 'texto', 'titulo', 'nombre', 'rol', 'clave', 'valor', 'empresa', 'detalle', 'telefono', 'nota', 'casa', 'cuando', 'fecha', 'dia', 'ambito']
+const CAMPOS_LEGIBLES = ['que', 'texto', 'titulo', 'hora', 'nombre', 'rol', 'clave', 'valor', 'empresa', 'detalle', 'telefono', 'nota', 'casa', 'cuando', 'fecha', 'dia', 'ambito']
 export function textoLegible(raw: unknown): string {
-  if (typeof raw === 'string') return raw.trim()
+  if (typeof raw === 'string') return fechasLegibles(raw.trim())
   if (!raw || typeof raw !== 'object') return ''
   const o = raw as Record<string, unknown>
-  return CAMPOS_LEGIBLES.map((k) => o[k]).filter((v): v is string => typeof v === 'string' && !!v.trim()).map((v) => v.trim()).join(' · ')
+  return fechasLegibles(CAMPOS_LEGIBLES.map((k) => o[k]).filter((v): v is string => typeof v === 'string' && !!v.trim()).map((v) => v.trim()).join(' · '))
 }
 
 /** Texto entero como tarea (si entra y no se pide nota) o como nota(s). */
@@ -116,10 +139,12 @@ export function describir(a: Accion): string {
     case 'eventoCasa': return `Historial de ${nombreCasa(a.casa)}: ${recortar(a.que, 120)} (${fechaLarga(a.cuando.slice(5))})`
     case 'personaCasa': return `Quién se ocupa en ${nombreCasa(a.casa)}: ${a.nombre} (${a.rol})`
     case 'servicioCasa': return `Servicios de ${nombreCasa(a.casa)}: ${a.clave}, ${a.valor ? recortar(a.valor, 80) : 'falta el número'}`
-    case 'pendiente': return `Tareas pendientes: ${a.texto}`
+    case 'pendiente': return `Tareas pendientes: ${a.texto}${a.fecha ? ` (${diaCorto(a.fecha)})` : ''}`
     case 'nota': return `Notas: ${recortar(a.texto, 120)}`
     case 'contacto': return `Contactos: ${a.nombre}${a.empresa ? ` (${a.empresa})` : ''}`
-    case 'fecha': return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${a.dia ? fechaLarga(a.dia) : 'falta la fecha'})`
+    case 'fecha':
+      if (a.repeticion === 'nunca' && a.dia && a.anioEvento) return `Calendario: ${a.nombre} (${diaCorto(`${a.anioEvento}-${a.dia}`)}${a.hora ? `, ${a.hora}` : ''})`
+      return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${a.dia ? fechaLarga(a.dia) : 'falta la fecha'})`
     case 'recordatorio': return `Recordatorios: ${a.titulo} (${fechaLarga(a.dia)})`
     case 'vencimiento': return `Vencimientos: ${a.titulo} (${fechaCompleta(a.fecha)})`
   }
@@ -129,14 +154,15 @@ export function describir(a: Accion): string {
 
 /** A qué sección va cada fila (lo que se elige en "Va en"). */
 export type SeccionContame =
-  | 'pendiente' | 'nota' | 'cumple' | 'otra' | 'recordatorio' | 'vencEmpresa' | 'vencPersonal' | 'contacto'
+  | 'pendiente' | 'nota' | 'cumple' | 'unaVez' | 'otra' | 'recordatorio' | 'vencEmpresa' | 'vencPersonal' | 'contacto'
   | 'eventoPortofino' | 'eventoMalibu' | 'personaPortofino' | 'personaMalibu' | 'servicioPortofino' | 'servicioMalibu'
 
 export const SECCIONES_CONTAME: [SeccionContame, string][] = [
   ['pendiente', 'Tareas pendientes'],
   ['nota', 'Notas'],
   ['cumple', 'Calendario · cumpleaños'],
-  ['otra', 'Calendario · otra fecha'],
+  ['unaVez', 'Calendario · una vez (reunión, viaje…)'],
+  ['otra', 'Calendario · todos los años'],
   ['recordatorio', 'Recordatorios'],
   ['vencEmpresa', 'Vencimientos · empresa'],
   ['vencPersonal', 'Vencimientos · personal'],
@@ -157,15 +183,16 @@ export function seccionDe(a: Accion): SeccionContame {
     case 'eventoCasa': return deCasa('evento', a.casa)
     case 'personaCasa': return deCasa('persona', a.casa)
     case 'servicioCasa': return deCasa('servicio', a.casa)
-    case 'fecha': return a.tipoFecha
+    case 'fecha': return a.repeticion === 'nunca' ? 'unaVez' : a.tipoFecha
     case 'vencimiento': return a.ambito === 'empresa' ? 'vencEmpresa' : 'vencPersonal'
     default: return a.tipo
   }
 }
 
 /** Qué fecha pide la sección: completa (día, mes y año), día y mes, día y mes opcional, o ninguna. */
-export function fechaQuePide(s: SeccionContame): 'completa' | 'diaMes' | 'diaMesOpcional' | null {
-  if (s === 'vencEmpresa' || s === 'vencPersonal' || s.startsWith('evento')) return 'completa'
+export function fechaQuePide(s: SeccionContame): 'completa' | 'completaOpcional' | 'diaMes' | 'diaMesOpcional' | null {
+  if (s === 'vencEmpresa' || s === 'vencPersonal' || s === 'unaVez' || s.startsWith('evento')) return 'completa'
+  if (s === 'pendiente') return 'completaOpcional'
   if (s === 'otra' || s === 'recordatorio') return 'diaMes'
   if (s === 'cumple') return 'diaMesOpcional'
   return null
@@ -175,6 +202,7 @@ export function fechaQuePide(s: SeccionContame): 'completa' | 'diaMes' | 'diaMes
 export function etiquetaTexto(s: SeccionContame): string {
   if (s === 'pendiente') return 'Qué hay que hacer'
   if (s === 'nota') return 'Nota'
+  if (s === 'unaVez') return 'Qué es'
   if (s.startsWith('evento')) return 'Qué pasó'
   if (s.startsWith('servicio')) return 'Servicio'
   if (s === 'recordatorio') return 'Qué hay que gestionar'
@@ -191,6 +219,8 @@ export interface Edicion {
   rol?: string
   /** solo Servicios: el número o dato */
   valor?: string
+  /** solo Calendario una vez: HH:MM opcional */
+  hora?: string
 }
 
 function textoPrincipal(a: Accion): string {
@@ -210,6 +240,8 @@ const deMmdd = (mmdd: string, hoyStr: string): FechaEdicion => { const [mes, dia
 export function edicionDe(a: Accion, hoyStr: string): Edicion {
   const fecha = a.tipo === 'eventoCasa' ? deIso(a.cuando)
     : a.tipo === 'vencimiento' ? deIso(a.fecha)
+      : a.tipo === 'pendiente' && a.fecha ? deIso(a.fecha)
+      : a.tipo === 'fecha' && a.repeticion === 'nunca' && a.dia && a.anioEvento ? deIso(`${a.anioEvento}-${a.dia}`)
       : a.tipo === 'recordatorio' ? deMmdd(a.dia, hoyStr)
         : a.tipo === 'fecha' && a.dia ? deMmdd(a.dia, hoyStr)
           : null
@@ -217,6 +249,7 @@ export function edicionDe(a: Accion, hoyStr: string): Edicion {
     seccion: seccionDe(a), texto: textoPrincipal(a), fecha,
     ...(a.tipo === 'personaCasa' ? { rol: a.rol } : {}),
     ...(a.tipo === 'servicioCasa' ? { valor: a.valor ?? '' } : {}),
+    ...(a.tipo === 'fecha' && a.hora ? { hora: a.hora } : {}),
   }
 }
 
@@ -236,8 +269,10 @@ export function aplicarEdicion(a: Accion, e: Edicion, hoyStr: string): { ok: tru
   if (!texto) return { ok: false, error: `Escribí ${etiquetaTexto(e.seccion) === 'Nombre' ? 'el nombre' : 'el texto'}.` }
   const pide = fechaQuePide(e.seccion)
   const f = e.fecha
-  if (pide && pide !== 'diaMesOpcional' && !f) return { ok: false, error: pide === 'completa' ? 'Elegí la fecha.' : 'Elegí el día y el mes.' }
-  if (f && pide && !fechaReal(pide === 'completa' ? f : { ...f, anio: 2000 })) return { ok: false, error: 'Revisá la fecha.' }
+  if (pide && pide !== 'diaMesOpcional' && pide !== 'completaOpcional' && !f) return { ok: false, error: pide === 'completa' ? 'Elegí la fecha.' : 'Elegí el día y el mes.' }
+  if (f && pide && !fechaReal(pide.startsWith('completa') ? f : { ...f, anio: 2000 })) return { ok: false, error: 'Revisá la fecha.' }
+  const hora = (e.hora ?? '').trim()
+  if (e.seccion === 'unaVez' && hora && !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return { ok: false, error: 'Revisá la hora.' }
   const iso = f ? `${f.anio}-${dos(f.mes)}-${dos(f.dia)}` : ''
   const mmdd = f ? `${dos(f.mes)}-${dos(f.dia)}` : ''
   const v = a as Record<string, unknown>
@@ -245,9 +280,10 @@ export function aplicarEdicion(a: Accion, e: Edicion, hoyStr: string): { ok: tru
 
   let raw: Record<string, unknown>
   switch (e.seccion) {
-    case 'pendiente': raw = { tipo: 'pendiente', texto }; break
+    case 'pendiente': raw = { tipo: 'pendiente', texto, ...(f ? { fecha: iso } : {}) }; break
     case 'nota': raw = { tipo: 'nota', texto }; break
     case 'cumple': raw = { tipo: 'fecha', tipoFecha: 'cumple', nombre: texto, dia: mmdd, ...(a.tipo === 'fecha' ? { anioNacimiento: a.anioNacimiento } : {}) }; break
+    case 'unaVez': raw = { tipo: 'fecha', tipoFecha: 'otra', repeticion: 'nunca', nombre: texto, fecha: iso, ...(hora ? { hora } : {}) }; break
     case 'otra': raw = { tipo: 'fecha', tipoFecha: 'otra', nombre: texto, dia: mmdd }; break
     case 'recordatorio': raw = { tipo: 'recordatorio', titulo: texto, dia: mmdd, avisarDiasAntes: a.tipo === 'recordatorio' ? a.avisarDiasAntes : 30 }; break
     case 'vencEmpresa': case 'vencPersonal':

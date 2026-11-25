@@ -6,8 +6,8 @@
 
 const APELLIDO = 'Gericke'
 
-/** Nombres de pila de la familia (además, cualquiera que esté guardado como "… Gericke"). */
-export const FAMILIA = ['Alfredo', 'Pau', 'Paula', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
+/** Nombres de pila de la familia (además, cualquiera que esté guardado como "… Gericke"). Pau es Paulina. */
+export const FAMILIA = ['Alfredo', 'Pau', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
 
 interface Correccion {
   /** palabra que escribe mal el dictado */

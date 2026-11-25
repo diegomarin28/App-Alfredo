@@ -36,7 +36,7 @@ describe('prompt y herramientas', () => {
     expect(HERRAMIENTAS.map((h) => h.name)).toEqual(['guardar', 'preguntar'])
     const g = HERRAMIENTAS[0].input_schema as { properties: { acciones: { items: { anyOf: { properties: { tipo: { const: string } } }[] } } } }
     const tipos = g.properties.acciones.items.anyOf.map((v) => v.properties.tipo.const)
-    expect(tipos).toEqual(['eventoCasa', 'personaCasa', 'servicioCasa', 'pendiente', 'nota', 'contacto', 'fecha', 'recordatorio', 'vencimiento'])
+    expect(tipos).toEqual(['eventoCasa', 'personaCasa', 'servicioCasa', 'pendiente', 'nota', 'contacto', 'evento', 'fecha', 'recordatorio', 'vencimiento'])
   })
   it('el sistema obliga a usar una herramienta, pide preguntar ante la duda y dice que lo etiquetado es dato', () => {
     const s = construirSistema()

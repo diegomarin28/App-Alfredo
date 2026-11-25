@@ -4,7 +4,8 @@ import {
   CONSERVAR_NULL, ENTIDADES, TABLAS, validarPathArchivo, type Cambio, type Entidad, type Nuevo, type Repo, type Tabla,
 } from './repo'
 import type { Config } from '@/domain/tipos'
-import { esIdInvalido, falla, leerTodo } from './supabaseUtil'
+import { esIdInvalido, falla, leerTodo, type ErrorDb } from './supabaseUtil'
+import { diaCorto } from '@/domain/fechaTexto'
 
 const BUCKET = 'archivos'
 const URL_SEGUNDOS = 60 * 60
@@ -27,12 +28,28 @@ function dbAFila<T>(row: Record<string, unknown>, conservarNull: string[] = []):
   ) as T
 }
 
+/**
+ * Una columna nueva cuya migración puede no estar aplicada todavía: si PostgREST dice que no existe (PGRST204),
+ * se reintenta con `plegar` (la fila sin esa columna). Se saca cuando la migración ya está en todos lados.
+ */
+export interface SinColumna { columna: string; plegar: (fila: Record<string, unknown>) => Record<string, unknown> }
+
+/** Ronda 7 (migración 0010): sin pendientes.fecha, la fecha queda escrita al final del texto ("… (lunes 30/11)"). */
+export const PENDIENTES_SIN_FECHA: SinColumna = {
+  columna: 'fecha',
+  plegar: ({ fecha, ...resto }) =>
+    typeof fecha === 'string' && typeof resto.texto === 'string' ? { ...resto, texto: `${resto.texto} (${diaCorto(fecha)})` } : resto,
+}
+
+const faltaColumna = (error: ErrorDb, fila: Record<string, unknown>, sc?: SinColumna): sc is SinColumna =>
+  !!sc && error?.code === 'PGRST204' && sc.columna in fila && error.message.includes(`'${sc.columna}'`)
+
 /** Exportada solo para probarla con un cliente falso. */
 export class TablaSupabase<E extends { id: string }> implements Tabla<E> {
   constructor(
     private db: SupabaseClient,
     private tabla: string,
-    private opts: { conservarNull?: string[]; nuevoPrimero?: boolean } = {},
+    private opts: { conservarNull?: string[]; nuevoPrimero?: boolean; sinColumna?: SinColumna } = {},
   ) {}
 
   private conv = (row: Record<string, unknown>) => dbAFila<E>(row, this.opts.conservarNull)
@@ -57,14 +74,19 @@ export class TablaSupabase<E extends { id: string }> implements Tabla<E> {
   }
 
   async create(data: Nuevo<E>): Promise<E> {
-    const { data: row, error } = await this.db.from(this.tabla).insert(filaADb(data)).select().single()
+    const insertar = (fila: Record<string, unknown>) => this.db.from(this.tabla).insert(fila).select().single()
+    const fila = filaADb(data)
+    let { data: row, error } = await insertar(fila)
+    if (faltaColumna(error, fila, this.opts.sinColumna)) ({ data: row, error } = await insertar(this.opts.sinColumna.plegar(fila)))
     falla(error, `${this.tabla}.create`)
     return this.conv(row!)
   }
 
   async update(id: string, patch: Cambio<E>): Promise<E> {
-    const { data: row, error } = await this.db
-      .from(this.tabla).update(filaADb(patch)).eq('id', id).select().maybeSingle()
+    const cambiar = (fila: Record<string, unknown>) => this.db.from(this.tabla).update(fila).eq('id', id).select().maybeSingle()
+    const fila = filaADb(patch)
+    let { data: row, error } = await cambiar(fila)
+    if (faltaColumna(error, fila, this.opts.sinColumna)) ({ data: row, error } = await cambiar(this.opts.sinColumna.plegar(fila)))
     if (esIdInvalido(error)) throw new Error(`No existe ${id}`)
     falla(error, `${this.tabla}.update`)
     if (!row) throw new Error(`No existe ${id}`)
@@ -107,6 +129,7 @@ export class SupabaseRepo implements Repo {
       ;(this as Record<string, unknown>)[e] = new TablaSupabase(this.db, TABLAS[e], {
         conservarNull: CONSERVAR_NULL[e] ?? [],
         nuevoPrimero: e === 'eventosCasa',
+        ...(e === 'pendientes' ? { sinColumna: PENDIENTES_SIN_FECHA } : {}),
       })
     }
   }
