@@ -7,7 +7,7 @@
 const APELLIDO = 'Gericke'
 
 /** Nombres de pila de la familia (además, cualquiera que esté guardado como "… Gericke"). */
-export const FAMILIA = ['Alfredo', 'Pau', 'Paula']
+export const FAMILIA = ['Alfredo', 'Pau', 'Paula', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
 
 interface Correccion {
   /** palabra que escribe mal el dictado */
@@ -23,6 +23,9 @@ export const CORRECCIONES: Correccion[] = [
 ]
 
 const escapar = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const TILDES: Record<string, string> = { a: '[aá]', e: '[eé]', i: '[ií]', o: '[oó]', u: '[uúü]', á: '[aá]', é: '[eé]', í: '[ií]', ó: '[oó]', ú: '[uú]' }
+/** Un nombre con o sin tildes: el dictado a veces escribe "Alvaro" o "Maria". */
+const conOSinTildes = (n: string) => [...escapar(n)].map((c) => TILDES[c.toLowerCase()] ?? c).join('')
 /** Límite de palabra que entiende acentos (\b de JS es solo ASCII). */
 const ANTES = '(?<![\\p{L}\\p{N}])'
 const DESPUES = '(?![\\p{L}\\p{N}])'
@@ -38,7 +41,7 @@ export function nombresFamilia(conocidos: string[] = []): string[] {
 
 /** Aplica el diccionario fijo. `conocidos`: nombres guardados (suman nombres de la familia). */
 export function corregirNombres(texto: string, conocidos: string[] = []): string {
-  const familia = nombresFamilia(conocidos).map(escapar).join('|')
+  const familia = nombresFamilia(conocidos).map(conOSinTildes).join('|')
   let t = texto
   for (const c of CORRECCIONES) {
     const mal = escapar(c.mal)

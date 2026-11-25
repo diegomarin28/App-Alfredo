@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { cantidad, enDias, textoEdad } from '@/domain/cantidades'
 import { iconoServicio } from '@/domain/iconoServicio'
-import { CORRECCIONES, corregirNombres, limpiarNombreCumple, nombresFamilia } from '@/domain/nombres'
+import { CORRECCIONES, FAMILIA, corregirNombres, limpiarNombreCumple, nombresFamilia } from '@/domain/nombres'
 import { esMuletilla, sinMuletillas } from '@/domain/muletillas'
 import { aplicarEdicion, edicionDe, fechaQuePide, filaPropuesta, seccionDe, SECCIONES_CONTAME, type Accion } from '@/ai/acciones'
 import { chipAviso } from '@/domain/recordatorios'
@@ -85,6 +85,17 @@ describe('nombres bien escritos (punto 3)', () => {
     expect(corregirNombres('Alfredo enrique')).toBe('Alfredo Gericke')
     expect(corregirNombres('Llamar a Enrique el plomero')).toBe('Llamar a Enrique el plomero')
     expect(corregirNombres('Juan Enrique Pérez')).toBe('Juan Enrique Pérez')
+  })
+  it('la familia: Alfredo, Pau, Paula, Paulina, María, Santiago, Álvaro, Ignacio, Alfonso y Eugenia', () => {
+    const familia = ['Alfredo', 'Pau', 'Paula', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
+    expect(FAMILIA).toEqual(familia)
+    for (const n of familia) expect(corregirNombres(`Llamar a ${n} Enrique mañana`)).toBe(`Llamar a ${n} Gericke mañana`)
+    // con o sin tildes, y en minúscula, como lo escribe el dictado
+    expect(corregirNombres('Alvaro Enrique')).toBe('Alvaro Gericke')
+    expect(corregirNombres('maria enrique')).toBe('maria Gericke')
+    // otro nombre no cambia
+    expect(corregirNombres('Mario Enrique')).toBe('Mario Enrique')
+    expect(corregirNombres('Mariano Enrique')).toBe('Mariano Enrique')
   })
   it('la familia suma a quien esté guardado con el apellido', () => {
     expect(nombresFamilia(['Sofía Gericke', 'Ana Pérez', 'Gericke'])).toContain('Sofía')
