@@ -9,9 +9,6 @@ import type { Accion, Opcion } from '@/ai/contamePrompt'
 import Revision, { type DudaRevision, type FilaRevision } from './Revision'
 import { useDictadoCompartido, type DictadoCompartido } from '@/voz/DictadoCompartido'
 import { soltarPuente, tomarTeclado as tomarTecladoYa } from '@/voz/puenteTeclado'
-import { anotar } from '@/voz/registro'
-import { _apertura } from '@/voz/useDictado'
-import RegistroDictado from './RegistroDictado'
 import AvisoTeclado from './AvisoTeclado'
 
 /** 'teclado' (ronda 11): la caja grande para dictar con el 🎤 del teclado o escribir; con "Listo" sigue como siempre. */
@@ -99,8 +96,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   function tocarMicrofono() {
     if (dictado.escuchando) return terminar()
     setError(null)
-    if (dictado.disponible) return dictado.empezar('círculo')
-    anotar(0, 'círculo: el dictado web ya se usó en esta apertura → teclado')
+    if (dictado.disponible) return dictado.empezar()
     tomarTeclado()
     setSeguir(false)
     setFase('teclado')
@@ -129,7 +125,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
     setEditado(null)
     setError(null)
     setFase('inicio')
-    dictado.empezar('botón «Usar el micrófono»')
+    dictado.empezar()
   }
 
   async function enviar(t: string, resp: string[]) {
@@ -268,11 +264,6 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
     _avisos.permiso = true
     setAvisoPermiso(true)
   }, [permiso])
-
-  // solo al abrir
-  useEffect(() => {
-    anotar(0, `Contame abierto${_apertura.usado ? ' (el dictado web ya se usó en esta apertura)' : ''}`)
-  }, [])
 
   const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
   return (
@@ -429,7 +420,6 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
             ? <Padel texto="Guardando" detalle="Lo estoy guardando donde va." />
             : <Padel texto="Ordenando" detalle="Estoy ordenando lo que me contaste." />)}
           {error && <Alerta>{error}</Alerta>}
-          {dictado.soportado && <RegistroDictado />}
         </>
       )}
     </main>

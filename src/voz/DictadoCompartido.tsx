@@ -2,7 +2,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useDictado, type Dictado } from './useDictado'
-import { anotar } from './registro'
 import { tomarTeclado } from './puenteTeclado'
 
 /**
@@ -47,10 +46,7 @@ export function ProveedorDictado({ children }: { children: React.ReactNode }) {
   // Solo cuando cambia la pantalla (no cuando empieza a escuchar: desde el menú arranca antes de llegar a Contame).
   const { terminar } = dictado
   useEffect(() => {
-    if (ruta !== RUTA_CONTAME && escuchando.current) {
-      anotar(0, `salí de Contame (${ruta}): corto la grabación`)
-      terminar()
-    }
+    if (ruta !== RUTA_CONTAME && escuchando.current) terminar()
   }, [ruta, terminar])
 
   const atenderTeclado = useCallback(() => setPedidoTeclado(null), [])
@@ -70,10 +66,9 @@ export function ProveedorDictado({ children }: { children: React.ReactNode }) {
     }
     if (disponible) {
       borrar() // una grabación nueva
-      empezar('menú')
+      empezar()
       return
     }
-    anotar(0, 'micrófono del menú: el dictado web ya se usó en esta apertura → teclado')
     tomarTeclado()
     if (ruta !== RUTA_CONTAME) borrar()
     setPedidoTeclado('teclado')

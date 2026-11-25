@@ -1,6 +1,5 @@
 'use client'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { anotar } from './registro'
 
 type ResultadosVoz = ArrayLike<{ isFinal: boolean; 0: { transcript: string } }>
 
@@ -14,11 +13,7 @@ interface Reconocedor {
   onend: (() => void) | null
   onstart?: (() => void) | null
   onaudiostart?: (() => void) | null
-  onsoundstart?: (() => void) | null
   onspeechstart?: (() => void) | null
-  onspeechend?: (() => void) | null
-  onsoundend?: (() => void) | null
-  onaudioend?: (() => void) | null
   start(): void
   stop(): void
   abort?(): void
@@ -51,8 +46,7 @@ export interface Dictado {
   texto: string
   /** ronda 12: lo que informa el navegador del permiso del micrófono ('prompt': lo pide cada vez) */
   permiso?: PermissionState
-  /** `origen` queda en el registro ("menú" o "círculo") */
-  empezar(origen?: string): void
+  empezar(): void
   terminar(): void
   borrar(): void
   error?: string
@@ -72,17 +66,12 @@ export const ESPERA_PERMISO_MS = 20000
 /** Sordo: el iPhone manda audiostart aunque no escuche; pasó esto sin speechstart ni result (ronda 12: 3 s). */
 export const ESPERA_SORDO_MS = 3000
 
-let contador = 0
-const numeros = new WeakMap<Reconocedor, number>()
-const numero = (r: Reconocedor) => numeros.get(r) ?? 0
-const nombreError = (e: unknown) => (e instanceof Error || e instanceof DOMException ? e.name : String(e))
 
 /**
  * Dictado con reconocimiento de voz del navegador, una toma por apertura (ronda 11).
  * Arranca sincrónico dentro del toque (iOS lo exige). No usamos getUserMedia: el permiso lo maneja el navegador.
  * Safari corta solo después de un silencio: si no se tocó terminar, se reinicia y sigue acumulando.
  * Si queda sordo, no arranca o da error, se corta y avisa con `alFallar`: Contame pasa al dictado del teclado.
- * Los handlers nunca se sacan: todo lo que manda el reconocedor queda en el registro de diagnóstico.
  */
 export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFallar?: (motivo: string) => void } = {}): Dictado {
   const soportado = useSyncExternalStore(nada, () => constructor() !== null, () => false)
@@ -93,7 +82,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
   const [error, setError] = useState<string>()
   const [permisoVisto, setPermisoVisto] = useState<PermissionState>()
 
-  /** lo decide el usuario, no el navegador; si es false, los errores (incluido el "aborted" de nuestro abort) solo se anotan */
+  /** lo decide el usuario, no el navegador; si es false, los errores (incluido el "aborted" de nuestro abort) se ignoran */
   const quiereEscuchar = useRef(false)
   const rec = useRef<Reconocedor | null>(null)
   /** llegó "start" y llegó voz (speechstart o result) desde el último start() */
@@ -133,15 +122,10 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     quiereEscuchar.current = false
     setEscuchando(false)
     sinRelojes()
-    const r = rec.current
-    anotar(0, `dictado web no anda: ${motivo} → teclado`)
-    if (r) {
-      anotar(numero(r), 'abort llamado')
-      try {
-        r.abort?.()
-      } catch (e) {
-        anotar(numero(r), `abort lanzó: ${nombreError(e)}`)
-      }
+    try {
+      rec.current?.abort?.()
+    } catch {
+      /* ya estaba cortado */
     }
     fijarParcial()
     if (mensaje) setError(mensaje)
@@ -165,14 +149,12 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     relojes.current.audio = setTimeout(revisar, ESPERA_AUDIO_MS)
   }, [fallar])
 
-  /** start() con registro y vigía. Devuelve false si lanzó. */
+  /** start() con vigía. Devuelve false si lanzó. */
   const arrancar = useCallback((r: Reconocedor): boolean => {
-    anotar(numero(r), 'start llamado')
     sesion.current = { start: false, voz: false }
     try {
       r.start()
-    } catch (e) {
-      anotar(numero(r), `start lanzó: ${nombreError(e)}`)
+    } catch {
       return false
     }
     vigilarAudio(r)
@@ -190,19 +172,14 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     const SR = constructor()
     if (!SR) return null
     const r = new SR()
-    numeros.set(r, ++contador)
-    const n = numero(r)
-    anotar(n, 'creado')
     r.lang = lang
     r.continuous = true
     r.interimResults = true
     const actual = () => rec.current === r
     r.onstart = () => {
-      anotar(n, 'start')
       if (actual()) sesion.current.start = true
     }
     r.onaudiostart = () => {
-      anotar(n, 'audiostart')
       if (!actual() || !quiereEscuchar.current) return
       const t = relojes.current.audio
       if (t !== undefined) clearTimeout(t)
@@ -216,28 +193,20 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
         }, ESPERA_SORDO_MS)
       }
     }
-    r.onsoundstart = () => anotar(n, 'soundstart')
     r.onspeechstart = () => {
-      anotar(n, 'speechstart')
       if (actual()) huboVoz()
     }
-    r.onspeechend = () => anotar(n, 'speechend')
-    r.onsoundend = () => anotar(n, 'soundend')
-    r.onaudioend = () => anotar(n, 'audioend')
     r.onresult = (e) => {
       let p = ''
-      let finales = 0
       const nuevos: string[] = []
       for (let i = 0; i < e.results.length; i++) {
         const t = e.results[i][0].transcript
         if (!e.results[i].isFinal) p += t
         else if (i >= e.resultIndex) {
-          finales++
           const limpio = t.trim()
           if (limpio) nuevos.push(limpio)
         }
       }
-      anotar(n, `result (${finales} final, ${p.trim().length} letras parciales)`)
       // también después de stop(): Safari manda el resultado final antes de su "end"
       if (!actual()) return
       huboVoz()
@@ -248,8 +217,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
       setParcial(enVivo.current)
     }
     r.onerror = (e) => {
-      anotar(n, `error ${e.error}${e.message ? `: ${e.message}` : ''}`)
-      // ya cortado (por Alfredo o por nosotros): solo se anota. Antes el "aborted" de nuestro abort disparaba otra recarga.
+      // ya cortado (por Alfredo o por nosotros): se ignora, también el "aborted" de nuestro propio abort.
       if (!actual() || !quiereEscuchar.current) return
       if (e.error === 'no-speech') return // silencio: onend reinicia solo
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') fallar(`error ${e.error}`, ERROR_PERMISO)
@@ -257,7 +225,6 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
       else fallar(`error ${e.error}`)
     }
     r.onend = () => {
-      anotar(n, 'end')
       if (!actual()) return
       fijarParcial() // si cortó con algo sin confirmar, no se pierde
       if (!quiereEscuchar.current) return
@@ -275,12 +242,8 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
   }, [lang, fijarParcial, arrancar, fallar, huboVoz, sinRelojes])
 
   // Sin await en el medio: en iOS el reconocimiento tiene que arrancar dentro del toque.
-  const empezar = useCallback((origen?: string) => {
-    if (_apertura.usado || quiereEscuchar.current) {
-      anotar(0, 'grabar ignorado: el dictado web ya se usó en esta apertura')
-      return
-    }
-    if (origen) anotar(0, `grabación desde el ${origen}`)
+  const empezar = useCallback(() => {
+    if (_apertura.usado || quiereEscuchar.current) return
     const r = crear()
     if (!r) return
     rec.current = r
@@ -303,11 +266,9 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     sinRelojes()
     const r = rec.current
     if (!r) return
-    anotar(numero(r), 'stop llamado')
     try {
       r.stop()
-    } catch (e) {
-      anotar(numero(r), `stop lanzó: ${nombreError(e)}`)
+    } catch {
       fijarParcial()
     }
   }, [sinRelojes, fijarParcial])
@@ -336,7 +297,6 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
       .query({ name: 'microphone' as PermissionName })
       .then((s) => {
         estado = s
-        anotar(0, `permiso del micrófono: ${s.state}`)
         s.addEventListener?.('change', revisar)
         revisar()
       })
@@ -349,7 +309,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     }
   }, [])
 
-  // Al salir de Contame: se corta (los handlers quedan; lo que llegue se anota y nada más).
+  // Al cerrar la app (se desmonta el layout): se corta.
   useEffect(() => {
     const r0 = relojes.current
     return () => {
@@ -357,7 +317,6 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
       const r = rec.current
       if (r && quiereEscuchar.current) {
         quiereEscuchar.current = false
-        anotar(numero(r), 'abort llamado (salí de Contame)')
         try {
           r.abort?.()
         } catch {
