@@ -61,11 +61,14 @@ export async function registrarFaceId(page: Page, opciones: { prf?: boolean } = 
  * Reconocimiento de voz falso, manejable desde la prueba con window.__voz.
  * `ios`: como el iPhone (ronda 8): stop() no termina nunca, abort() después de stop() no hace nada y un start() con
  * otro reconocedor vivo deja sordo al nuevo (no le llega lo que se dice).
+ * Ronda 9: start() avisa "start" y "audiostart" como Safari; `__voz.trabar()` traba el motor (start() no da audio)
+ * hasta que se recarga la página, como en el iPhone real. `trabar(true)` lo deja trabado también después de recargar.
  */
 export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
   const ios = !!opciones?.ios
   type Res = { isFinal: boolean; 0: { transcript: string } }
-  const estado = { instancias: [] as FakeRec[], starts: 0 }
+  const CLAVE_TRABADO = '__voz:trabado'
+  const estado = { instancias: [] as FakeRec[], starts: 0, trabado: sessionStorage.getItem(CLAVE_TRABADO) === '1' }
   class FakeRec {
     lang = ''
     continuous = false
@@ -73,6 +76,8 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
     onresult: ((e: { resultIndex: number; results: Res[] }) => void) | null = null
     onerror: ((e: { error: string }) => void) | null = null
     onend: (() => void) | null = null
+    onstart: (() => void) | null = null
+    onaudiostart: (() => void) | null = null
     activo = false
     parando = false
     sordo = false
@@ -84,6 +89,8 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
       this.activo = true
       this.resultados = []
       estado.starts++
+      // trabado: arranca ("start") pero el audio no llega nunca
+      setTimeout(() => { if (this.activo) { this.onstart?.(); if (!estado.trabado) this.onaudiostart?.() } }, 0)
     }
     stop() {
       if (!this.activo) return
@@ -105,7 +112,7 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
     decir(texto: string, isFinal = true) {
       const r = actual()
       if (!r) throw new Error('no está escuchando')
-      if (r.sordo) return
+      if (r.sordo || estado.trabado) return
       const i = r.resultados.findIndex((x) => !x.isFinal)
       const idx = i >= 0 ? i : r.resultados.length
       r.resultados[idx] = { isFinal, 0: { transcript: texto } }
@@ -126,6 +133,13 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
       r.onend?.()
     },
     starts: () => estado.starts,
+    trabar(siempre = false) {
+      estado.trabado = true
+      if (siempre) sessionStorage.setItem(CLAVE_TRABADO, '1')
+    },
+    destrabar() {
+      sessionStorage.removeItem(CLAVE_TRABADO)
+    },
   }
 }
 

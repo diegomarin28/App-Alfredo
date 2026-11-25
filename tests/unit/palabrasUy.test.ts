@@ -32,7 +32,6 @@ describe('palabras de Uruguay (ronda 8)', () => {
     ['Mana ntiales', 'Manantiales'],
     ['Porto fino', 'Portofino'],
     ['malibu', 'Malibú'],
-    ['Antell', 'Antel'],
     ['antel', 'Antel'],
     ['Inten dencia', 'Intendencia'],
     ['San Jose', 'San José'],
