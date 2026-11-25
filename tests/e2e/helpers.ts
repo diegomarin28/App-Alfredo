@@ -132,7 +132,8 @@ export async function sinErroresNiDesborde(page: Page, errores: string[], donde:
 
 /** Espera a que React haya enganchado el elemento (un toque antes de eso no hace nada, sobre todo en `next dev`). */
 export async function hidratado(el: Locator): Promise<void> {
-  await expect.poll(() => el.evaluate((n) => Object.keys(n).some((k) => k.startsWith('__reactProps')))).toBe(true)
+  // 10 s: con la suite entera, `next dev` a veces tarda más de 5 s en hidratar
+  await expect.poll(() => el.evaluate((n) => Object.keys(n).some((k) => k.startsWith('__reactProps'))), { timeout: 10_000 }).toBe(true)
 }
 
 /**

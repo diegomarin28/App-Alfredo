@@ -12,5 +12,10 @@ export default async function precalentar(config: FullConfig): Promise<void> {
   await ctx.post('/api/test/login', { data: { rol: 'owner' } })
   const rutas = new Set(PANTALLAS.filter((p) => p.rol).map((p) => (p.ruta === 'carpeta' ? '/documentos/no-existe' : p.ruta)))
   for (const ruta of rutas) await ctx.get(ruta)
+  // Las rutas de la API también se compilan la primera vez: con un cuerpo inválido (400) no guardan nada, y
+  // "Guardar todo" o "Deshacer" no tardan más de lo que espera la prueba.
+  for (const ruta of ['/api/ai/contame', '/api/ai/mensajes', '/api/contame/guardar', '/api/contame/deshacer']) {
+    await ctx.post(ruta, { data: {} })
+  }
   await ctx.dispose()
 }
