@@ -7,6 +7,8 @@ import Actualizar from '@/components/Actualizar'
 import { hoy, proximosCumples, vencimientosProximos } from '@/domain/fechas'
 import { EmptyState, IconoTile, Lista, clasesFila, clasesSeparador } from '@/components/ui'
 import { Icono, type NombreIcono } from '@/components/iconos'
+import { paraCompletar } from '@/domain/completar'
+import ParaCompletar, { type DatosCompletar, type FilaCompletar } from './ParaCompletar'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +67,9 @@ export default async function Inicio() {
     repo.getConfig(),
     repo.fotos.list(),
     repo.fechas.list(),
-    sesionP.then((s) => (s?.rol === 'owner' ? Promise.all([repo.vencimientos.list(), repo.pendientes.list()]) : null)),
+    sesionP.then((s) => (s?.rol === 'owner'
+      ? Promise.all([repo.vencimientos.list(), repo.pendientes.list(), repo.serviciosCasa.list(), repo.contactos.list(), repo.gruposContacto.list()])
+      : null)),
     sesionP.then((s) => (s?.rol === 'familia' ? repo.recordatorios.list() : null)),
   ])
   const owner = sesion?.rol === 'owner'
@@ -107,6 +111,22 @@ export default async function Inicio() {
   const cumple = proximosCumples(fechas.filter((f) => f.tipo === 'cumple'), hoyStr)[0]
   const venc = delOwner ? vencimientosProximos(delOwner[0], hoyStr)[0] : undefined
   const abiertos = delOwner ? delOwner[1].filter((p) => !p.hecho).length : 0
+  // "Para completar" (ronda 5, punto 9): cumpleaños sin fecha, servicios sin número, contactos sin teléfono
+  const [servicios, contactos, grupos] = delOwner ? [delOwner[2], delOwner[3], delOwner[4]] : [[], [], []]
+  const completar: FilaCompletar[] = paraCompletar({ fechas, servicios, contactos }).map((i) => {
+    let datos: DatosCompletar
+    if (i.tipo === 'fecha') {
+      const f = fechas.find((x) => x.id === i.id)!
+      datos = { tipo: 'fecha', nombre: f.nombre, anioNacimiento: f.anioNacimiento }
+    } else if (i.tipo === 'servicio') {
+      const v = servicios.find((x) => x.id === i.id)!
+      datos = { tipo: 'servicio', clave: v.clave, valor: v.valor }
+    } else {
+      const c = contactos.find((x) => x.id === i.id)!
+      datos = { tipo: 'contacto', nombre: c.nombre, grupoId: c.grupoId, empresa: c.empresa, telefono: c.telefono, nota: c.nota }
+    }
+    return { ...i, datos }
+  })
 
   return (
     <Actualizar>
@@ -169,6 +189,8 @@ export default async function Inicio() {
             : <li className={`${clasesFila} text-base text-texto-2`}>No hay tareas pendientes.</li>}
         </Lista>
       </section>
+
+      {completar.length > 0 && <ParaCompletar items={completar} grupos={[...grupos].sort((a, b) => a.orden - b.orden).map((g) => ({ id: g.id, nombre: g.nombre }))} />}
     </main>
     </Actualizar>
   )

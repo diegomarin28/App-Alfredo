@@ -96,8 +96,9 @@ function base(dia: string, anio: number | undefined, hoyStr: string): string {
   return `${anio ?? hoyStr.slice(0, 4)}-${dia}`
 }
 
-/** Próxima ocurrencia de una fecha del Calendario (el cumpleaños, todos los años). */
+/** Próxima ocurrencia de una fecha del Calendario (el cumpleaños, todos los años); null si no tiene fecha. */
 export function proximaDeFecha(f: Pick<Fecha, 'tipo' | 'dia' | 'repeticion' | 'anioEvento' | 'diasSemana'>, hoyStr: string): string | null {
+  if (f.dia === null) return null // cumpleaños sin fecha todavía
   if (f.tipo === 'cumple') return proximaRepeticion(base(f.dia, undefined, hoyStr), 'anual', hoyStr)
   return proximaRepeticion(base(f.dia, f.anioEvento, hoyStr), f.repeticion ?? 'anual', hoyStr, f.diasSemana)
 }

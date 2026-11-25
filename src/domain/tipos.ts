@@ -6,8 +6,8 @@ export interface Fecha {
   nombre: string
   /** los aniversarios viejos pasaron a "otra" (todos los años) en la migración 0005 */
   tipo: 'cumple' | 'otra'
-  /** MM-DD */
-  dia: string
+  /** MM-DD; null = cumpleaños sin fecha todavía (va a "Para completar", no al Calendario) */
+  dia: string | null
   anioNacimiento?: number
   /** solo "otra": cómo se repite (falta = todos los años). El cumpleaños es siempre todos los años. */
   repeticion?: Repeticion
@@ -17,6 +17,8 @@ export interface Fecha {
   hora?: string
   /** solo "otra" semanal: días marcados, 1 = lunes … 7 = domingo (falta = el día de la semana de la fecha) */
   diasSemana?: number[]
+  /** "Omitir" en "Para completar": no se pide más la fecha */
+  completarOmitido?: boolean
 }
 
 export type Repeticion = 'nunca' | 'diaria' | 'semanal' | 'mensual' | 'anual'
@@ -85,7 +87,10 @@ export interface ServicioCasa {
   creadoEn?: string
   casa: Casa
   clave: string
-  valor: string
+  /** null = falta el número (va a "Para completar") */
+  valor: string | null
+  /** "Omitir" en "Para completar": no se pide más el número */
+  completarOmitido?: boolean
 }
 
 export interface Contacto {
@@ -98,6 +103,8 @@ export interface Contacto {
   empresa?: string
   telefono?: string
   nota?: string
+  /** "Omitir" en "Para completar": no se pide más el teléfono */
+  completarOmitido?: boolean
 }
 
 export interface Pendiente {

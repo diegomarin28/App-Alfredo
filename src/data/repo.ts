@@ -8,7 +8,7 @@ import type {
 export type Nuevo<E extends { id: string }> = Omit<E, 'id' | 'creadoEn'> & { creadoEn?: string }
 
 /** Campos que declaran `| null` como valor real (null se conserva, no borra). */
-export const CONSERVAR_NULL: Partial<Record<Entidad, string[]>> = { recordatorios: ['dia'] }
+export const CONSERVAR_NULL: Partial<Record<Entidad, string[]>> = { recordatorios: ['dia'], fechas: ['dia'], serviciosCasa: ['valor'] }
 
 /** Cambio parcial: `null` borra el campo (queda ausente al leer); `undefined` no lo toca. */
 export type Cambio<E extends { id: string }> = { [K in keyof Omit<E, 'id'>]?: Omit<E, 'id'>[K] | null }

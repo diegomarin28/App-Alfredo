@@ -31,7 +31,7 @@ export async function ultimosGuardados(repo: Repo, cuantos = 3): Promise<Guardad
     ...de(notas, (n) => ({ titulo: corto(n.texto), detalle: 'Notas', clase: 'nota' })),
     ...de(vencimientos, (v) => ({ titulo: v.titulo, detalle: `Vencimientos · ${diaMes(v.fecha.slice(5))}`, clase: 'vencimiento' })),
     ...de(contactos, (c) => ({ titulo: c.nombre, detalle: 'Contactos', clase: 'contacto' })),
-    ...de(fechas, (f) => ({ titulo: f.nombre, detalle: `Calendario · ${diaMes(f.dia)}`, clase: 'fecha' })),
+    ...de(fechas, (f) => ({ titulo: f.nombre, detalle: `Calendario · ${f.dia ? diaMes(f.dia) : 'falta la fecha'}`, clase: 'fecha' })),
     ...de(recordatorios, (r) => ({ titulo: r.titulo, detalle: 'Recordatorios', clase: 'recordatorio' })),
   ].sort((a, b) => b.creadoEn.localeCompare(a.creadoEn)).slice(0, cuantos)
 }

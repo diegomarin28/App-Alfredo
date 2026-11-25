@@ -34,6 +34,9 @@ test('Posponer eligiendo cuánto: 3 días, o hasta una fecha', async ({ page }) 
   await hoja.getByRole('button', { name: 'Posponer' }).click()
   await expect(page.getByText('Te lo recuerdo de nuevo en 3 días.')).toBeVisible()
   await expect(activos.getByRole('article', { name: 'Gestionar Navidad' })).toHaveCount(0)
+  // que termine la recarga de datos de la pantalla antes de resetear (si llega después, Next recarga la página
+  // entera y pisa la navegación de abajo)
+  await page.waitForLoadState('networkidle')
 
   // de nuevo desde cero: ahora hasta una fecha elegida
   await resetear(page, { hoy: HOY })
