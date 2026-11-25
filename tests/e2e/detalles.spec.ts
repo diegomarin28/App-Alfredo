@@ -141,6 +141,7 @@ test('Mensajes: pádel mientras sugiere la respuesta y dados con "Otra versión"
 })
 
 test.describe('whisky: el 25 de noviembre', () => {
+  test.use({ storageState: { cookies: [], origins: [] } }) // sin el "ya brindó hoy" de playwright.config
   test('al abrir la app ese día, dos vasos brindan "¡Salud, Alfredo!"; Gracias lo cierra y no vuelve ese día', async ({ page }) => {
     await resetear(page, { hoy: '2026-11-25', config: { nombre: 'Alfredo' } })
     await entrarComo(page, 'owner')
