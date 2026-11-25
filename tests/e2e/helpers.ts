@@ -135,6 +135,7 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
     },
     starts: () => estado.starts,
     instancias: () => estado.instancias.length,
+    escuchando: () => estado.instancias.some((r) => r.activo),
     trabar(siempre = false) {
       estado.trabado = true
       if (siempre) sessionStorage.setItem(CLAVE_TRABADO, '1')

@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, Card, IconoTile, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
 import { Icono, type NombreIcono } from '@/components/iconos'
@@ -7,7 +7,10 @@ import type { Guardado } from '@/domain/ultimos'
 import { Padel } from '@/components/detalles'
 import type { Accion, Opcion } from '@/ai/contamePrompt'
 import Revision, { type DudaRevision, type FilaRevision } from './Revision'
-import { useDictado } from '@/voz/useDictado'
+import { useDictadoCompartido, type DictadoCompartido } from '@/voz/DictadoCompartido'
+import { soltarPuente, tomarTeclado as tomarTecladoYa } from '@/voz/puenteTeclado'
+import { anotar } from '@/voz/registro'
+import { _apertura } from '@/voz/useDictado'
 import RegistroDictado from './RegistroDictado'
 import AvisoTeclado from './AvisoTeclado'
 
@@ -15,16 +18,13 @@ import AvisoTeclado from './AvisoTeclado'
 type Fase = 'inicio' | 'teclado' | 'pregunta' | 'propuesta' | 'listo'
 interface Linea { id: string; descripcion: string }
 
-/** La ayuda de cómo activar el dictado del teclado se muestra una sola vez. */
-const CLAVE_AYUDA_TECLADO = 'alfredo:ayuda-dictado-teclado'
-function primeraVezAyuda(): boolean {
-  try {
-    if (localStorage.getItem(CLAVE_AYUDA_TECLADO)) return false
-    localStorage.setItem(CLAVE_AYUDA_TECLADO, '1')
-    return true
-  } catch {
-    return false
-  }
+/** Ronda 12: el aviso de cómo no tener que dar permiso cada vez, una sola vez por apertura (en memoria). */
+export const _avisos = { permiso: false }
+
+function usarDictado(): DictadoCompartido {
+  const d = useDictadoCompartido()
+  if (!d) throw new Error('Contame necesita el ProveedorDictado del layout')
+  return d
 }
 
 const MAX = 8000
@@ -60,17 +60,13 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   const montado = useSyncExternalStore(nada, () => true, () => false)
   const [fase, setFase] = useState<Fase>('inicio')
   const [editado, setEditado] = useState<string | null>(null)
-  // Ronda 11: si el dictado web queda sordo, no arranca o da error, se sigue con el teclado y con lo que ya se dictó.
-  const alFallar = useCallback(() => {
-    setEditado(null)
-    setFase('teclado')
-  }, [])
-  const dictado = useDictado({ lang: 'es-UY', alFallar })
+  // Ronda 12: el dictado vive en el layout (el micrófono del menú lo arranca antes de llegar acá).
+  const dictado = usarDictado()
   const segundos = useSegundos(dictado.escuchando)
   const caja = useRef<HTMLTextAreaElement>(null)
-  /** campo invisible que toma el foco dentro del toque (ver tomarTeclado) */
-  const puente = useRef<HTMLInputElement | null>(null)
-  const [ayuda, setAyuda] = useState(false)
+  /** se llegó a la caja porque el dictado web no anduvo: el aviso dice "Seguí con el 🎤 del teclado" */
+  const [seguir, setSeguir] = useState(false)
+  const [avisoPermiso, setAvisoPermiso] = useState(false)
   const [enviado, setEnviado] = useState('')
   const [respuestas, setRespuestas] = useState<string[]>([])
   const [pregunta, setPregunta] = useState<{ pregunta: string; opciones: Opcion[] } | null>(null)
@@ -87,31 +83,15 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   // Mientras no se edite, la caja sigue al dictado (pueden llegar los últimos resultados después de terminar).
   const texto = editado ?? dictado.texto
 
-  /**
-   * iOS abre el teclado solo si el foco se pide dentro del toque. La caja todavía no existe: un campo invisible
-   * toma el foco ya (se abre el teclado) y, cuando aparece la caja, el foco pasa a ella y el campo se va.
-   */
-  function tomarTeclado() {
-    if (caja.current) {
-      caja.current.focus()
-      return
-    }
-    if (puente.current) return
-    const i = document.createElement('input')
-    i.type = 'text'
-    i.tabIndex = -1
-    i.setAttribute('aria-hidden', 'true')
-    Object.assign(i.style, { position: 'fixed', top: '0', left: '0', width: '1px', height: '1px', opacity: '0', fontSize: '16px', border: '0', padding: '0' })
-    document.body.appendChild(i)
-    i.focus({ preventScroll: true })
-    puente.current = i
-  }
+  /** iOS abre el teclado solo si el foco se pide dentro del toque (ver puenteTeclado). */
+  const tomarTeclado = () => tomarTecladoYa(caja.current)
 
   /** Terminar la grabación (dictado web): sigue en el teclado con lo dictado, para corregir o seguir dictando. */
   function terminar() {
     tomarTeclado()
     dictado.terminar()
     setEditado(null)
+    setSeguir(false)
     setFase('teclado')
   }
 
@@ -119,8 +99,10 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   function tocarMicrofono() {
     if (dictado.escuchando) return terminar()
     setError(null)
-    if (dictado.disponible) return dictado.empezar()
+    if (dictado.disponible) return dictado.empezar('círculo')
+    anotar(0, 'círculo: el dictado web ya se usó en esta apertura → teclado')
     tomarTeclado()
+    setSeguir(false)
     setFase('teclado')
   }
 
@@ -129,6 +111,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
     tomarTeclado()
     if (dictado.escuchando) dictado.terminar()
     setEditado(null)
+    setSeguir(false)
     setFase('teclado')
   }
 
@@ -146,7 +129,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
     setEditado(null)
     setError(null)
     setFase('inicio')
-    dictado.empezar()
+    dictado.empezar('botón «Usar el micrófono»')
   }
 
   async function enviar(t: string, resp: string[]) {
@@ -251,27 +234,53 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
 
   const vista = fase === 'inicio' && !dictado.soportado ? 'teclado' : fase
 
-  // Al entrar al teclado: la caja queda enfocada con el cursor al final, y la ayuda se muestra una sola vez.
+  // Al entrar al teclado: la caja queda enfocada con el cursor al final (y el campo invisible del toque se va).
   useEffect(() => {
-    if (vista !== 'teclado') return
-    if (fase === 'teclado') {
-      const c = caja.current
-      if (c) {
-        c.focus({ preventScroll: true })
-        c.setSelectionRange(c.value.length, c.value.length)
-      }
+    if (fase !== 'teclado') return
+    const c = caja.current
+    if (c) {
+      c.focus({ preventScroll: true })
+      c.setSelectionRange(c.value.length, c.value.length)
     }
-    puente.current?.remove()
-    puente.current = null
-    if (primeraVezAyuda()) setAyuda(true)
-  }, [vista, fase])
+    soltarPuente()
+  }, [fase])
 
-  useEffect(() => () => puente.current?.remove(), [])
+  // Ronda 12: pedidos del dictado del layout. 'fallo': quedó sordo, dio error o no arrancó (puede pasar antes de
+  // llegar a Contame); 'teclado': el micrófono del menú cuando el dictado web ya se usó.
+  const { pedidoTeclado, atenderTeclado, escuchando, permiso } = dictado
+  useEffect(() => {
+    if (!pedidoTeclado) return
+    atenderTeclado()
+    setEditado(null)
+    setSeguir(pedidoTeclado === 'fallo')
+    setError(null)
+    setFase('teclado')
+  }, [pedidoTeclado, atenderTeclado])
+
+  // Empezó a escuchar desde el menú estando en otra parte de Contame: se ve "Te escucho".
+  useEffect(() => {
+    if (escuchando) setFase('inicio')
+  }, [escuchando])
+
+  // Safari pide permiso cada vez: se explica cómo evitarlo, una vez por apertura.
+  useEffect(() => {
+    if (permiso !== 'prompt' || _avisos.permiso) return
+    _avisos.permiso = true
+    setAvisoPermiso(true)
+  }, [permiso])
+
+  // solo al abrir
+  useEffect(() => {
+    anotar(0, `Contame abierto${_apertura.usado ? ' (el dictado web ya se usó en esta apertura)' : ''}`)
+  }, [])
 
   const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
   return (
     <main className="space-y-4">
       <h1 className={clasesTitulo}>Contame</h1>
+      {montado && avisoPermiso && (
+        <p className="text-base text-texto-2">Para no tener que dar permiso cada vez: Ajustes → Apps → Safari → Micrófono → Permitir</p>
+      )}
       {!montado ? null : (
         <>
           {vista === 'inicio' && (
@@ -336,10 +345,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
 
           {vista === 'teclado' && (
             <div className="space-y-4">
-              <AvisoTeclado />
-              {ayuda && (
-                <p className="text-base text-texto-2">¿No ves el 🎤 en el teclado? Se activa en Ajustes → General → Teclado → Activar dictado.</p>
-              )}
+              <AvisoTeclado texto={seguir ? 'Seguí con el 🎤 del teclado (abajo a la derecha)' : 'Tocá el 🎤 del teclado (abajo a la derecha) y hablá'} />
               <textarea
                 ref={caja}
                 aria-label="Lo que querés guardar"

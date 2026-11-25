@@ -216,12 +216,12 @@ describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () =>
   beforeEach(() => { vi.useFakeTimers() })
   afterEach(() => { vi.useRealTimers() })
 
-  it('sordo: 5 s desde audiostart sin speechstart ni result → corta y avisa una sola vez', () => {
+  it('sordo: 3 s desde audiostart sin speechstart ni result → corta y avisa una sola vez', () => {
     const alFallar = vi.fn()
     const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
     act(() => ultima().oir())
-    act(() => { vi.advanceTimersByTime(4999) })
+    act(() => { vi.advanceTimersByTime(2999) })
     expect(alFallar).not.toHaveBeenCalled()
     act(() => { vi.advanceTimersByTime(1) })
     expect(alFallar).toHaveBeenCalledTimes(1)
@@ -239,7 +239,7 @@ describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () =>
     const { result } = renderHook(() => useDictado({ alFallar }))
     act(() => result.current.empezar())
     act(() => ultima().oir())
-    act(() => { vi.advanceTimersByTime(3000) })
+    act(() => { vi.advanceTimersByTime(2000) })
     act(() => ultima().onspeechstart?.())
     act(() => { vi.advanceTimersByTime(20000) })
     expect(alFallar).not.toHaveBeenCalled()
@@ -255,7 +255,7 @@ describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () =>
     act(() => r.decir('Comprar pilas', false))
     act(() => r.fin()) // Safari corta en una pausa y se reinicia
     act(() => r.oir())
-    act(() => { vi.advanceTimersByTime(5000) })
+    act(() => { vi.advanceTimersByTime(3000) })
     expect(alFallar).toHaveBeenCalledTimes(1)
     expect(result.current.texto).toBe('Comprar pilas')
   })
@@ -391,6 +391,25 @@ describe('registro de diagnóstico', () => {
     act(() => ultima().onerror?.({ error: 'audio-capture' }))
     expect(registroComoTexto()).toMatch(/dictado web no anda: error audio-capture → teclado/)
     expect(registroComoTexto()).not.toMatch(/recarg/)
+  })
+})
+
+describe('ronda 12: origen y permiso', () => {
+  it('anota desde dónde arrancó la grabación', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar('menú'))
+    expect(registro()).toContain('grabación desde el menú')
+  })
+
+  it('informa el estado del permiso (prompt: Safari lo pide cada vez)', async () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, 'permissions')
+    Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => ({ state: 'prompt' }) } })
+    const { result } = renderHook(() => useDictado({}))
+    await act(async () => {})
+    expect(result.current.permiso).toBe('prompt')
+    expect(result.current.error).toBeUndefined()
+    if (original) Object.defineProperty(navigator, 'permissions', original)
+    else delete (navigator as unknown as { permissions?: unknown }).permissions
   })
 })
 

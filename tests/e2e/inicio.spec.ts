@@ -54,7 +54,8 @@ test('repo vacío: Inicio muestra textos vacíos y sin "Lo próximo" (ronda 6)',
   const res = await page.goto('/')
   expect(res?.status()).toBe(200)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Alfredo')
-  await expect(page.getByText('Todavía no hay fotos')).toBeVisible()
+  // por rol: mientras Next transmite la página, una copia oculta (<div hidden id="S:…">) también tiene el texto
+  await expect(page.getByRole('region', { name: 'Foto del día' }).getByText('Todavía no hay fotos')).toBeVisible()
   await expect(page.getByRole('link', { name: /Agregar fotos/ })).toHaveAttribute('href', '/fotos')
   // ronda 6: sin nada en ninguna fila, no hay sección
   await expect(page.getByRole('navigation', { name: 'Accesos directos' })).toBeVisible()
