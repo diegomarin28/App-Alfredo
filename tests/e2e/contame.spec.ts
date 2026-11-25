@@ -131,14 +131,16 @@ test('permiso de micrófono denegado: aviso claro, sin perder lo dictado', async
   await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas')
 })
 
-test('sin conexión: deja de escuchar y avisa (no se queda reiniciando)', async ({ page }) => {
+test('sin conexión: deja de escuchar y avisa (no se queda reiniciando ni recarga)', async ({ page, context }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await context.setOffline(true)
   await page.evaluate(() => (window as unknown as { __voz: { error(c: string): void } }).__voz.error('network'))
   await expect(page.getByRole('alert').filter({ hasText: 'No pude escuchar. Revisá la conexión y probá de nuevo.' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
   expect(await page.evaluate(() => (window as unknown as { __voz: { starts(): number } }).__voz.starts())).toBe(1)
+  await context.setOffline(false)
 })
 
 test('respuesta de la IA cortada: propone todo como nota y lo avisa', async ({ page }) => {
@@ -221,4 +223,69 @@ test('iPhone: grabar, repetir, grabar, cancelar, grabar… 10 de 10 veces vuelve
   await terminarCon('la última')
   // ningún aviso nuestro (el anunciador de rutas de Next también es role=alert, pero vacío)
   await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveCount(0)
+})
+
+type Voz = { __voz: { trabar(siempre?: boolean): void; error(c: string): void } }
+
+test('plan B: si el micrófono da error, recarga, vuelve el texto y con un toque sigue', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await expect(page.getByRole('button', { name: 'Tocá para terminar' })).toBeVisible()
+  await decir(page, 'Comprar pilas', false)
+  await expect(page.getByText('Comprar pilas')).toBeVisible()
+  await page.evaluate(() => (window as unknown as Voz).__voz.error('audio-capture'))
+  // recargó: el texto está y pide un toque
+  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible()
+  await expect(page.getByText('Comprar pilas')).toBeVisible()
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await expect(page.getByText('Tocá el micrófono para seguir')).toHaveCount(0)
+  await decir(page, 'y leche', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas y leche')
+})
+
+test('plan B: "Repetir" sin audio en 2 s recarga y el siguiente toque anda', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'primera toma', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await page.evaluate(() => (window as unknown as Voz).__voz.trabar())
+  await page.getByRole('button', { name: 'Repetir' }).click()
+  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'segunda toma', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('segunda toma')
+})
+
+test('plan B: si ni recargando anda, avisa qué hacer (nunca toca y no pasa nada)', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.evaluate(() => (window as unknown as Voz).__voz.trabar(true))
+  for (let vez = 1; vez <= 2; vez++) {
+    await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+    await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible({ timeout: 10_000 })
+  }
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await expect(page.getByRole('alert').filter({ hasText: 'El micrófono no responde' })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByRole('button', { name: 'Prefiero escribir' })).toBeVisible()
+})
+
+test('registro de diagnóstico: muestra los eventos con hora y se puede copiar', async ({ page, browserName, context }) => {
+  if (browserName === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'hola', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await page.getByRole('button', { name: 'Ver registro' }).click()
+  const registro = page.getByTestId('registro-dictado')
+  for (const ev of ['creado', 'start llamado', 'audiostart', 'result', 'abort llamado']) {
+    await expect(registro).toContainText(new RegExp(`\\d{2}:\\d{2}:\\d{2}\\.\\d{3} #\\d+ ${ev}`))
+  }
+  await page.getByRole('button', { name: 'Copiar registro' }).click()
+  await expect(page.getByRole('status').filter({ hasText: /Copiado|copialo a mano/ })).toBeVisible()
+  if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/audiostart/)
 })

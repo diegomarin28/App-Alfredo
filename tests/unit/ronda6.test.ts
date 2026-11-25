@@ -90,9 +90,9 @@ describe('nombres bien escritos (punto 3)', () => {
     const familia = ['Alfredo', 'Pau', 'Paulina', 'María', 'Santiago', 'Álvaro', 'Ignacio', 'Alfonso', 'Eugenia']
     expect(FAMILIA).toEqual(familia)
     for (const n of familia) expect(corregirNombres(`Llamar a ${n} Enrique mañana`)).toBe(`Llamar a ${n} Gericke mañana`)
-    // con o sin tildes, y en minúscula, como lo escribe el dictado
-    expect(corregirNombres('Alvaro Enrique')).toBe('Alvaro Gericke')
-    expect(corregirNombres('maria enrique')).toBe('maria Gericke')
+    // con o sin tildes, y en minúscula, como lo escribe el dictado (ronda 9: el nombre también queda bien escrito)
+    expect(corregirNombres('Alvaro Enrique')).toBe('Álvaro Gericke')
+    expect(corregirNombres('maria enrique')).toBe('María Gericke')
     // otro nombre no cambia
     expect(corregirNombres('Mario Enrique')).toBe('Mario Enrique')
     expect(corregirNombres('Mariano Enrique')).toBe('Mariano Enrique')

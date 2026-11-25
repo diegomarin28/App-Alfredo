@@ -8,6 +8,7 @@ import { Padel } from '@/components/detalles'
 import type { Accion, Opcion } from '@/ai/contamePrompt'
 import Revision, { type DudaRevision, type FilaRevision } from './Revision'
 import { useDictado } from '@/voz/useDictado'
+import RegistroDictado from './RegistroDictado'
 
 type Fase = 'inicio' | 'revisar' | 'pregunta' | 'propuesta' | 'listo'
 type Origen = 'voz' | 'teclado'
@@ -200,7 +201,11 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
         <>
           {vista === 'inicio' && (
             <div className="space-y-5">
-              {!dictado.escuchando && <p className="text-base text-texto-2">Contame qué pasó y yo lo guardo donde va.</p>}
+              {/* ronda 9: volvió de recargar para destrabar el micrófono; iOS necesita un toque más */}
+              {!dictado.escuchando && dictado.recuperado && (
+                <p role="status" className="text-[28px] leading-tight font-bold text-texto">Tocá el micrófono para seguir</p>
+              )}
+              {!dictado.escuchando && !dictado.recuperado && <p className="text-base text-texto-2">Contame qué pasó y yo lo guardo donde va.</p>}
               <div className="flex flex-col items-center gap-3 pt-2">
                 <button
                   type="button"
@@ -337,6 +342,7 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
             ? <Padel texto="Guardando" detalle="Lo estoy guardando donde va." />
             : <Padel texto="Ordenando" detalle="Estoy ordenando lo que me contaste." />)}
           {error && <Alerta>{error}</Alerta>}
+          {dictado.soportado && <RegistroDictado />}
         </>
       )}
     </main>
