@@ -49,7 +49,10 @@ export interface Dictado {
   escuchando: boolean
   /** lo final acumulado + lo parcial en vivo */
   texto: string
-  empezar(): void
+  /** ronda 12: lo que informa el navegador del permiso del micrófono ('prompt': lo pide cada vez) */
+  permiso?: PermissionState
+  /** `origen` queda en el registro ("menú" o "círculo") */
+  empezar(origen?: string): void
   terminar(): void
   borrar(): void
   error?: string
@@ -66,8 +69,8 @@ const MAX_REINICIOS_SIN_RESULTADO = 5
 export const ESPERA_AUDIO_MS = 2000
 /** Mientras Safari puede estar mostrando el pedido de permiso, se espera más. */
 export const ESPERA_PERMISO_MS = 20000
-/** Sordo: el iPhone manda audiostart aunque no escuche; pasó esto sin speechstart ni result. */
-export const ESPERA_SORDO_MS = 5000
+/** Sordo: el iPhone manda audiostart aunque no escuche; pasó esto sin speechstart ni result (ronda 12: 3 s). */
+export const ESPERA_SORDO_MS = 3000
 
 let contador = 0
 const numeros = new WeakMap<Reconocedor, number>()
@@ -88,6 +91,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
   const [final, setFinal] = useState('')
   const [parcial, setParcial] = useState('')
   const [error, setError] = useState<string>()
+  const [permisoVisto, setPermisoVisto] = useState<PermissionState>()
 
   /** lo decide el usuario, no el navegador; si es false, los errores (incluido el "aborted" de nuestro abort) solo se anotan */
   const quiereEscuchar = useRef(false)
@@ -204,7 +208,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
       if (t !== undefined) clearTimeout(t)
       relojes.current.audio = undefined
       huboAudio.current = true
-      // el iPhone manda audiostart aunque esté sordo: si en 5 s no llega voz, al teclado
+      // el iPhone manda audiostart aunque esté sordo: si en 3 s no llega voz, al teclado
       if (!sesion.current.voz && relojes.current.sordo === undefined) {
         relojes.current.sordo = setTimeout(() => {
           relojes.current.sordo = undefined
@@ -271,11 +275,12 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
   }, [lang, fijarParcial, arrancar, fallar, huboVoz, sinRelojes])
 
   // Sin await en el medio: en iOS el reconocimiento tiene que arrancar dentro del toque.
-  const empezar = useCallback(() => {
+  const empezar = useCallback((origen?: string) => {
     if (_apertura.usado || quiereEscuchar.current) {
       anotar(0, 'grabar ignorado: el dictado web ya se usó en esta apertura')
       return
     }
+    if (origen) anotar(0, `grabación desde el ${origen}`)
     const r = crear()
     if (!r) return
     rec.current = r
@@ -314,10 +319,6 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     setParcial('')
   }, [])
 
-  useEffect(() => {
-    anotar(0, `Contame abierto${_apertura.usado ? ' (el dictado web ya se usó en esta apertura)' : ''}`)
-  }, [])
-
   // Permiso denegado de antes: se avisa cómo activarlo sin esperar al toque (Safari 16+ lo informa).
   useEffect(() => {
     const permisos = typeof navigator !== 'undefined' ? navigator.permissions : undefined
@@ -327,6 +328,7 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
     const revisar = () => {
       if (!vigente || !estado) return
       permiso.current = estado.state
+      setPermisoVisto(estado.state)
       if (estado.state === 'denied') setError(ERROR_PERMISO)
       else setError((e) => (e === ERROR_PERMISO ? undefined : e))
     }
@@ -366,5 +368,8 @@ export function useDictado({ lang = 'es-UY', alFallar }: { lang?: string; alFall
   }, [])
 
   const texto = [final, parcial].filter(Boolean).join(' ')
-  return { soportado, disponible: soportado && !usado, escuchando, texto, empezar, terminar, borrar, ...(error ? { error } : {}) }
+  return {
+    soportado, disponible: soportado && !usado, escuchando, texto, empezar, terminar, borrar,
+    ...(permisoVisto ? { permiso: permisoVisto } : {}), ...(error ? { error } : {}),
+  }
 }

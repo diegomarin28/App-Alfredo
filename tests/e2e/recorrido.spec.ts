@@ -72,8 +72,9 @@ test('recorrido completo de Alfredo, de la entrada a Inicio', async ({ page, bro
     toolName: 'guardar',
     toolInput: { acciones: [{ tipo: 'eventoCasa', casa: 'portofino', que: 'Cambié la bomba de agua', cuando: '2026-10-25' }] },
   }])
+  // ronda 12: un solo toque en el micrófono del menú y ya escucha
   await page.getByRole('link', { name: 'Hablar con el asistente' }).click()
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await expect(page.getByRole('button', { name: 'Tocá para terminar' })).toBeVisible()
   await decir(page, 'Ayer cambié la bomba de agua en Portofino')
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
   await page.getByRole('button', { name: 'Listo', exact: true }).click()

@@ -2,7 +2,7 @@
  * Ronda 11: el dictado web del iPhone anda una vez por apertura; después se dicta con el 🎤 del teclado de iOS.
  * Dibujo del teclado con el micrófono marcado abajo a la derecha, y el texto que lo explica.
  */
-export default function AvisoTeclado() {
+export default function AvisoTeclado({ texto }: { texto: string }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl bg-tinte p-4">
       <svg viewBox="0 0 120 80" width="96" height="64" aria-hidden="true" className="shrink-0">
@@ -18,7 +18,7 @@ export default function AvisoTeclado() {
         <circle cx="102" cy="64" r="12" className="fill-current text-azul" />
         <path d="M102 56.5a3 3 0 0 1 3 3v4.5a3 3 0 0 1-6 0v-4.5a3 3 0 0 1 3-3Zm-6 7.5a6 6 0 0 0 12 0M102 70v2.5" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
-      <p className="text-[20px] leading-snug font-bold text-texto">Tocá el 🎤 del teclado (abajo a la derecha) y hablá</p>
+      <p className="text-[20px] leading-snug font-bold text-texto">{texto}</p>
     </div>
   )
 }

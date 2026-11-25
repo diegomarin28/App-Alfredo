@@ -10,6 +10,7 @@ import { RastroNavegacion } from '@/components/Volver'
 import Brindis from '@/components/Brindis'
 import { esCumpleDeAlfredo } from '@/domain/detalles'
 import { hoy } from '@/domain/fechas'
+import { ProveedorDictado } from '@/voz/DictadoCompartido'
 
 /** "miércoles 25" en hora de Montevideo. */
 function diaDeVencimiento(iso: string | undefined): string {
@@ -26,25 +27,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // La primera vez que entra Alfredo: Bienvenida y Guía (una sola vez).
   if (config && !config.bienvenidaVista) redirect('/bienvenida')
   const hoyStr = hoy()
+  // ronda 12: el dictado vive a nivel del layout, así el micrófono del menú arranca a escuchar en el mismo toque
   return (
-    <ProveedorDeshacer>
-      {familia && (
-        <p role="note" className="flex items-center gap-2 bg-urg-bg px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 text-base font-semibold text-urg-tx lg:pl-64">
-          <Icono nombre="reloj" tamano={18} />
-          Modo carga · el link vence el {diaDeVencimiento(sesion.expira)}
-        </p>
-      )}
-      {/* lg: la navegación pasa a una barra lateral de 15rem (w-60); el contenido se centra en el resto */}
-      <div className="lg:pl-60">
-        <div className={`mx-auto min-h-dvh max-w-xl px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:pb-[calc(2rem+env(safe-area-inset-bottom))] ${familia ? 'pt-5' : 'pt-[calc(2.5rem+env(safe-area-inset-top))]'}`}>
-          {children}
+    <ProveedorDictado>
+      <ProveedorDeshacer>
+        {familia && (
+          <p role="note" className="flex items-center gap-2 bg-urg-bg px-5 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 text-base font-semibold text-urg-tx lg:pl-64">
+            <Icono nombre="reloj" tamano={18} />
+            Modo carga · el link vence el {diaDeVencimiento(sesion.expira)}
+          </p>
+        )}
+        {/* lg: la navegación pasa a una barra lateral de 15rem (w-60); el contenido se centra en el resto */}
+        <div className="lg:pl-60">
+          <div className={`mx-auto min-h-dvh max-w-xl px-5 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:max-w-[720px] lg:pb-[calc(2rem+env(safe-area-inset-bottom))] ${familia ? 'pt-5' : 'pt-[calc(2.5rem+env(safe-area-inset-top))]'}`}>
+            {children}
+          </div>
         </div>
-      </div>
-      {/* whisky (mockup v2): el día de su cumpleaños, un brindis */}
-      {config && esCumpleDeAlfredo(hoyStr) && <Brindis hoy={hoyStr} nombre={config.nombre || 'Alfredo'} />}
-      <BottomNav rol={sesion.rol} />
-      <TransicionesPantalla />
-      <RastroNavegacion />
-    </ProveedorDeshacer>
+        {/* whisky (mockup v2): el día de su cumpleaños, un brindis */}
+        {config && esCumpleDeAlfredo(hoyStr) && <Brindis hoy={hoyStr} nombre={config.nombre || 'Alfredo'} />}
+        <BottomNav rol={sesion.rol} />
+        <TransicionesPantalla />
+        <RastroNavegacion />
+      </ProveedorDeshacer>
+    </ProveedorDictado>
   )
 }

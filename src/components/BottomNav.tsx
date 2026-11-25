@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Rol } from '@/auth/access'
+import { useDictadoCompartido } from '@/voz/DictadoCompartido'
 import { Icono, type NombreIcono } from './iconos'
 
 export type Tab = 'inicio' | 'calendario' | 'contame' | 'mensajes' | 'casas' | 'fotos'
@@ -40,6 +41,7 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
   const pathname = usePathname()
   const actual = activo !== undefined ? activo : tabDe(pathname)
   const owner = rol === 'owner'
+  const dictado = useDictadoCompartido()
   return (
     <nav
       aria-label="Principal"
@@ -53,6 +55,8 @@ export default function BottomNav({ activo, rol = 'owner' }: { activo?: Tab | nu
             <Link
               href="/contame"
               prefetch
+              // ronda 12: un solo toque. Arranca a escuchar acá, dentro del toque (iOS lo exige); el link lleva a Contame.
+              onClick={dictado?.tocarMenu}
               aria-label="Hablar con el asistente"
               aria-current={actual === 'contame' ? 'page' : undefined}
               className="-mt-2 flex size-14 items-center justify-center rounded-full bg-azul text-white shadow-[0_6px_16px_rgba(31,78,140,0.28)] hover:bg-azul-osc lg:mt-0 lg:h-14 lg:w-full lg:justify-start lg:gap-3 lg:rounded-xl lg:px-4"
