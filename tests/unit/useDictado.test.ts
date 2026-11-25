@@ -1,7 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { _apertura, ERROR_PERMISO, ERROR_RED, useDictado } from '@/voz/useDictado'
-import { _reiniciarRegistro, leerRegistro, registroComoTexto } from '@/voz/registro'
 
 type Resultado = { isFinal: boolean; 0: { transcript: string } }
 
@@ -59,7 +58,6 @@ class FakeRec {
 
 const w = window as unknown as { webkitSpeechRecognition?: unknown; SpeechRecognition?: unknown }
 const ultima = () => FakeRec.instancias[FakeRec.instancias.length - 1]
-const registro = () => leerRegistro().map((e) => e.ev)
 
 beforeEach(() => {
   FakeRec.instancias = []
@@ -67,7 +65,6 @@ beforeEach(() => {
   FakeRec.alParar = 'ya'
   w.webkitSpeechRecognition = FakeRec
   sessionStorage.clear()
-  _reiniciarRegistro()
   _apertura.usado = false
 })
 afterEach(() => {
@@ -191,7 +188,6 @@ describe('ronda 11: el dictado web anda una vez por apertura', () => {
     expect(FakeRec.instancias).toHaveLength(1)
     expect(ultima().starts).toBe(1)
     expect(result.current.escuchando).toBe(false)
-    expect(registro()).toContain('grabar ignorado: el dictado web ya se usó en esta apertura')
   })
 
   it('se recuerda en memoria: al volver a Contame (otro montaje, misma apertura) sigue sin estar disponible', () => {
@@ -200,8 +196,8 @@ describe('ronda 11: el dictado web anda una vez por apertura', () => {
     primera.unmount()
     const { result } = renderHook(() => useDictado({}))
     expect(result.current.disponible).toBe(false)
-    // en memoria, no en sessionStorage (ahí solo está el registro de diagnóstico)
-    expect(Object.keys(sessionStorage).filter((k) => k !== 'alfredo:dictado:registro')).toEqual([])
+    // en memoria, no en sessionStorage
+    expect(sessionStorage.length).toBe(0)
   })
 
   it('una apertura nueva (memoria vacía) vuelve a tenerlo', () => {
@@ -227,8 +223,7 @@ describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () =>
     expect(alFallar).toHaveBeenCalledTimes(1)
     expect(result.current.escuchando).toBe(false)
     expect(ultima().abortos).toBe(1)
-    // el "aborted" de nuestro propio abort solo se anota (antes disparaba otra recarga)
-    expect(registro()).toContain('error aborted: No speech detected')
+    // el "aborted" de nuestro propio abort no dispara nada más (antes disparaba otra recarga)
     act(() => { vi.advanceTimersByTime(60000) })
     expect(alFallar).toHaveBeenCalledTimes(1)
     expect(result.current.error).toBeUndefined()
@@ -364,43 +359,7 @@ describe('ronda 11: si el dictado web no anda, al teclado (sin recargar)', () =>
   })
 })
 
-describe('registro de diagnóstico', () => {
-  it('anota cada evento del reconocedor, en orden, con la hora en milisegundos', () => {
-    const { result } = renderHook(() => useDictado({}))
-    act(() => result.current.empezar())
-    const r = ultima()
-    act(() => {
-      r.onstart?.(); r.onaudiostart?.(); r.onsoundstart?.(); r.onspeechstart?.()
-    })
-    act(() => r.decir('hola', false))
-    act(() => {
-      r.onspeechend?.(); r.onaudioend?.(); r.onerror?.({ error: 'no-speech' }); r.fin()
-    })
-    act(() => result.current.terminar())
-    const eventos = leerRegistro().filter((e) => e.n > 0).map((e) => e.ev)
-    expect(eventos).toEqual([
-      'creado', 'start llamado', 'start', 'audiostart', 'soundstart', 'speechstart', 'result (0 final, 4 letras parciales)',
-      'speechend', 'audioend', 'error no-speech', 'end', 'start llamado', 'stop llamado', 'end',
-    ])
-    expect(registroComoTexto()).toMatch(/^Navegador: .+\n\d{2}:\d{2}:\d{2}\.\d{3} /)
-  })
-
-  it('cuando no anda, queda anotado por qué', () => {
-    const { result } = renderHook(() => useDictado({ alFallar: vi.fn() }))
-    act(() => result.current.empezar())
-    act(() => ultima().onerror?.({ error: 'audio-capture' }))
-    expect(registroComoTexto()).toMatch(/dictado web no anda: error audio-capture → teclado/)
-    expect(registroComoTexto()).not.toMatch(/recarg/)
-  })
-})
-
-describe('ronda 12: origen y permiso', () => {
-  it('anota desde dónde arrancó la grabación', () => {
-    const { result } = renderHook(() => useDictado({}))
-    act(() => result.current.empezar('menú'))
-    expect(registro()).toContain('grabación desde el menú')
-  })
-
+describe('ronda 12: permiso', () => {
   it('informa el estado del permiso (prompt: Safari lo pide cada vez)', async () => {
     const original = Object.getOwnPropertyDescriptor(navigator, 'permissions')
     Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => ({ state: 'prompt' }) } })

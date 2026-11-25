@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProveedorDictado, useDictadoCompartido, type DictadoCompartido } from '@/voz/DictadoCompartido'
 import { _apertura } from '@/voz/useDictado'
-import { _reiniciarRegistro, leerRegistro } from '@/voz/registro'
 import { soltarPuente } from '@/voz/puenteTeclado'
 import BottomNav from '@/components/BottomNav'
 
@@ -32,7 +31,6 @@ class FakeRec {
 }
 
 const w = window as unknown as { webkitSpeechRecognition?: unknown }
-const registro = () => leerRegistro().map((e) => e.ev)
 
 /** Lo que ve una pantalla del dictado compartido. */
 let visto: DictadoCompartido | null = null
@@ -56,7 +54,6 @@ beforeEach(() => {
   _apertura.usado = false
   nav.ruta = '/'
   sessionStorage.clear()
-  _reiniciarRegistro()
   visto = null
 })
 afterEach(() => {
@@ -65,14 +62,13 @@ afterEach(() => {
 })
 
 describe('ronda 12: hablar con un solo toque desde el menú', () => {
-  it('el toque en el micrófono del menú crea y arranca el reconocedor ahí mismo (sincrónico) y lo anota', () => {
+  it('el toque en el micrófono del menú crea y arranca el reconocedor ahí mismo (sincrónico)', () => {
     const { rerender } = render(<App />)
     fireEvent.click(microfono())
     // dentro del mismo toque: ya hay reconocedor y start() ya se llamó
     expect(FakeRec.instancias).toHaveLength(1)
     expect(FakeRec.instancias[0].starts).toBe(1)
     expect(visto?.escuchando).toBe(true)
-    expect(registro()).toContain('grabación desde el menú')
     // sigue escuchando al llegar a Contame (vive en el layout, no en la página)
     nav.ruta = '/contame'
     rerender(<App />)
@@ -88,7 +84,6 @@ describe('ronda 12: hablar con un solo toque desde el menú', () => {
     rerender(<App />)
     expect(visto?.escuchando).toBe(false)
     expect(FakeRec.instancias[0].stops).toBe(1)
-    expect(registro()).toContain('salí de Contame (/calendario): corto la grabación')
   })
 
   it('tocar el micrófono del menú mientras escucha: corta y pide la caja del teclado', () => {

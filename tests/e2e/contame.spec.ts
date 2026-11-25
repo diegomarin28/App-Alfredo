@@ -317,8 +317,6 @@ test('ronda 12: un solo toque en el micrófono del menú y ya escucha; llega a C
   await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Tareas pendientes: Comprar pilas')).toBeVisible()
-  await page.getByRole('button', { name: 'Ver registro' }).click()
-  await expect(page.getByTestId('registro-dictado')).toContainText('grabación desde el menú')
 })
 
 test('ronda 12: desde el menú y sordo: a la caja con "Seguí con el 🎤 del teclado", sin recargar', async ({ page }) => {
@@ -332,14 +330,24 @@ test('ronda 12: desde el menú y sordo: a la caja con "Seguí con el 🎤 del te
   expect(await page.evaluate(() => (window as unknown as { __marca?: number }).__marca)).toBe(1)
 })
 
-test('ronda 12: el círculo grande sigue igual y queda anotado de dónde arrancó', async ({ page }) => {
+test('ronda 12: el círculo grande sigue igual', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await decir(page, 'hola', false)
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await page.getByRole('button', { name: 'Ver registro' }).click()
-  await expect(page.getByTestId('registro-dictado')).toContainText('grabación desde el círculo')
+  await expect(page.getByLabel('Lo que querés guardar')).toHaveValue('hola')
+  expect(await starts(page)).toBe(1)
+})
+
+test('ronda 13: sin el registro de diagnóstico', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await decir(page, 'hola', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(page.getByRole('button', { name: /registro/i })).toHaveCount(0)
+  expect(await page.evaluate(() => Object.keys(sessionStorage).filter((k) => k.startsWith('alfredo:')))).toEqual([])
 })
 
 test('ronda 12: si salgo de Contame mientras escucha, deja de escuchar', async ({ page }) => {
@@ -376,21 +384,4 @@ test('ronda 12: sin el cartel de "¿No ves el 🎤 en el teclado?"', async ({ pa
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
   await expect(page.getByText('Tocá el 🎤 del teclado (abajo a la derecha) y hablá')).toBeVisible()
   await expect(page.getByText(/No ves el 🎤/)).toHaveCount(0)
-})
-
-test('registro de diagnóstico: muestra los eventos con hora y se puede copiar', async ({ page, browserName, context }) => {
-  if (browserName === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
-  await page.addInitScript(instalarVozFalsa)
-  await page.goto('/contame')
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'hola', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await page.getByRole('button', { name: 'Ver registro' }).click()
-  const registro = page.getByTestId('registro-dictado')
-  for (const ev of ['creado', 'start llamado', 'audiostart', 'result', 'stop llamado', 'end']) {
-    await expect(registro).toContainText(new RegExp(`\\d{2}:\\d{2}:\\d{2}\\.\\d{3} #\\d+ ${ev}`))
-  }
-  await page.getByRole('button', { name: 'Copiar registro' }).click()
-  await expect(page.getByRole('status').filter({ hasText: /Copiado|copialo a mano/ })).toBeVisible()
-  if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/audiostart/)
 })
