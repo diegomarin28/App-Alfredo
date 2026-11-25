@@ -26,8 +26,8 @@ async function dictarEscrito(page: Page, texto: string) {
   const escribir = page.getByRole('button', { name: 'Prefiero escribir' })
   await hidratado(escribir)
   await escribir.click()
-  await page.getByLabel('Escribí o dictá con el teclado').fill(texto)
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Lo que querés guardar').fill(texto)
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Esto es lo que entendí' })).toBeVisible()
 }
 

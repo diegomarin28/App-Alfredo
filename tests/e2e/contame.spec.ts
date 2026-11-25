@@ -45,11 +45,11 @@ test('dictar, corregir, responder la pregunta, guardar en la casa y deshacer', a
   await decir(page, 'dos mil pesos')
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
 
-  const caja = page.getByLabel('Lo que escuché · podés corregirlo')
+  const caja = page.getByLabel('Lo que querés guardar')
   await expect(caja).toHaveValue('Ayer le pagué al jardinero dos mil pesos')
   await caja.fill('Ayer le pagué al jardinero 2000 pesos')
   await expect(page.getByRole('button', { name: 'Repetir' })).toBeVisible()
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
 
   await expect(page.getByText('¿Es en Portofino, en Malibú, o es otra cosa?')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' })).toBeVisible()
@@ -91,8 +91,8 @@ test('"Otra cosa" guarda en Tareas pendientes sin otra llamada a la IA', async (
   }])
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
-  await page.getByLabel('Escribí o dictá con el teclado').fill('Arreglar la canilla')
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Lo que querés guardar').fill('Arreglar la canilla')
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await page.getByRole('button', { name: 'Otra cosa · guardar en Tareas pendientes' }).click()
   await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Tareas pendientes: Arreglar la canilla')).toBeVisible()
@@ -112,8 +112,8 @@ test('sin reconocimiento de voz: se puede escribir o pegar', async ({ page }) =>
   await guion(page, [{ texto: '', toolName: 'guardar', toolInput: { acciones: [{ tipo: 'pendiente', texto: 'Comprar pilas' }] } }])
   await page.goto('/contame')
   await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toHaveCount(0)
-  await page.getByLabel('Escribí o dictá con el teclado').fill('Comprar pilas')
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Lo que querés guardar').fill('Comprar pilas')
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Tareas pendientes: Comprar pilas')).toBeVisible()
 })
@@ -124,21 +124,19 @@ test('permiso de micrófono denegado: aviso claro, sin perder lo dictado', async
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await decir(page, 'Comprar pilas')
   await page.evaluate(() => (window as unknown as { __voz: { error(c: string): void } }).__voz.error('not-allowed'))
+  // ronda 11: pasa al teclado con lo dictado y explica cómo activar el permiso
   await expect(page.getByRole('alert').filter({ hasText: 'Falta el permiso del micrófono' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
-  await expect(page.getByText('Comprar pilas')).toBeVisible()
-  await page.getByRole('button', { name: 'Revisar y enviar' }).click()
-  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas')
+  await expect(page.getByLabel('Lo que querés guardar')).toHaveValue('Comprar pilas')
 })
 
-test('sin conexión: deja de escuchar y avisa (no se queda reiniciando ni recarga)', async ({ page, context }) => {
+test('sin conexión: deja de escuchar, avisa y sigue en el teclado (no se queda reiniciando)', async ({ page, context }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await context.setOffline(true)
   await page.evaluate(() => (window as unknown as { __voz: { error(c: string): void } }).__voz.error('network'))
   await expect(page.getByRole('alert').filter({ hasText: 'No pude escuchar. Revisá la conexión y probá de nuevo.' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
+  await expect(page.getByLabel('Lo que querés guardar')).toBeVisible()
   expect(await page.evaluate(() => (window as unknown as { __voz: { starts(): number } }).__voz.starts())).toBe(1)
   await context.setOffline(false)
 })
@@ -153,8 +151,8 @@ test('respuesta de la IA cortada: propone todo como nota y lo avisa', async ({ p
   }])
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
-  await page.getByLabel('Escribí o dictá con el teclado').fill('Primera cosa en Portofino. Segunda cosa en Malibú.')
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Lo que querés guardar').fill('Primera cosa en Portofino. Segunda cosa en Malibú.')
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'nota' })).toContainText('revis')
   await page.getByRole('button', { name: 'Guardar todo' }).click()
   await expect(page.getByText('Listo, lo guardé:')).toBeVisible()
@@ -169,8 +167,8 @@ test('sin saldo: mensaje amable', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Prefiero escribir' }).click()
-  await page.getByLabel('Escribí o dictá con el teclado').fill('Hola')
-  await page.getByRole('button', { name: 'Enviar' }).click()
+  await page.getByLabel('Lo que querés guardar').fill('Hola')
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
   await expect(page.getByRole('alert').filter({ hasText: 'Se terminó el saldo de la IA, avisale a Diego.' })).toBeVisible()
 })
 
@@ -197,82 +195,115 @@ test('APIs: familia 403, validación 400, deshacer con lote inválido 400', asyn
   expect(r.status()).toBe(403)
 })
 
-test('iPhone: grabar, repetir, grabar, cancelar, grabar… 10 de 10 veces vuelve a escuchar', async ({ page }) => {
+type Voz = { __voz: { trabar(siempre?: boolean): void; error(c: string): void; starts(): number; instancias(): number } }
+const starts = (page: import('@playwright/test').Page) => page.evaluate(() => (window as unknown as Voz).__voz.starts())
+
+test('ronda 11: la primera grabación usa el dictado web; después, Repetir y el micrófono abren el teclado', async ({ page }) => {
   test.setTimeout(120_000)
   await page.addInitScript(instalarVozFalsa, { ios: true })
   const propuesta = { texto: '', toolName: 'guardar', toolInput: { acciones: [{ tipo: 'eventoCasa', casa: 'malibu', que: 'Vino el jardinero', cuando: '2026-11-22' }] } }
   await guion(page, Array.from({ length: 10 }, () => propuesta))
   await page.goto('/contame')
-  const caja = page.getByLabel('Lo que escuché · podés corregirlo')
-  const terminarCon = async (frase: string) => {
-    await expect(page.getByRole('button', { name: 'Tocá para terminar' })).toBeVisible()
-    await decir(page, frase, false) // en el iPhone casi todo llega como parcial
-    await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-    await expect(caja).toHaveValue(frase)
-  }
-  for (let vez = 1; vez <= 10; vez++) {
-    await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-    await terminarCon(`grabar ${vez}`)
-    await page.getByRole('button', { name: 'Repetir' }).click()
-    await terminarCon(`repetir ${vez}`)
-    await page.getByRole('button', { name: 'Enviar' }).click()
-    await page.getByRole('button', { name: 'Cancelar' }).click()
-    await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
-  }
+  const caja = page.getByLabel('Lo que querés guardar')
+
+  // 1ª: dictado web
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await terminarCon('la última')
-  // ronda 10: siempre la misma instancia (las nuevas quedan sordas en el iPhone)
-  expect(await page.evaluate(() => (window as unknown as { __voz: { instancias(): number } }).__voz.instancias())).toBe(1)
-  // ningún aviso nuestro (el anunciador de rutas de Next también es role=alert, pero vacío)
+  await decir(page, 'Vino el jardinero', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  // al terminar: modo teclado, la caja enfocada con lo dictado y el aviso del 🎤
+  await expect(caja).toHaveValue('Vino el jardinero')
+  await expect(caja).toBeFocused()
+  await expect(page.getByText('Tocá el 🎤 del teclado (abajo a la derecha) y hablá')).toBeVisible()
+  // Repetir: caja vacía y enfocada, sin volver al dictado web
+  await page.getByRole('button', { name: 'Repetir' }).click()
+  await expect(caja).toHaveValue('')
+  await expect(caja).toBeFocused()
+  await caja.pressSequentially('Vino el jardinero a Malibú') // lo que escribe el dictado del teclado
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await page.getByRole('button', { name: 'Cancelar' }).click()
+
+  for (let vez = 1; vez <= 10; vez++) {
+    // el micrófono grande ya no prueba el dictado web: va directo al teclado
+    await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+    await expect(caja).toBeFocused()
+    await expect(caja).toHaveValue('')
+    await caja.fill(`cosa ${vez}`)
+    await page.getByRole('button', { name: 'Listo', exact: true }).click()
+    await page.getByRole('button', { name: 'Cancelar' }).click()
+  }
+  expect(await starts(page)).toBe(1)
+  expect(await page.evaluate(() => (window as unknown as Voz).__voz.instancias())).toBe(1)
   await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveCount(0)
 })
 
-type Voz = { __voz: { trabar(siempre?: boolean): void; error(c: string): void; demorarFin(ms: number): void } }
-
-test('plan B: si el micrófono da error, recarga, vuelve el texto y con un toque sigue', async ({ page }) => {
+test('ronda 11: sordo (audiostart pero 5 s sin voz) pasa al teclado, sin recargar', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
+  await page.evaluate(() => { (window as unknown as { __marca: number }).__marca = 1 })
+  await page.evaluate(() => (window as unknown as Voz).__voz.trabar())
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await expect(page.getByRole('button', { name: 'Tocá para terminar' })).toBeVisible()
+  await expect(page.getByText('Tocá el 🎤 del teclado (abajo a la derecha) y hablá')).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByLabel('Lo que querés guardar')).toBeFocused()
+  // la misma página: no recargó
+  expect(await page.evaluate(() => (window as unknown as { __marca?: number }).__marca)).toBe(1)
+  expect(await starts(page)).toBe(1)
+})
+
+test('ronda 11: un error del micrófono pasa al teclado con lo dictado', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await guion(page, [{ texto: '', toolName: 'guardar', toolInput: { acciones: [{ tipo: 'pendiente', texto: 'Comprar pilas y leche' }] } }])
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
   await decir(page, 'Comprar pilas', false)
-  await expect(page.getByText('Comprar pilas')).toBeVisible()
   await page.evaluate(() => (window as unknown as Voz).__voz.error('audio-capture'))
-  // recargó: el texto está y pide un toque
-  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible()
-  await expect(page.getByText('Comprar pilas')).toBeVisible()
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await expect(page.getByText('Tocá el micrófono para seguir')).toHaveCount(0)
-  await decir(page, 'y leche', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('Comprar pilas y leche')
+  const caja = page.getByLabel('Lo que querés guardar')
+  await expect(caja).toHaveValue('Comprar pilas')
+  await caja.press('End')
+  await caja.pressSequentially(' y leche')
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await page.getByRole('button', { name: 'Guardar todo' }).click()
+  await expect(page.getByText('Tareas pendientes: Comprar pilas y leche')).toBeVisible()
 })
 
-test('plan B: "Repetir" sordo (audiostart pero 5 s sin voz) recarga y el siguiente toque anda', async ({ page }) => {
+test('ronda 11: "Prefiero escribir" usa la misma caja, y ahí se puede probar el micrófono si no se usó', async ({ page }) => {
+  await page.addInitScript(instalarVozFalsa)
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
+  const caja = page.getByLabel('Lo que querés guardar')
+  await expect(caja).toBeFocused()
+  await expect(page.getByText('Tocá el 🎤 del teclado (abajo a la derecha) y hablá')).toBeVisible()
+  await page.getByRole('button', { name: 'Usar el micrófono' }).click()
+  await decir(page, 'hola', false)
+  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+  await expect(caja).toHaveValue('hola')
+  // ya se usó: no se ofrece de nuevo
+  await expect(page.getByRole('button', { name: 'Usar el micrófono' })).toHaveCount(0)
+})
+
+test('ronda 11: en la misma apertura, volver a Contame va directo al teclado', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'primera toma', false)
+  await decir(page, 'hola', false)
   await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await page.evaluate(() => (window as unknown as Voz).__voz.trabar())
-  await page.getByRole('button', { name: 'Repetir' }).click()
-  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible({ timeout: 10_000 })
+  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Inicio' }).click()
+  await page.getByRole('link', { name: 'Hablar con el asistente' }).click()
   await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'segunda toma', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('segunda toma')
+  await expect(page.getByLabel('Lo que querés guardar')).toBeFocused()
+  expect(await starts(page)).toBe(1)
 })
 
-test('plan B: si ni recargando anda, avisa qué hacer (nunca toca y no pasa nada)', async ({ page }) => {
+test('ronda 11: la ayuda de cómo activar el 🎤 del teclado aparece una sola vez', async ({ page }) => {
   await page.addInitScript(instalarVozFalsa)
   await page.goto('/contame')
-  await page.evaluate(() => (window as unknown as Voz).__voz.trabar(true))
-  for (let vez = 1; vez <= 2; vez++) {
-    await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-    await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible({ timeout: 10_000 })
-  }
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await expect(page.getByRole('alert').filter({ hasText: 'El micrófono no responde' })).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByRole('button', { name: 'Prefiero escribir' })).toBeVisible()
+  const ayuda = page.getByText('Se activa en Ajustes → General → Teclado → Activar dictado.')
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
+  await expect(ayuda).toBeVisible()
+  await page.goto('/contame')
+  await page.getByRole('button', { name: 'Prefiero escribir' }).click()
+  await expect(page.getByText('Tocá el 🎤 del teclado (abajo a la derecha) y hablá')).toBeVisible()
+  await expect(ayuda).toHaveCount(0)
 })
 
 test('registro de diagnóstico: muestra los eventos con hora y se puede copiar', async ({ page, browserName, context }) => {
@@ -290,36 +321,4 @@ test('registro de diagnóstico: muestra los eventos con hora y se puede copiar',
   await page.getByRole('button', { name: 'Copiar registro' }).click()
   await expect(page.getByRole('status').filter({ hasText: /Copiado|copialo a mano/ })).toBeVisible()
   if (browserName === 'chromium') expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/audiostart/)
-})
-
-test('plan B: si corta sin que haya llegado nada (sordo), recarga y pide un toque', async ({ page }) => {
-  await page.addInitScript(instalarVozFalsa)
-  await page.goto('/contame')
-  await page.evaluate(() => (window as unknown as Voz).__voz.trabar())
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'esto no llega', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await expect(page.getByText('Tocá el micrófono para seguir')).toBeVisible()
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'ahora sí', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('ahora sí')
-})
-
-test('Repetir espera a que el reconocedor anterior termine ("Un momento…")', async ({ page }) => {
-  await page.addInitScript(instalarVozFalsa)
-  await page.goto('/contame')
-  await page.evaluate(() => (window as unknown as Voz).__voz.demorarFin(1000))
-  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
-  await decir(page, 'primera', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  const repetir = page.getByRole('button', { name: 'Repetir' })
-  await expect(repetir).toBeDisabled()
-  await expect(page.getByText('Un momento…')).toBeVisible()
-  await expect(repetir).toBeEnabled()
-  await expect(page.getByText('Un momento…')).toHaveCount(0)
-  await repetir.click()
-  await decir(page, 'segunda', false)
-  await page.getByRole('button', { name: 'Tocá para terminar' }).click()
-  await expect(page.getByLabel('Lo que escuché · podés corregirlo')).toHaveValue('segunda')
 })

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useRouter } from 'next/navigation'
 import { Boton, Card, IconoTile, Lista, Seccion, clasesFila, clasesInput } from '@/components/ui'
 import { Icono, type NombreIcono } from '@/components/iconos'
@@ -9,10 +9,23 @@ import type { Accion, Opcion } from '@/ai/contamePrompt'
 import Revision, { type DudaRevision, type FilaRevision } from './Revision'
 import { useDictado } from '@/voz/useDictado'
 import RegistroDictado from './RegistroDictado'
+import AvisoTeclado from './AvisoTeclado'
 
-type Fase = 'inicio' | 'revisar' | 'pregunta' | 'propuesta' | 'listo'
-type Origen = 'voz' | 'teclado'
+/** 'teclado' (ronda 11): la caja grande para dictar con el 🎤 del teclado o escribir; con "Listo" sigue como siempre. */
+type Fase = 'inicio' | 'teclado' | 'pregunta' | 'propuesta' | 'listo'
 interface Linea { id: string; descripcion: string }
+
+/** La ayuda de cómo activar el dictado del teclado se muestra una sola vez. */
+const CLAVE_AYUDA_TECLADO = 'alfredo:ayuda-dictado-teclado'
+function primeraVezAyuda(): boolean {
+  try {
+    if (localStorage.getItem(CLAVE_AYUDA_TECLADO)) return false
+    localStorage.setItem(CLAVE_AYUDA_TECLADO, '1')
+    return true
+  } catch {
+    return false
+  }
+}
 
 const MAX = 8000
 const ERROR_GENERICO = 'No pude guardarlo, probá de nuevo.'
@@ -45,11 +58,19 @@ function useSegundos(activo: boolean): number {
 export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: string }) {
   const router = useRouter()
   const montado = useSyncExternalStore(nada, () => true, () => false)
-  const dictado = useDictado({ lang: 'es-UY' })
-  const segundos = useSegundos(dictado.escuchando)
   const [fase, setFase] = useState<Fase>('inicio')
-  const [origen, setOrigen] = useState<Origen>('voz')
   const [editado, setEditado] = useState<string | null>(null)
+  // Ronda 11: si el dictado web queda sordo, no arranca o da error, se sigue con el teclado y con lo que ya se dictó.
+  const alFallar = useCallback(() => {
+    setEditado(null)
+    setFase('teclado')
+  }, [])
+  const dictado = useDictado({ lang: 'es-UY', alFallar })
+  const segundos = useSegundos(dictado.escuchando)
+  const caja = useRef<HTMLTextAreaElement>(null)
+  /** campo invisible que toma el foco dentro del toque (ver tomarTeclado) */
+  const puente = useRef<HTMLInputElement | null>(null)
+  const [ayuda, setAyuda] = useState(false)
   const [enviado, setEnviado] = useState('')
   const [respuestas, setRespuestas] = useState<string[]>([])
   const [pregunta, setPregunta] = useState<{ pregunta: string; opciones: Opcion[] } | null>(null)
@@ -63,31 +84,69 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const teclado = origen === 'teclado' || !dictado.soportado
   // Mientras no se edite, la caja sigue al dictado (pueden llegar los últimos resultados después de terminar).
-  const texto = editado ?? (teclado ? '' : dictado.texto)
+  const texto = editado ?? dictado.texto
 
-  function terminar() {
-    dictado.terminar()
-    setOrigen('voz')
-    setEditado(null)
-    setFase('revisar')
+  /**
+   * iOS abre el teclado solo si el foco se pide dentro del toque. La caja todavía no existe: un campo invisible
+   * toma el foco ya (se abre el teclado) y, cuando aparece la caja, el foco pasa a ella y el campo se va.
+   */
+  function tomarTeclado() {
+    if (caja.current) {
+      caja.current.focus()
+      return
+    }
+    if (puente.current) return
+    const i = document.createElement('input')
+    i.type = 'text'
+    i.tabIndex = -1
+    i.setAttribute('aria-hidden', 'true')
+    Object.assign(i.style, { position: 'fixed', top: '0', left: '0', width: '1px', height: '1px', opacity: '0', fontSize: '16px', border: '0', padding: '0' })
+    document.body.appendChild(i)
+    i.focus({ preventScroll: true })
+    puente.current = i
   }
 
-  function grabarDeNuevo() {
+  /** Terminar la grabación (dictado web): sigue en el teclado con lo dictado, para corregir o seguir dictando. */
+  function terminar() {
+    tomarTeclado()
+    dictado.terminar()
+    setEditado(null)
+    setFase('teclado')
+  }
+
+  /** El micrófono grande: la primera vez de la apertura, dictado web; después, el teclado. */
+  function tocarMicrofono() {
+    if (dictado.escuchando) return terminar()
+    setError(null)
+    if (dictado.disponible) return dictado.empezar()
+    tomarTeclado()
+    setFase('teclado')
+  }
+
+  /** "Prefiero escribir": la misma caja. */
+  function escribir() {
+    tomarTeclado()
+    if (dictado.escuchando) dictado.terminar()
+    setEditado(null)
+    setFase('teclado')
+  }
+
+  /** "Repetir" en el teclado: caja vacía y enfocada, para dictar de nuevo con el 🎤 del teclado. */
+  function repetir() {
+    caja.current?.focus()
+    dictado.borrar()
+    setEditado('')
+    setError(null)
+  }
+
+  /** El dictado web todavía no se usó en esta apertura (p. ej. empezó escribiendo): se puede probar. */
+  function usarMicrofono() {
     dictado.borrar()
     setEditado(null)
-    setOrigen('voz')
     setError(null)
     setFase('inicio')
     dictado.empezar()
-  }
-
-  function escribir() {
-    if (dictado.escuchando) dictado.terminar()
-    setOrigen('teclado')
-    setEditado(null)
-    setFase('revisar')
   }
 
   async function enviar(t: string, resp: string[]) {
@@ -170,7 +229,6 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
   function otraCosa() {
     dictado.borrar()
     setFase('inicio')
-    setOrigen('voz')
     setEditado(null)
     setEnviado('')
     setRespuestas([])
@@ -184,14 +242,31 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
     setError(null)
   }
 
-  /** Revisar lo dictado cuando dejó de escuchar solo (error o silencio largo). */
+  /** Revisar lo dictado cuando dejó de escuchar solo (silencio largo). */
   function revisar() {
-    setOrigen('voz')
+    tomarTeclado()
     setEditado(null)
-    setFase('revisar')
+    setFase('teclado')
   }
 
-  const vista = fase === 'inicio' && teclado ? 'revisar' : fase
+  const vista = fase === 'inicio' && !dictado.soportado ? 'teclado' : fase
+
+  // Al entrar al teclado: la caja queda enfocada con el cursor al final, y la ayuda se muestra una sola vez.
+  useEffect(() => {
+    if (vista !== 'teclado') return
+    if (fase === 'teclado') {
+      const c = caja.current
+      if (c) {
+        c.focus({ preventScroll: true })
+        c.setSelectionRange(c.value.length, c.value.length)
+      }
+    }
+    puente.current?.remove()
+    puente.current = null
+    if (primeraVezAyuda()) setAyuda(true)
+  }, [vista, fase])
+
+  useEffect(() => () => puente.current?.remove(), [])
 
   const clasesTitulo = 'text-[30px] leading-[1.1] font-bold tracking-[-0.6px] text-texto'
   return (
@@ -201,19 +276,14 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
         <>
           {vista === 'inicio' && (
             <div className="space-y-5">
-              {/* ronda 9: volvió de recargar para destrabar el micrófono; iOS necesita un toque más */}
-              {!dictado.escuchando && dictado.recuperado && (
-                <p role="status" className="text-[28px] leading-tight font-bold text-texto">Tocá el micrófono para seguir</p>
-              )}
-              {!dictado.escuchando && !dictado.recuperado && <p className="text-base text-texto-2">Contame qué pasó y yo lo guardo donde va.</p>}
+              {!dictado.escuchando && <p className="text-base text-texto-2">Contame qué pasó y yo lo guardo donde va.</p>}
               <div className="flex flex-col items-center gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={dictado.escuchando ? terminar : dictado.empezar}
-                  disabled={!dictado.escuchando && dictado.ocupado}
+                  onClick={tocarMicrofono}
                   aria-pressed={dictado.escuchando}
                   aria-label={dictado.escuchando ? 'Tocá para terminar' : 'Tocá para hablar'}
-                  className="relative flex size-40 items-center justify-center rounded-full disabled:opacity-50"
+                  className="relative flex size-40 items-center justify-center rounded-full"
                 >
                   {/* anillos: quietos esperando; respiran mientras escucha (con "reducir movimiento", solo cambian de opacidad) */}
                   <span aria-hidden="true" className={`absolute inset-0 rounded-full bg-tinte ${dictado.escuchando ? 'animate-respirar' : ''}`} />
@@ -227,8 +297,6 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
                     <p aria-hidden="true" className="text-[17px] font-bold text-texto">Te escucho · {reloj(segundos)}</p>
                     <p className="text-base text-texto-2">Podés hacer pausas. Tocá para terminar.</p>
                   </div>
-                ) : dictado.ocupado ? (
-                  <p role="status" className="text-base text-texto-2">Un momento…</p>
                 ) : (
                   <p aria-hidden="true" className="text-[17px] font-bold text-texto">Tocá para hablar</p>
                 )}
@@ -266,28 +334,36 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
             </div>
           )}
 
-          {vista === 'revisar' && (
+          {vista === 'teclado' && (
             <div className="space-y-4">
-              <p className="text-base text-texto-2">
-                {teclado ? 'Escribí o pegá lo que querés guardar.' : 'Esto escuché. Podés corregirlo antes de mandar.'}
-              </p>
+              <AvisoTeclado />
+              {ayuda && (
+                <p className="text-base text-texto-2">¿No ves el 🎤 en el teclado? Se activa en Ajustes → General → Teclado → Activar dictado.</p>
+              )}
               <textarea
-                aria-label={teclado ? 'Escribí o dictá con el teclado' : 'Lo que escuché · podés corregirlo'}
-                className={`${clasesInput} min-h-40 py-3 text-[17px] leading-relaxed`}
+                ref={caja}
+                aria-label="Lo que querés guardar"
+                className={`${clasesInput} min-h-56 py-3 text-[19px] leading-relaxed`}
                 maxLength={MAX}
                 value={texto}
                 onChange={(e) => setEditado(e.target.value)}
               />
-              <Boton className="w-full" disabled={cargando || !texto.trim()} onClick={() => enviar(texto.trim(), [])}>Enviar</Boton>
-              {dictado.soportado && (
-                <div className="flex flex-col items-center gap-1">
-                  {/* ronda 10: no se graba de nuevo hasta que el reconocedor anterior terminó */}
-                  <button type="button" onClick={grabarDeNuevo} disabled={dictado.ocupado} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul disabled:opacity-50">
-                    <Icono nombre={teclado ? 'microfono' : 'repetir'} tamano={18} />{teclado ? 'Usar el micrófono' : 'Repetir'}
-                  </button>
-                  {dictado.ocupado && <p role="status" className="text-base text-texto-2">Un momento…</p>}
+              <Boton className="w-full" disabled={cargando || !texto.trim()} onClick={() => enviar(texto.trim(), [])}>Listo</Boton>
+              {(texto || dictado.disponible) && (
+                <div className="flex flex-wrap justify-center gap-2">
+                  {texto && (
+                    <button type="button" onClick={repetir} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul">
+                      <Icono nombre="repetir" tamano={18} />Repetir
+                    </button>
+                  )}
+                  {dictado.disponible && (
+                    <button type="button" onClick={usarMicrofono} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul">
+                      <Icono nombre="microfono" tamano={18} />Usar el micrófono
+                    </button>
+                  )}
                 </div>
               )}
+              {dictado.error && <Alerta>{dictado.error}</Alerta>}
             </div>
           )}
 
