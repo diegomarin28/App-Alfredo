@@ -2,7 +2,9 @@
  * Nombres bien escritos (ronda 6). El dictado del iPhone cambia apellidos: dice "Henrique" por "Gericke".
  * Antes de ordenar con la IA, el texto pasa por este diccionario fijo; a la IA, además, se le pasa la lista de
  * nombres que ya hay en Calendario, Contactos y Casas.
+ * Ronda 8: el mismo paso corrige lugares, casas y organismos de Uruguay (palabrasUy).
  */
+import { corregirPalabrasUy } from './palabrasUy'
 
 const APELLIDO = 'Gericke'
 
@@ -49,7 +51,7 @@ export function corregirNombres(texto: string, conocidos: string[] = []): string
       ? t.replace(new RegExp(`${ANTES}(${familia})(\\s+)${mal}${DESPUES}`, 'giu'), (_m, nombre: string, esp: string) => `${nombre}${esp}${c.bien}`)
       : t.replace(new RegExp(`${ANTES}${mal}${DESPUES}`, 'giu'), c.bien)
   }
-  return t
+  return corregirPalabrasUy(t)
 }
 
 const RELACIONES = [

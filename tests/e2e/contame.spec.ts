@@ -194,3 +194,31 @@ test('APIs: familia 403, validación 400, deshacer con lote inválido 400', asyn
   r = await page.request.post('/api/contame/deshacer', { data: { loteId: crypto.randomUUID() } })
   expect(r.status()).toBe(403)
 })
+
+test('iPhone: grabar, repetir, grabar, cancelar, grabar… 10 de 10 veces vuelve a escuchar', async ({ page }) => {
+  test.setTimeout(120_000)
+  await page.addInitScript(instalarVozFalsa, { ios: true })
+  const propuesta = { texto: '', toolName: 'guardar', toolInput: { acciones: [{ tipo: 'eventoCasa', casa: 'malibu', que: 'Vino el jardinero', cuando: '2026-11-22' }] } }
+  await guion(page, Array.from({ length: 10 }, () => propuesta))
+  await page.goto('/contame')
+  const caja = page.getByLabel('Lo que escuché · podés corregirlo')
+  const terminarCon = async (frase: string) => {
+    await expect(page.getByRole('button', { name: 'Tocá para terminar' })).toBeVisible()
+    await decir(page, frase, false) // en el iPhone casi todo llega como parcial
+    await page.getByRole('button', { name: 'Tocá para terminar' }).click()
+    await expect(caja).toHaveValue(frase)
+  }
+  for (let vez = 1; vez <= 10; vez++) {
+    await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+    await terminarCon(`grabar ${vez}`)
+    await page.getByRole('button', { name: 'Repetir' }).click()
+    await terminarCon(`repetir ${vez}`)
+    await page.getByRole('button', { name: 'Enviar' }).click()
+    await page.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByRole('button', { name: 'Tocá para hablar' })).toBeVisible()
+  }
+  await page.getByRole('button', { name: 'Tocá para hablar' }).click()
+  await terminarCon('la última')
+  // ningún aviso nuestro (el anunciador de rutas de Next también es role=alert, pero vacío)
+  await expect(page.getByRole('alert').filter({ hasText: /\S/ })).toHaveCount(0)
+})

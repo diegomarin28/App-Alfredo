@@ -22,8 +22,9 @@ class FakeRec {
     this.starts++
     this.resultados = []
   }
+  abortos = 0
   stop() { this.stops++; this.onend?.() }
-  abort() { this.onend?.() }
+  abort() { this.abortos++; this.onend?.() }
   /** simula un resultado (parcial o final) de esta sesión */
   decir(texto: string, isFinal: boolean) {
     const r: Resultado = { isFinal, 0: { transcript: texto } }
@@ -104,7 +105,7 @@ describe('useDictado', () => {
     const r = ultima()
     act(() => r.decir('Listo', true))
     act(() => result.current.terminar())
-    expect(r.stops).toBe(1)
+    expect(r.abortos).toBe(1)
     expect(result.current.escuchando).toBe(false)
     act(() => r.onend?.())
     expect(r.starts).toBe(1)
@@ -127,7 +128,7 @@ describe('useDictado', () => {
     const r = ultima()
     act(() => r.onerror?.({ error: 'not-allowed' }))
     act(() => r.onend?.())
-    expect(result.current.error).toBe('Falta el permiso del micrófono')
+    expect(result.current.error).toBe('Falta el permiso del micrófono. Para activarlo: Ajustes → Apps → Safari → Micrófono → Permitir.')
     expect(result.current.escuchando).toBe(false)
     expect(r.starts).toBe(1)
   })
@@ -220,5 +221,120 @@ describe('useDictado', () => {
     act(() => result.current.terminar())
     act(() => result.current.borrar())
     expect(result.current.texto).toBe('')
+  })
+
+  it('al terminar, lo parcial que se ve queda (no se espera al resultado final)', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    act(() => ultima().decir('Comprar pilas', true))
+    act(() => ultima().decir('y leche', false))
+    act(() => result.current.terminar())
+    expect(result.current.texto).toBe('Comprar pilas y leche')
+  })
+
+  it('si Safari corta con algo sin confirmar, no se pierde al reiniciar', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const r = ultima()
+    act(() => r.decir('Llamar a UTE', false))
+    act(() => r.onend?.())
+    act(() => r.decir('mañana', true))
+    expect(result.current.texto).toBe('Llamar a UTE mañana')
+  })
+
+  it('terminar suelta los handlers del reconocedor', () => {
+    const { result } = renderHook(() => useDictado({}))
+    act(() => result.current.empezar())
+    const r = ultima()
+    act(() => result.current.terminar())
+    expect(r.onresult).toBeNull()
+    expect(r.onerror).toBeNull()
+    expect(r.onend).toBeNull()
+  })
+})
+
+/**
+ * Como el iPhone (ronda 8): stop() no termina nunca (no llega onend y el micrófono queda tomado), abort() después
+ * de stop() no hace nada, y un start() con otro reconocedor vivo deja sordo al nuevo.
+ */
+class FakeIos {
+  static instancias: FakeIos[] = []
+  lang = ''
+  continuous = false
+  interimResults = false
+  onresult: ((e: { resultIndex: number; results: Resultado[] }) => void) | null = null
+  onerror: ((e: { error: string }) => void) | null = null
+  onend: (() => void) | null = null
+  estado: 'quieto' | 'escuchando' | 'parando' = 'quieto'
+  sordo = false
+  constructor() { FakeIos.instancias.push(this) }
+  start() {
+    if (this.estado !== 'quieto') throw new Error('InvalidStateError')
+    this.sordo = FakeIos.instancias.some((o) => o !== this && o.estado !== 'quieto')
+    this.estado = 'escuchando'
+  }
+  stop() { if (this.estado === 'escuchando') this.estado = 'parando' }
+  abort() {
+    if (this.estado !== 'escuchando') return
+    this.estado = 'quieto'
+    this.onend?.()
+  }
+  /** lo que dice la persona: solo llega si este reconocedor tiene el micrófono */
+  decir(texto: string) {
+    if (this.estado !== 'escuchando' || this.sordo) return
+    this.onresult?.({ resultIndex: 0, results: [{ isFinal: false, 0: { transcript: texto } }] })
+  }
+}
+
+describe('useDictado en el iPhone: "Repetir" vuelve a escuchar', () => {
+  beforeEach(() => {
+    FakeIos.instancias = []
+    w.webkitSpeechRecognition = FakeIos
+  })
+
+  it('grabar, repetir, grabar, cancelar, grabar: 10 de 10 veces seguidas', () => {
+    const { result } = renderHook(() => useDictado({}))
+    const grabar = (frase: string) => {
+      act(() => result.current.empezar())
+      const r = FakeIos.instancias[FakeIos.instancias.length - 1]
+      act(() => r.decir(frase))
+      act(() => result.current.terminar())
+      expect(result.current.texto).toBe(frase)
+      expect(result.current.escuchando).toBe(false)
+    }
+    for (let vez = 1; vez <= 10; vez++) {
+      grabar(`grabar ${vez}`)
+      act(() => result.current.borrar()) // Repetir
+      grabar(`repetir ${vez}`)
+      act(() => result.current.borrar())
+      grabar(`grabar otra ${vez}`)
+      act(() => result.current.borrar()) // Cancelar
+      grabar(`después de cancelar ${vez}`)
+      act(() => result.current.borrar())
+    }
+    expect(FakeIos.instancias).toHaveLength(40)
+    expect(FakeIos.instancias.every((r) => !r.sordo)).toBe(true)
+    expect(FakeIos.instancias.every((r) => r.estado === 'quieto')).toBe(true)
+  })
+})
+
+describe('useDictado: permiso del micrófono denegado de antes', () => {
+  const nav = navigator as unknown as { permissions?: unknown }
+  const original = Object.getOwnPropertyDescriptor(navigator, 'permissions')
+  afterEach(() => {
+    if (original) Object.defineProperty(navigator, 'permissions', original)
+    else delete nav.permissions
+  })
+
+  it('avisa cómo activarlo sin esperar al toque, y se va al permitirlo', async () => {
+    const oyentes: (() => void)[] = []
+    const estado = { state: 'denied', addEventListener: (_: string, f: () => void) => oyentes.push(f), removeEventListener() {} }
+    Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => estado } })
+    const { result } = renderHook(() => useDictado({}))
+    await act(async () => {})
+    expect(result.current.error).toMatch(/Ajustes → Apps → Safari → Micrófono/)
+    estado.state = 'granted'
+    act(() => oyentes.forEach((f) => f()))
+    expect(result.current.error).toBeUndefined()
   })
 })

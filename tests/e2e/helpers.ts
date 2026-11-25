@@ -57,8 +57,13 @@ export async function registrarFaceId(page: Page, opciones: { prf?: boolean } = 
   await expect(page).toHaveURL(/^http:\/\/localhost:3100\/$/)
 }
 
-/** Reconocimiento de voz falso, manejable desde la prueba con window.__voz. */
-export function instalarVozFalsa() {
+/**
+ * Reconocimiento de voz falso, manejable desde la prueba con window.__voz.
+ * `ios`: como el iPhone (ronda 8): stop() no termina nunca, abort() después de stop() no hace nada y un start() con
+ * otro reconocedor vivo deja sordo al nuevo (no le llega lo que se dice).
+ */
+export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
+  const ios = !!opciones?.ios
   type Res = { isFinal: boolean; 0: { transcript: string } }
   const estado = { instancias: [] as FakeRec[], starts: 0 }
   class FakeRec {
@@ -69,11 +74,28 @@ export function instalarVozFalsa() {
     onerror: ((e: { error: string }) => void) | null = null
     onend: (() => void) | null = null
     activo = false
+    parando = false
+    sordo = false
     resultados: Res[] = []
     constructor() { estado.instancias.push(this) }
-    start() { this.activo = true; this.resultados = []; estado.starts++ }
-    stop() { this.activo = false; setTimeout(() => this.onend?.(), 0) }
-    abort() { this.stop() }
+    start() {
+      if (this.activo || this.parando) throw new DOMException('ya empezó', 'InvalidStateError')
+      this.sordo = ios && estado.instancias.some((o) => o !== this && (o.activo || o.parando))
+      this.activo = true
+      this.resultados = []
+      estado.starts++
+    }
+    stop() {
+      if (!this.activo) return
+      this.activo = false
+      if (ios) { this.parando = true; return }
+      setTimeout(() => this.onend?.(), 0)
+    }
+    abort() {
+      if (this.parando || !this.activo) return
+      this.activo = false
+      setTimeout(() => this.onend?.(), 0)
+    }
   }
   const actual = () => estado.instancias.filter((r) => r.activo).pop()
   // Chromium trae uno real (también sin prefijo): se reemplazan los dos.
@@ -83,6 +105,7 @@ export function instalarVozFalsa() {
     decir(texto: string, isFinal = true) {
       const r = actual()
       if (!r) throw new Error('no está escuchando')
+      if (r.sordo) return
       const i = r.resultados.findIndex((x) => !x.isFinal)
       const idx = i >= 0 ? i : r.resultados.length
       r.resultados[idx] = { isFinal, 0: { transcript: texto } }
