@@ -34,7 +34,8 @@ export interface Dictado {
   error?: string
 }
 
-export const ERROR_PERMISO = 'Falta el permiso del micrófono'
+/** Dónde se activa en el iPhone (ronda 8). */
+export const ERROR_PERMISO = 'Falta el permiso del micrófono. Para activarlo: Ajustes → Apps → Safari → Micrófono → Permitir.'
 const ERROR_MICROFONO = 'No encuentro el micrófono.'
 export const ERROR_RED = 'No pude escuchar. Revisá la conexión y probá de nuevo.'
 const ERROR_SILENCIO = 'No te escuché por un rato. Tocá para hablar de nuevo.'
@@ -42,8 +43,29 @@ const ERROR_SILENCIO = 'No te escuché por un rato. Tocá para hablar de nuevo.'
 const MAX_REINICIOS_SIN_RESULTADO = 5
 
 /**
+ * Suelta un reconocedor del todo: sin handlers (sus eventos tardíos no llegan a nada) y con abort().
+ * Ronda 8: en el iPhone, stop() muchas veces no termina nunca (no llega onend y sigue con el micrófono tomado), y
+ * abort() después de stop() no hace nada. Si el próximo start() arranca con el anterior vivo, WebKit corta el
+ * anterior y al soltar su audio deja sordo al nuevo: "Repetir" no volvía a escuchar. abort() lo corta en el momento.
+ */
+function soltar(r: Reconocedor | null) {
+  if (!r) return
+  r.onresult = null
+  r.onerror = null
+  r.onend = null
+  try {
+    if (r.abort) r.abort()
+    else r.stop()
+  } catch {
+    /* ya estaba parado */
+  }
+}
+
+/**
  * Dictado con reconocimiento de voz del navegador (portado del prototipo).
  * Safari corta solo después de un silencio: si no se tocó terminar, se reinicia y sigue acumulando.
+ * Cada toque en "hablar" usa un reconocedor nuevo y arranca sincrónico dentro del toque (iOS lo exige).
+ * El permiso lo maneja el navegador: no usamos getUserMedia, así que no hay un segundo pedido ni un stream abierto.
  */
 export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado {
   const soportado = useSyncExternalStore(nada, () => constructor() !== null, () => false)
@@ -55,8 +77,18 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
   const quiereEscuchar = useRef(false) // lo decide el usuario, no el navegador
   const rec = useRef<Reconocedor | null>(null)
   const acumulado = useRef('')
+  const enVivo = useRef('')
   /** reinicios seguidos sin ningún resultado */
   const reinicios = useRef(0)
+
+  /** Lo parcial que se está viendo pasa a lo acumulado (al terminar no se espera al resultado final). */
+  const fijarParcial = useCallback(() => {
+    const p = enVivo.current.trim()
+    if (p) acumulado.current += (acumulado.current ? ' ' : '') + p
+    enVivo.current = ''
+    setFinal(acumulado.current)
+    setParcial('')
+  }, [])
 
   const parar = useCallback((mensaje?: string) => {
     quiereEscuchar.current = false
@@ -71,21 +103,23 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
     r.lang = lang
     r.continuous = true
     r.interimResults = true
-    // Cada handler ignora los eventos tardíos de un reconocedor que ya no es el actual (p. ej. tras "Grabar de nuevo").
+    // Cada handler ignora los eventos de un reconocedor que ya no es el actual (por si el navegador los manda igual).
     const actual = () => rec.current === r
     r.onresult = (e) => {
       if (!actual()) return
       reinicios.current = 0
       let p = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let i = 0; i < e.results.length; i++) {
         const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) {
+        if (!e.results[i].isFinal) p += t
+        else if (i >= e.resultIndex) {
           const limpio = t.trim()
           if (limpio) acumulado.current += (acumulado.current ? ' ' : '') + limpio
-        } else p += t
+        }
       }
+      enVivo.current = p.trim()
       setFinal(acumulado.current)
-      setParcial(p.trim())
+      setParcial(enVivo.current)
     }
     r.onerror = (e) => {
       if (!actual()) return
@@ -97,7 +131,7 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
     }
     r.onend = () => {
       if (!actual()) return
-      setParcial('')
+      fijarParcial() // si cortó con algo sin confirmar, no se pierde
       if (!quiereEscuchar.current) return
       if (reinicios.current >= MAX_REINICIOS_SIN_RESULTADO) {
         parar(ERROR_SILENCIO)
@@ -107,6 +141,7 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
       try {
         r.start()
       } catch {
+        soltar(r)
         const otro = nuevo()
         rec.current = otro
         try {
@@ -117,18 +152,18 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
       }
     }
     return r
-  }, [lang, parar])
+  }, [lang, parar, fijarParcial])
 
+  // Sin await en el medio: en iOS el reconocimiento tiene que arrancar dentro del toque.
   const empezar = useCallback(() => {
+    const anterior = rec.current
+    rec.current = null
+    soltar(anterior)
     const r = nuevo()
     if (!r) return
-    const anterior = rec.current
-    rec.current = r // desde acá el anterior queda ignorado
-    try {
-      anterior?.abort?.()
-    } catch {
-      /* ya estaba parado */
-    }
+    rec.current = r
+    enVivo.current = ''
+    setParcial('')
     setError(undefined)
     reinicios.current = 0
     quiereEscuchar.current = true
@@ -136,6 +171,8 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
     try {
       r.start()
     } catch {
+      rec.current = null
+      soltar(r)
       parar('No pude empezar a escuchar, probá de nuevo.')
     }
   }, [nuevo, parar])
@@ -143,26 +180,51 @@ export function useDictado({ lang = 'es-UY' }: { lang?: string } = {}): Dictado 
   const terminar = useCallback(() => {
     quiereEscuchar.current = false
     setEscuchando(false)
-    try {
-      rec.current?.stop()
-    } catch {
-      /* ya estaba parado */
-    }
-  }, [])
+    const r = rec.current
+    rec.current = null
+    fijarParcial()
+    soltar(r)
+  }, [fijarParcial])
 
   const borrar = useCallback(() => {
     acumulado.current = ''
+    enVivo.current = ''
     setFinal('')
     setParcial('')
   }, [])
 
+  // Permiso denegado de antes: se avisa cómo activarlo sin esperar al toque (Safari 16+ lo informa).
+  useEffect(() => {
+    const permisos = typeof navigator !== 'undefined' ? navigator.permissions : undefined
+    if (!permisos?.query) return
+    let vivo = true
+    let estado: PermissionStatus | null = null
+    const revisar = () => {
+      if (!vivo || !estado) return
+      if (estado.state === 'denied') setError(ERROR_PERMISO)
+      else setError((e) => (e === ERROR_PERMISO ? undefined : e))
+    }
+    permisos
+      .query({ name: 'microphone' as PermissionName })
+      .then((s) => {
+        estado = s
+        s.addEventListener?.('change', revisar)
+        revisar()
+      })
+      .catch(() => {
+        /* el navegador no lo informa */
+      })
+    return () => {
+      vivo = false
+      estado?.removeEventListener?.('change', revisar)
+    }
+  }, [])
+
   useEffect(() => () => {
     quiereEscuchar.current = false
-    try {
-      rec.current?.abort?.()
-    } catch {
-      /* nada */
-    }
+    const r = rec.current
+    rec.current = null
+    soltar(r)
   }, [])
 
   const texto = [final, parcial].filter(Boolean).join(' ')
