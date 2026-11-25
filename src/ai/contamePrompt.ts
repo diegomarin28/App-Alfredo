@@ -4,12 +4,13 @@ import type { Casa, Fecha, Vencimiento } from '@/domain/tipos'
 export type Accion =
   | { tipo: 'eventoCasa'; casa: Casa; que: string; cuando: string }
   | { tipo: 'personaCasa'; casa: Casa; nombre: string; rol: string; detalle?: string; telefono?: string }
-  | { tipo: 'servicioCasa'; casa: Casa; clave: string; valor: string }
+  /** valor null: no dijo el número (queda en "Para completar") */
+  | { tipo: 'servicioCasa'; casa: Casa; clave: string; valor: string | null }
   | { tipo: 'pendiente'; texto: string }
   | { tipo: 'nota'; texto: string }
   | { tipo: 'contacto'; nombre: string; empresa?: string; telefono?: string; nota?: string }
-  /** `tipo` de la fecha va como `tipoFecha`; dia MM-DD. */
-  | { tipo: 'fecha'; nombre: string; tipoFecha: Fecha['tipo']; dia: string; anioNacimiento?: number }
+  /** `tipo` de la fecha va como `tipoFecha`; dia MM-DD (null: cumpleaños sin fecha, queda en "Para completar"). */
+  | { tipo: 'fecha'; nombre: string; tipoFecha: Fecha['tipo']; dia: string | null; anioNacimiento?: number }
   /** dia MM-DD */
   | { tipo: 'recordatorio'; titulo: string; dia: string; avisarDiasAntes: number }
   /** fecha YYYY-MM-DD */
@@ -53,8 +54,8 @@ const VARIANTES = [
   variante('servicioCasa', 'Dato de un servicio de una casa (DirecTV, wifi, UTE, OSE, alarma, riego…).', {
     casa: CASA,
     clave: str('Nombre del servicio (ej. UTE).'),
-    valor: str('El dato (ej. número de cliente, contraseña del wifi, teléfono de la empresa).'),
-  }, ['casa', 'clave', 'valor']),
+    valor: str('El dato (ej. número de cliente, contraseña del wifi, teléfono de la empresa). Si no lo dice, no lo pongas: queda para completar.'),
+  }, ['casa', 'clave']),
   variante('pendiente', 'Una tarea pendiente: algo que tiene que hacer, o lo que no sabés dónde va.', {
     texto: str('La tarea, corta (hasta 200 letras).'),
   }, ['texto']),
@@ -70,9 +71,9 @@ const VARIANTES = [
   variante('fecha', 'Cumpleaños u otra fecha que se repite todos los años (un aniversario es "otra").', {
     nombre: str('De quién o de qué es la fecha.'),
     tipoFecha: { type: 'string', enum: ['cumple', 'otra'], description: 'cumple u otra (aniversarios y demás)' },
-    dia: str('Día del año, MM-DD.'),
+    dia: str('Día del año, MM-DD. Si es un cumpleaños y no dice la fecha, no lo pongas: queda para completar.'),
     anioNacimiento: { type: 'integer', description: 'Opcional: año de nacimiento, solo si lo dice.' },
-  }, ['nombre', 'tipoFecha', 'dia']),
+  }, ['nombre', 'tipoFecha']),
   variante('recordatorio', 'Algo que hay que gestionar todos los años en una fecha.', {
     titulo: str('Qué hay que hacer.'),
     dia: str('Día del año, MM-DD.'),

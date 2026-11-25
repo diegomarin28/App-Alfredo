@@ -66,12 +66,14 @@ export function validarEventoCasa(e: EntradaEventoCasa, hoyStr: string): Res<Omi
 
 export interface EntradaServicioCasa { casa: string; clave: string; valor: string }
 
-export function validarServicioCasa(e: EntradaServicioCasa): Res<Omit<ServicioCasa, 'id' | 'loteId' | 'creadoEn'>> {
+/** sinValor: Contame guarda el servicio aunque no diga el número (queda en "Para completar"). */
+export function validarServicioCasa(e: EntradaServicioCasa, { sinValor = false } = {}): Res<Omit<ServicioCasa, 'id' | 'loteId' | 'creadoEn'>> {
   if (!esCasa(e.casa)) return { ok: false, error: ERR_CASA }
   const clave = txt(e.clave)
   if (!clave) return { ok: false, error: 'Escribí el nombre del servicio.' }
   if (clave.length > MAX_CLAVE) return { ok: false, error: `El servicio puede tener hasta ${MAX_CLAVE} letras.` }
   const valor = txt(e.valor)
+  if (!valor && sinValor) return { ok: true, valor: { casa: e.casa, clave, valor: null } }
   if (!valor) return { ok: false, error: 'Escribí el dato (por ejemplo, el número de cliente).' }
   if (valor.length > MAX_VALOR) return { ok: false, error: `El dato puede tener hasta ${MAX_VALOR} letras.` }
   return { ok: true, valor: { casa: e.casa, clave, valor } }

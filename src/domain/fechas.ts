@@ -1,5 +1,5 @@
 import type { Fecha, Recordatorio, Vencimiento } from './tipos'
-import { posponerPor, proximaDeRecordatorio, resolverRecordatorio } from './repeticion'
+import { diasDeAviso, posponerPor, proximaDeRecordatorio, resolverRecordatorio } from './repeticion'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -54,12 +54,14 @@ export function proximaOcurrencia(diaMMDD: string, hoyStr: string): string {
 }
 
 export function edadQueCumple(f: Fecha, hoyStr: string): number | null {
-  if (f.anioNacimiento == null) return null
+  if (f.anioNacimiento == null || f.dia === null) return null
   return Number(proximaOcurrencia(f.dia, hoyStr).slice(0, 4)) - f.anioNacimiento
 }
 
+/** Los que tienen fecha, del más cercano al más lejano (los sin fecha van a "Para completar"). */
 export function proximosCumples(fechas: Fecha[], hoyStr: string) {
   return fechas
+    .filter((f): f is Fecha & { dia: string } => f.dia !== null)
     .map(f => {
       const proxima = proximaOcurrencia(f.dia, hoyStr)
       return { ...f, proxima, dias: diasHasta(proxima, hoyStr), edad: edadQueCumple(f, hoyStr) }
@@ -73,7 +75,7 @@ export function recordatoriosActivos(rs: Recordatorio[], hoyStr: string) {
     const proxima = proximaDeRecordatorio(r, hoyStr)
     if (proxima === null) continue
     const dias = diasHasta(proxima, hoyStr)
-    if (dias > r.avisarDiasAntes) continue
+    if (dias > diasDeAviso(r)) continue
     const rep = r.repeticion ?? 'anual'
     if ((rep === 'anual' || rep === 'nunca') && r.resueltoAnio === Number(proxima.slice(0, 4))) continue
     if (r.pospuestoHasta && r.pospuestoHasta > hoyStr) continue

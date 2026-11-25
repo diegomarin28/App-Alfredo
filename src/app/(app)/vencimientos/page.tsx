@@ -2,7 +2,7 @@ import { getRepo } from '@/data/getRepo'
 import { hoy, vencimientosProximos } from '@/domain/fechas'
 import { chipVencimiento } from '@/domain/vencimientos'
 import { MESES } from '@/domain/validarFecha'
-import { Seccion, Titulo } from '@/components/ui'
+import { Seccion, Titulo, Volver } from '@/components/ui'
 import { Swing } from '@/components/detalles'
 import FormVencimiento from './FormVencimiento'
 import Lista from './Lista'
@@ -32,6 +32,7 @@ export default async function Vencimientos() {
 
   return (
     <main className="space-y-5">
+      <Volver />
       <Titulo accion={<FormVencimiento />}>Vencimientos</Titulo>
       {/* golf (mockup v2): sin nada por vencer, un swing */}
       {todos.length === 0 && <Swing />}

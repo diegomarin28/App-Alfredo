@@ -38,9 +38,9 @@ export default function SeccionServicios({ casa, servicios }: { casa: Casa; serv
               <IconoTile nombre={iconoDe(v.clave)} tono="gris" />
               <div className="min-w-0 flex-1">
                 <p className="text-base font-semibold break-words text-texto">{v.clave}</p>
-                <p className="text-base break-words text-texto-2">{v.valor}</p>
+                <p className="text-base break-words text-texto-2">{v.valor ?? 'Falta el número'}</p>
               </div>
-              <Copiar nombre={v.clave} texto={v.valor} />
+              {v.valor && <Copiar nombre={v.clave} texto={v.valor} />}
               <BotonBorrar nombre={v.clave} accion={borrarServicio.bind(null, v.id)} />
             </li>
           ))}

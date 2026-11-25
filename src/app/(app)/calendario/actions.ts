@@ -21,7 +21,8 @@ async function permitido(): Promise<Res> {
 export async function agregarFecha(entrada: EntradaFecha): Promise<Res> {
   const p = await permitido()
   if (!p.ok) return p
-  const r = validarFecha(entrada, Number(hoy().slice(0, 4)))
+  const hoyStr = hoy()
+  const r = validarFecha(entrada, Number(hoyStr.slice(0, 4)), hoyStr)
   if (!r.ok) return r
   await (await getRepo()).fechas.create(r.valor)
   revalidatePath('/calendario')

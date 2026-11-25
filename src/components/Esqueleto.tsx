@@ -29,10 +29,14 @@ export function Filas({ cantidad = 4, alto = 'h-16' }: { cantidad?: number; alto
   )
 }
 
-/** La forma más común: título, opcionalmente un botón o filtros, y una lista. */
-export function EsqueletoPagina({ filas = 4, alto = 'h-16', arriba }: { filas?: number; alto?: string; arriba?: ReactNode }) {
+/**
+ * La forma más común: título, opcionalmente un botón o filtros, y una lista. volver: deja el lugar de "‹ Volver"
+ * (las pantallas que no son pestañas del menú), para que nada salte cuando llegan los datos.
+ */
+export function EsqueletoPagina({ filas = 4, alto = 'h-16', arriba, volver = false }: { filas?: number; alto?: string; arriba?: ReactNode; volver?: boolean }) {
   return (
     <Esqueleto>
+      {volver && <div aria-hidden="true" className="-mt-3 h-11" />}
       <div className="flex items-center justify-between gap-3">
         <Titulo />
         <Barra className="h-11 w-28" />

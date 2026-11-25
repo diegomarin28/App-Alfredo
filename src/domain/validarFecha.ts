@@ -1,4 +1,5 @@
 import type { Fecha, Repeticion } from './tipos'
+import { validarDiasSemana } from './repeticion'
 
 export const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 const DIAS_MES = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] // febrero con 29: el 29/2 se permite
@@ -14,6 +15,8 @@ export interface EntradaFecha {
   repeticion?: Repeticion
   /** HH:MM, opcional (solo "otra") */
   hora?: string | null
+  /** solo "otra" semanal: días marcados (1 = lunes … 7 = domingo); con días no se piden día, mes ni año */
+  diasSemana?: number[] | null
 }
 export type ResultadoFecha =
   | { ok: true; valor: Omit<Fecha, 'id' | 'loteId' | 'creadoEn'> }
@@ -29,10 +32,23 @@ export function validarDiaMes(dia: number, mes: number): { ok: true; valor: stri
   return { ok: true, valor: `${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}` }
 }
 
-export function validarFecha(e: EntradaFecha, anioActual: number): ResultadoFecha {
+/**
+ * hoyStr (YYYY-MM-DD): para las semanales con días marcados, que guardan hoy como fecha de inicio.
+ */
+export function validarFecha(e: EntradaFecha, anioActual: number, hoyStr = `${anioActual}-01-01`): ResultadoFecha {
   const nombre = (e.nombre ?? '').trim()
   if (!nombre) return { ok: false, error: 'Escribí el nombre.' }
   if (e.tipo !== 'cumple' && e.tipo !== 'otra') return { ok: false, error: 'Elegí qué tipo de fecha es.' }
+  if (e.tipo === 'otra' && e.repeticion === 'semanal' && e.diasSemana != null) {
+    const ds = validarDiasSemana(e.diasSemana)
+    if (!ds.ok) return ds
+    const hora = (e.hora ?? '').trim()
+    if (hora && !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return { ok: false, error: 'Revisá la hora.' }
+    return {
+      ok: true,
+      valor: { nombre, tipo: 'otra', dia: hoyStr.slice(5), repeticion: 'semanal', anioEvento: Number(hoyStr.slice(0, 4)), diasSemana: ds.valor, ...(hora ? { hora } : {}) },
+    }
+  }
   const dm = validarDiaMes(e.dia, e.mes)
   if (!dm.ok) return dm
   const dia = dm.valor

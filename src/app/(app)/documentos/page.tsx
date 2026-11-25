@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { soloOwner } from './guardia'
 import { getRepo } from '@/data/getRepo'
-import { EmptyState, Field, IconoTile, Titulo, clasesInput } from '@/components/ui'
+import { EmptyState, Field, IconoTile, Titulo, Volver, clasesInput } from '@/components/ui'
 import Agregar from '../casas/Agregar'
 import { nuevaCarpeta } from './actions'
 
@@ -22,6 +22,7 @@ export default async function Page() {
   const carpetas = (await getRepo().carpetas.list()).sort((a, b) => (a.orden ?? 999) - (b.orden ?? 999))
   return (
     <main className="space-y-4">
+      <Volver />
       <Titulo accion={<Agregar forma="mas" boton="Nueva carpeta" titulo="Nueva carpeta" guardar={nuevaCarpeta}><Campos /></Agregar>}>Documentos</Titulo>
       {carpetas.length === 0 ? <EmptyState>Todavía no hay carpetas.</EmptyState> : (
         <ul className="grid grid-cols-2 gap-2.5">

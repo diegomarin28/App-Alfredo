@@ -1,7 +1,7 @@
 import { getRepo } from '@/data/getRepo'
 import { fechaCorta } from '@/domain/vencimientos'
 import { hoy } from '@/domain/fechas'
-import { EmptyState, Seccion, Titulo } from '@/components/ui'
+import { EmptyState, Seccion, Titulo, Volver } from '@/components/ui'
 import { Icono } from '@/components/iconos'
 import NuevaNota from './NuevaNota'
 import Pendientes, { NuevoPendiente } from './Pendientes'
@@ -15,6 +15,7 @@ export default async function PendientesYNotas() {
 
   return (
     <main className="space-y-5">
+      <Volver />
       <Titulo accion={<NuevoPendiente />}>Tareas pendientes</Titulo>
       {/* los que creó Contame (vienen de un dictado) llevan el micrófono */}
       <Pendientes items={pendientes.map((p) => ({ id: p.id, texto: p.texto, hecho: p.hecho, deVoz: Boolean(p.loteId) }))} nombre={config.nombre || 'Alfredo'} hoy={hoy()} />

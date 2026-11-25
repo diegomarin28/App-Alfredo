@@ -256,6 +256,29 @@ describe('contame (Review Focus 4)', () => {
     expect('aviso' in r).toBe(false)
   })
 
+  it('ronda 5: cumpleaños sin fecha y servicio sin número se guardan igual (quedan "Para completar")', async () => {
+    const ai = new FakeAiClient([guardar([
+      { tipo: 'fecha', nombre: 'Ariel Luz', tipoFecha: 'cumple' },
+      { tipo: 'servicioCasa', casa: 'malibu', clave: 'Prosegur' },
+    ])])
+    const r = await contame(repo, ai, email, { texto: 'el cumple de Ariel Luz y la alarma de Malibú es Prosegur' })
+    if (!('guardado' in r)) throw new Error('esperaba guardado')
+    expect((await repo.fechas.list())[0]).toMatchObject({ nombre: 'Ariel Luz', tipo: 'cumple', dia: null })
+    expect((await repo.serviciosCasa.list())[0]).toMatchObject({ clave: 'Prosegur', valor: null })
+    expect(r.guardado.map((g) => g.descripcion)).toEqual([
+      'Calendario: cumpleaños de Ariel Luz (falta la fecha)',
+      'Servicios de Malibú: Prosegur, falta el número',
+    ])
+  })
+
+  it('una fecha "otra" sin día no se guarda como fecha', async () => {
+    const ai = new FakeAiClient([guardar([{ tipo: 'fecha', nombre: 'Aniversario', tipoFecha: 'otra' }])])
+    const r = await contame(repo, ai, email, { texto: 'el aniversario' })
+    if (!('guardado' in r)) throw new Error('esperaba guardado')
+    expect(r.guardado[0].accion.tipo).toBe('pendiente')
+    expect(await repo.fechas.list()).toHaveLength(0)
+  })
+
   it('fecha con día imposible → pendiente', async () => {
     const ai = new FakeAiClient([guardar([{ tipo: 'fecha', nombre: 'Ana', tipoFecha: 'cumple', dia: '02-31' }])])
     const r = await contame(repo, ai, email, { texto: 'cumple de Ana' })

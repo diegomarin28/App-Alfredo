@@ -13,7 +13,7 @@ export default async function Ajustes() {
   if (sesion?.rol !== 'owner') redirect('/')
   return (
     <main className="space-y-4">
-      <Volver href="/">Inicio</Volver>
+      <Volver />
       <Titulo>Ajustes</Titulo>
       <section aria-label="Tu perfil">
         <Perfil nombre={config.nombre} estilo={config.estiloEscritura} />

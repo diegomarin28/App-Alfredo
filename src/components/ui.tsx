@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Icono, type NombreIcono } from './iconos'
 
 export { Sheet } from './Hoja'
+export { Volver } from './Volver'
 
 /** Tarjeta blanca del mockup v2 (radio 16, borde fino). */
 export function Card({ children, className = '', ...rest }: { children: ReactNode; className?: string } & React.HTMLAttributes<HTMLDivElement>) {
@@ -25,7 +26,7 @@ export function Chip({ children, activo = false, urgente = false, className = ''
 
 export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1.5 block text-base font-semibold text-texto">{label}</span>
       {hint && <span className="mb-2 block text-base text-texto-2">{hint}</span>}
       {children}
@@ -47,6 +48,12 @@ export function CampoSelect({ id, label, children }: { id: string; label: string
 }
 
 export const clasesInput = 'min-h-12 w-full rounded-xl border border-borde bg-white px-4 text-base text-texto placeholder:text-texto-2 focus:border-azul focus:outline-none focus:ring-2 focus:ring-tinte'
+
+/**
+ * Fecha u hora (ronda 5): en el iPhone el control nativo es más ancho que su columna y deja mover la hoja para el
+ * costado; así ocupa su lugar y nada más.
+ */
+export const clasesFechaHora = `${clasesInput} block min-w-0 appearance-none py-[11px] leading-6`
 
 /** Select con la flechita del mockup v2. */
 export const clasesSelect = `${clasesInput} appearance-none bg-[url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%235F646B' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")] bg-[length:20px] bg-[right_14px_center] bg-no-repeat pr-10`
@@ -70,6 +77,7 @@ const VARIANTES = {
   gris: 'bg-gris text-texto',
   blanco: 'bg-white text-azul',
   peligro: 'bg-rojo-bg text-rojo',
+  rojo: 'bg-rojo text-white',
 } as const
 
 type PropsBoton = ButtonHTMLAttributes<HTMLButtonElement> & { variante?: keyof typeof VARIANTES }
@@ -180,15 +188,6 @@ export function Avatar({ nombre, tono = 'azul' }: { nombre: string; tono?: 'azul
 export function Pill({ children, tono = 'gris' }: { children: ReactNode; tono?: 'rojo' | 'naranja' | 'gris' }) {
   const color = tono === 'rojo' ? 'bg-rojo-bg text-rojo' : tono === 'naranja' ? 'bg-urg-bg text-urg-tx' : 'bg-gris text-texto-2'
   return <span className={`inline-flex items-center rounded-lg px-2 py-0.5 text-base font-semibold ${color}`}>{children}</span>
-}
-
-/** Volver, arriba del título: "‹ Documentos" (la flecha apunta a la izquierda). */
-export function Volver({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link href={href} className="-ml-1 inline-flex min-h-11 items-center gap-1 rounded-xl px-1 text-base font-semibold text-azul">
-      <Icono nombre="atras" tamano={16} trazo={2} />{children}
-    </Link>
-  )
 }
 
 /** Botón redondo con ícono (llamar, copiar): 44 px, fondo suave. */

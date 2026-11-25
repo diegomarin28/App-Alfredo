@@ -90,7 +90,8 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
       return r.ok ? { tipo: 'personaCasa', ...r.valor } : null
     }
     case 'servicioCasa': {
-      const r = validarServicioCasa({ casa: s('casa'), clave: s('clave'), valor: s('valor') })
+      // sin el número: se guarda igual y queda en "Para completar"
+      const r = validarServicioCasa({ casa: s('casa'), clave: s('clave'), valor: s('valor') }, { sinValor: true })
       return r.ok ? { tipo: 'servicioCasa', ...r.valor } : null
     }
     case 'pendiente': {
@@ -108,13 +109,15 @@ export function validarAccion(raw: unknown, hoyStr: string): Accion | null {
       return { tipo: 'contacto', ...r.valor }
     }
     case 'fecha': {
-      const m = MMDD.exec(s('dia'))
-      if (!m) return null
       const anio = o.anioNacimiento === undefined || o.anioNacimiento === null ? null : entero('anioNacimiento', NaN)
+      // cumpleaños sin fecha: se guarda igual y queda en "Para completar" (no aparece en el Calendario)
+      const sinFecha = s('tipoFecha') === 'cumple' && !s('dia').trim()
+      const m = sinFecha ? ['', '01', '01'] : MMDD.exec(s('dia'))
+      if (!m) return null
       const r = validarFecha({ nombre: s('nombre'), tipo: s('tipoFecha'), dia: Number(m[2]), mes: Number(m[1]), anio }, Number(hoyStr.slice(0, 4)))
       if (!r.ok || (anio !== null && r.valor.anioNacimiento === undefined)) return null
       const { tipo, ...resto } = r.valor
-      return { tipo: 'fecha', tipoFecha: tipo, ...resto }
+      return { tipo: 'fecha', tipoFecha: tipo, ...resto, ...(sinFecha ? { dia: null } : {}) }
     }
     case 'recordatorio': {
       const m = MMDD.exec(s('dia'))
@@ -169,11 +172,11 @@ export function describir(a: Accion): string {
   switch (a.tipo) {
     case 'eventoCasa': return `Historial de ${nombreCasa(a.casa)}: ${recortar(a.que, 120)} (${fechaLarga(a.cuando.slice(5))})`
     case 'personaCasa': return `Quién se ocupa en ${nombreCasa(a.casa)}: ${a.nombre} (${a.rol})`
-    case 'servicioCasa': return `Servicios de ${nombreCasa(a.casa)}: ${a.clave}, ${recortar(a.valor, 80)}`
+    case 'servicioCasa': return `Servicios de ${nombreCasa(a.casa)}: ${a.clave}, ${a.valor ? recortar(a.valor, 80) : 'falta el número'}`
     case 'pendiente': return `Tareas pendientes: ${a.texto}`
     case 'nota': return `Notas: ${recortar(a.texto, 120)}`
     case 'contacto': return `Contactos: ${a.nombre}${a.empresa ? ` (${a.empresa})` : ''}`
-    case 'fecha': return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${fechaLarga(a.dia)})`
+    case 'fecha': return `Calendario: ${NOMBRE_FECHA[a.tipoFecha]} de ${a.nombre} (${a.dia ? fechaLarga(a.dia) : 'falta la fecha'})`
     case 'recordatorio': return `Recordatorios: ${a.titulo} (${fechaLarga(a.dia)})`
     case 'vencimiento': return `Vencimientos: ${a.titulo} (${fechaCompleta(a.fecha)})`
   }

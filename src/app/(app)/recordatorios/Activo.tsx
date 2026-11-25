@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Boton, Sheet, clasesInput } from '@/components/ui'
+import { Boton, Sheet, clasesFechaHora } from '@/components/ui'
 import { Icono } from '@/components/iconos'
-import { opcionesPosponer } from '@/domain/posponer'
+import { OPCIONES_POSPONER } from '@/domain/posponer'
 
 export interface ItemActivo { id: string; titulo: string; fecha: string; dias: number; posponerDias: number }
 
@@ -16,13 +16,12 @@ function diaLargo(iso: string): string {
 }
 
 /**
- * "Posponer" (ronda 4b): hoja chica para elegir cuánto: 1 día · 3 días · 1 semana · 15 días · 1 mes · Elegir fecha.
- * La opción por defecto del recordatorio va primera y marcada.
+ * "Posponer": hoja chica para elegir cuánto, siempre de menor a mayor: 1 día · 3 días · 1 semana · 15 días · 1 mes ·
+ * Elegir fecha. La opción por defecto del recordatorio aparece marcada en su lugar (ronda 5).
  */
 function HojaPosponer({ item, onCerrar, onElegir }: { item: ItemActivo | null; onCerrar: () => void; onElegir: (p: Posponer) => void }) {
   const [eleccion, setEleccion] = useState<string>('')
   const [fecha, setFecha] = useState('')
-  const opciones = item ? opcionesPosponer(item.posponerDias) : []
   const actual = eleccion || String(item?.posponerDias ?? 15)
   return (
     <Sheet abierto={item !== null} onCerrar={() => { setEleccion(''); onCerrar() }} titulo={`Posponer ${item?.titulo ?? ''}`}>
@@ -35,7 +34,7 @@ function HojaPosponer({ item, onCerrar, onElegir }: { item: ItemActivo | null; o
         }}
       >
         <div role="radiogroup" aria-label="¿Cuánto?" className="overflow-hidden rounded-2xl border border-borde">
-          {[...opciones.map(([d, t]) => [String(d), t] as const), ['fecha', 'Elegir fecha'] as const].map(([v, t]) => (
+          {[...OPCIONES_POSPONER.map(([d, t]) => [String(d), t] as const), ['fecha', 'Elegir fecha'] as const].map(([v, t]) => (
             <label key={v} className="flex min-h-12 cursor-pointer items-center gap-3 px-4 text-base [&:not(:first-child)]:border-t [&:not(:first-child)]:border-borde">
               <input type="radio" name="cuanto" value={v} checked={actual === v} onChange={() => setEleccion(v)} className="size-5 accent-azul" />
               {t}
@@ -43,7 +42,7 @@ function HojaPosponer({ item, onCerrar, onElegir }: { item: ItemActivo | null; o
           ))}
         </div>
         {actual === 'fecha' && (
-          <input type="date" aria-label="Hasta" value={fecha} onChange={(e) => setFecha(e.target.value)} className={clasesInput} />
+          <input type="date" aria-label="Hasta" value={fecha} onChange={(e) => setFecha(e.target.value)} className={clasesFechaHora} />
         )}
         <Boton type="submit" className="w-full" disabled={actual === 'fecha' && !fecha}>Posponer</Boton>
       </form>
