@@ -210,9 +210,10 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
                 <button
                   type="button"
                   onClick={dictado.escuchando ? terminar : dictado.empezar}
+                  disabled={!dictado.escuchando && dictado.ocupado}
                   aria-pressed={dictado.escuchando}
                   aria-label={dictado.escuchando ? 'Tocá para terminar' : 'Tocá para hablar'}
-                  className="relative flex size-40 items-center justify-center rounded-full"
+                  className="relative flex size-40 items-center justify-center rounded-full disabled:opacity-50"
                 >
                   {/* anillos: quietos esperando; respiran mientras escucha (con "reducir movimiento", solo cambian de opacidad) */}
                   <span aria-hidden="true" className={`absolute inset-0 rounded-full bg-tinte ${dictado.escuchando ? 'animate-respirar' : ''}`} />
@@ -226,6 +227,8 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
                     <p aria-hidden="true" className="text-[17px] font-bold text-texto">Te escucho · {reloj(segundos)}</p>
                     <p className="text-base text-texto-2">Podés hacer pausas. Tocá para terminar.</p>
                   </div>
+                ) : dictado.ocupado ? (
+                  <p role="status" className="text-base text-texto-2">Un momento…</p>
                 ) : (
                   <p aria-hidden="true" className="text-[17px] font-bold text-texto">Tocá para hablar</p>
                 )}
@@ -277,10 +280,12 @@ export default function Contame({ ultimos, hoy }: { ultimos: Guardado[]; hoy: st
               />
               <Boton className="w-full" disabled={cargando || !texto.trim()} onClick={() => enviar(texto.trim(), [])}>Enviar</Boton>
               {dictado.soportado && (
-                <div className="flex justify-center">
-                  <button type="button" onClick={grabarDeNuevo} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul">
+                <div className="flex flex-col items-center gap-1">
+                  {/* ronda 10: no se graba de nuevo hasta que el reconocedor anterior terminó */}
+                  <button type="button" onClick={grabarDeNuevo} disabled={dictado.ocupado} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-base font-semibold text-azul disabled:opacity-50">
                     <Icono nombre={teclado ? 'microfono' : 'repetir'} tamano={18} />{teclado ? 'Usar el micrófono' : 'Repetir'}
                   </button>
+                  {dictado.ocupado && <p role="status" className="text-base text-texto-2">Un momento…</p>}
                 </div>
               )}
             </div>

@@ -59,16 +59,16 @@ export async function registrarFaceId(page: Page, opciones: { prf?: boolean } = 
 
 /**
  * Reconocimiento de voz falso, manejable desde la prueba con window.__voz.
- * `ios`: como el iPhone (ronda 8): stop() no termina nunca, abort() después de stop() no hace nada y un start() con
- * otro reconocedor vivo deja sordo al nuevo (no le llega lo que se dice).
- * Ronda 9: start() avisa "start" y "audiostart" como Safari; `__voz.trabar()` traba el motor (start() no da audio)
- * hasta que se recarga la página, como en el iPhone real. `trabar(true)` lo deja trabado también después de recargar.
+ * start() avisa "start" y "audiostart" como Safari; stop()/abort() mandan "end" (después de `__voz.demorarFin(ms)`).
+ * `ios` (ronda 10, según el registro del iPhone real): una instancia creada después de que otra arrancó queda sorda
+ * (start y audiostart, pero nunca voz); reusar la misma con start() después de su "end" anda.
+ * `__voz.trabar()`: el motor queda sordo hasta recargar la página; `trabar(true)`, también después de recargar.
  */
 export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
   const ios = !!opciones?.ios
   type Res = { isFinal: boolean; 0: { transcript: string } }
   const CLAVE_TRABADO = '__voz:trabado'
-  const estado = { instancias: [] as FakeRec[], starts: 0, trabado: sessionStorage.getItem(CLAVE_TRABADO) === '1' }
+  const estado = { instancias: [] as FakeRec[], starts: 0, trabado: sessionStorage.getItem(CLAVE_TRABADO) === '1', demoraFin: 0 }
   class FakeRec {
     lang = ''
     continuous = false
@@ -82,27 +82,28 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
     parando = false
     sordo = false
     resultados: Res[] = []
-    constructor() { estado.instancias.push(this) }
+    constructor() {
+      this.sordo = ios && estado.instancias.some((o) => o.arranco)
+      estado.instancias.push(this)
+    }
+    arranco = false
     start() {
       if (this.activo || this.parando) throw new DOMException('ya empezó', 'InvalidStateError')
-      this.sordo = ios && estado.instancias.some((o) => o !== this && (o.activo || o.parando))
       this.activo = true
+      this.arranco = true
       this.resultados = []
       estado.starts++
-      // trabado: arranca ("start") pero el audio no llega nunca
-      setTimeout(() => { if (this.activo) { this.onstart?.(); if (!estado.trabado) this.onaudiostart?.() } }, 0)
+      // sordo o trabado: arranca y "abre el micrófono" igual, pero nunca llega voz
+      setTimeout(() => { if (this.activo) { this.onstart?.(); this.onaudiostart?.() } }, 0)
     }
-    stop() {
+    private terminar() {
       if (!this.activo) return
       this.activo = false
-      if (ios) { this.parando = true; return }
-      setTimeout(() => this.onend?.(), 0)
+      this.parando = true
+      setTimeout(() => { this.parando = false; this.onend?.() }, estado.demoraFin)
     }
-    abort() {
-      if (this.parando || !this.activo) return
-      this.activo = false
-      setTimeout(() => this.onend?.(), 0)
-    }
+    stop() { this.terminar() }
+    abort() { this.terminar() }
   }
   const actual = () => estado.instancias.filter((r) => r.activo).pop()
   // Chromium trae uno real (también sin prefijo): se reemplazan los dos.
@@ -133,12 +134,13 @@ export function instalarVozFalsa(opciones: { ios?: boolean } = {}) {
       r.onend?.()
     },
     starts: () => estado.starts,
+    instancias: () => estado.instancias.length,
     trabar(siempre = false) {
       estado.trabado = true
       if (siempre) sessionStorage.setItem(CLAVE_TRABADO, '1')
     },
-    destrabar() {
-      sessionStorage.removeItem(CLAVE_TRABADO)
+    demorarFin(ms: number) {
+      estado.demoraFin = ms
     },
   }
 }
